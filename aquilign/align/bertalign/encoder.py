@@ -8,12 +8,11 @@ from aquilign.align.bertalign.utils import yield_overlaps
 class Encoder:
     def __init__(self, model_name, device):
         self.device = "cuda:0" if torch.cuda.is_available() and device != "cpu" else "cpu"
-        if model_name == "LaBSE":
-            self.model = SentenceTransformer(model_name_or_path=model_name, device=device)
-            self.model_name = model_name
-        else:
-            self.t2vec_model = TextToEmbeddingModelPipeline(encoder="text_sonar_basic_encoder",
-                                           tokenizer="text_sonar_basic_encoder")
+        # if model_name == "LaBSE":
+        self.model = SentenceTransformer(model_name_or_path=model_name, device=device)
+        self.model_name = model_name
+        # else:
+            # self.t2vec_model = TextToEmbeddingModelPipeline(encoder="text_sonar_basic_encoder", tokenizer="text_sonar_basic_encoder")
         
     
     def simple_vectorization(self, sents):

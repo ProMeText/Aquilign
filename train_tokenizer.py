@@ -24,10 +24,9 @@ import glob
 # logging_steps : the number of logging steps (ex : 50)
 
 # function which produces the train, which first gets texts, transforms them into tokens and labels, then trains model with the specific given arguments
-def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps, keep_punct=True):
+def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps, keep_punct=True, add_lang_metadata=True):
     model = AutoModelForTokenClassification.from_pretrained(modelName, num_labels=4)
     tokenizer = BertTokenizer.from_pretrained(modelName, max_length=10)
-    
     train_lines = []
     dev_lines = []
     eval_lines = []
@@ -51,11 +50,11 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
 
     
     # Train corpus
-    train_texts_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=tokenizer, delimiter="£")
+    train_texts_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=tokenizer, delimiter="£", add_lang_metadata=add_lang_metadata)
     train_dataset = trainer_functions.SentenceBoundaryDataset(train_texts_and_labels, tokenizer)
     
     # Dev corpus
-    dev_texts_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(dev_lines, tokenizer=tokenizer, delimiter="£")
+    dev_texts_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(dev_lines, tokenizer=tokenizer, delimiter="£", add_lang_metadata=add_lang_metadata)
     dev_dataset = trainer_functions.SentenceBoundaryDataset(dev_texts_and_labels, tokenizer)
     
     
@@ -172,6 +171,7 @@ if __name__ == '__main__':
     num_train_epochs = int(sys.argv[5])
     batch_size = int(sys.argv[6])
     logging_steps = int(sys.argv[7])
+    add_lang_metadata = bool(sys.argv[8])
 
-    training_trainer(model, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps)
+    training_trainer(model, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps, add_lang_metadata)
 

@@ -65,7 +65,7 @@ def convertToWordsSentencesAndLabels(corpus:list, delimiter="£") -> (list, list
     return sentencesList, sentencesAsLabels
 
 
-def get_lang_mapping(tokenizer):
+def get_lang_mapping(tokenizer, void_metadata):
     """
     This function gets the token ID for pseudo tokens used as metadata for training and inference. Returns the tokenizer 
     which vocab can be modified to add a new token
@@ -85,12 +85,17 @@ def get_lang_mapping(tokenizer):
             lang_mapping[lang] = tokenizer.encode(lang)[1]
         else:
             lang_mapping[lang] = encoded_token[1]
+            
+    if void_metadata:
+        all_langs = lang_mapping.items()
+        all_tokens = lang_mapping.values()
+        lang_mapping = {lang:all_tokens[0] for lang in all_langs}
     return lang_mapping, tokens_to_add
         
 
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False):
+def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False, add_lang_metadata=True):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels, adding lang metadata.
     Returns the data and the tokenizer which vocab can be updated (worth a class transformation)
@@ -115,7 +120,7 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     out_toks_and_labels = []
     # langs = "es it fr"
     # [4, 1058, 4290, 2123, 5]
-    lang_mapping, tokens_to_add = get_lang_mapping(tokenizer)
+    lang_mapping, tokens_to_add = get_lang_mapping(tokenizer, void_metadata=add_lang_metadata)
     tokenizer.add_tokens(tokens_to_add)
     for (text, lang), labels in zip(sentencesList, sentencesAsLabels):
         toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=False,

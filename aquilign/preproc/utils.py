@@ -99,23 +99,18 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         corresp = functions.get_index_correspondence(tokens, tokenizer)
         # aligning the label
         new_labels = functions.align_labels(corresp, labels)
-        #print(new_labels)
-        #print(f"New labels: {len(new_labels)}")
-        #print([tokenizer.convert_ids_to_tokens(t) for t in tokenizer.encode(text)])
+        
+        
         # get the length of the tensor
         
         # We add the metadata: CONTINUE HEERE
         sq = (toks['input_ids'].squeeze())
-        
         attention_mask:list = toks['attention_mask'].squeeze().tolist()
         attention_mask.insert(0, 1)
-        #print(f"Attention: {len(attention_mask)}")
         attention_mask = torch.tensor(attention_mask)
-        
+
         sq = sq.tolist()
         sq.insert(1, lang_mapping[lang])
-        #print(sq)
-        #print(f"SQ: {len(sq)}")
         sq = torch.tensor(sq)
         sq_as_list = sq.tolist()
         # print(list(zip([tokenizer.convert_ids_to_tokens(t) for t in tokenizer.encode(text)], [t for t in tokenizer.encode(text)], [item for item in new_labels])))
@@ -123,11 +118,6 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         ### insert 2 for in the new_labels in order to get tensors with the same size !
         if len(sq) == len(new_labels):
             pass
-            print("OK")
-            print(f"{(sq.tolist())}\n" \
-                   f"{(new_labels)}\n" \
-                   f"sq: {len(sq)}\n" \
-                   f"new labels: {len(new_labels)}")
         else:
             diff = len(sq) - len(new_labels)
             for elem in range(diff):
@@ -138,9 +128,13 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
                                            f"{(new_labels)}\n" \
                                            f"sq: {len(sq)}\n" \
                                            f"new labels: {len(new_labels)}"
+        new_labels = torch.tensor(new_labels)
         # tensorize the new labels
         # print(list(zip(sq_as_list, new_labels, [tokenizer.convert_ids_to_tokens(t) for t in sq_as_list])))
         label = torch.tensor(new_labels)
+        
+        assert all([type(current_data) == type(label) for current_data in [attention_mask, sq]]), "Datatype error"
+        
         out_toks_and_labels.append({'input_ids': sq,
                                     'attention_mask': attention_mask,
                                     'labels': label})

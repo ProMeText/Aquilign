@@ -35,7 +35,7 @@ def align_labels(corresp, orig_labels):
     # for special tokens (automatically added by BERT tokenizer), value of 2
     new_labels.append(2)
     # 1001 will be the label of metadata.
-    new_labels.insert(0, 1001)
+    new_labels.insert(0, 3)
     new_labels.insert(0, 2)
     return new_labels
 

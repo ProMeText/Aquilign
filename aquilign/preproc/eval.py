@@ -160,11 +160,9 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter=
                                              f"{example}\n" \
                                              f"(label: {len(label)} and predicted: {len(predicted)})"
     synt_results = get_metrics(syntactic_preds, all_syntactic_gt)
-    print(synt_results)
     
     
     # Second, model evaluation
-    print("Performing bert-based tokenization evaluation")
     gt_toks_and_labels = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, tokenizer=tokenizer, delimiter=delimiter)
     for (txt_example, lang), gt in zip(corpus_as_list, gt_toks_and_labels):
         # We get only the text

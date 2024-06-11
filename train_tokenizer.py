@@ -118,7 +118,7 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
             if keep_punct is False:
                 eval_lines = [utils.remove_punctuation(line) for line in eval_lines]
         eval_data_lang = edataset.split("/")[-2]
-        print(f"Evaluating model on {eval_data_lang}")
+        print(f"\n---\nEvaluating model on {eval_data_lang}")
         eval_results = evaluation.run_eval(data=eval_lines,
                                            model_path=best_model_path,
                                            tokenizer_name=tokenizer.name_or_path,

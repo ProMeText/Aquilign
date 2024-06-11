@@ -62,7 +62,8 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
     # We update the tokens embedding size, 
     # see https://huggingface.co/docs/transformers/main_classes/tokenizer#transformers.PreTrainedTokenizer.add_tokens
     model.resize_token_embeddings(len(tokenizer))
-    
+
+    best_model_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
     
     if '/' in modelName:
         name_of_model = re.split('/', modelName)[1]
@@ -111,6 +112,9 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
     # print the whole log_history with the compute metrics
     best_precision_step, best_step_metrics = utils.get_best_precision(trainer.state.log_history)
     best_model_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
+    
+    # We save the tokenizer, in case it's been updated with new data
+    tokenizer.save_pretrained(f"./results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}/tokenizer")
     print(f"Best model path according to precision: {best_model_path}")
     print(f"Full metrics: {best_step_metrics}")
     

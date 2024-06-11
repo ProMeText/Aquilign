@@ -36,7 +36,7 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
         with open(tdataset, "r") as train_file:
             current_train_lines = [(item.replace("\n", ""), lang) for item in train_file.readlines()]
             if keep_punct is False:
-                current_train_lines = [utils.remove_punctuation(line) for line in current_train_lines]
+                current_train_lines = [(utils.remove_punctuation(line), line) for line in current_train_lines]
             train_lines.extend(current_train_lines)
 
     dev_dataset = glob.glob(f"data/tokenisation/*/*dev.txt")
@@ -173,5 +173,5 @@ if __name__ == '__main__':
     logging_steps = int(sys.argv[7])
     add_lang_metadata = True if sys.argv[8] == "True" else False
 
-    training_trainer(model, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps, add_lang_metadata)
+    training_trainer(model, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps, add_lang_metadata=add_lang_metadata)
 

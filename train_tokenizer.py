@@ -57,7 +57,13 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
     # Dev corpus
     dev_texts_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(dev_lines, tokenizer=tokenizer, delimiter="£")
     dev_dataset = trainer_functions.SentenceBoundaryDataset(dev_texts_and_labels, tokenizer)
-
+    
+    
+    # We update the tokens embedding size, 
+    # see https://huggingface.co/docs/transformers/main_classes/tokenizer#transformers.PreTrainedTokenizer.add_tokens
+    model.resize_token_embeddings(len(tokenizer))
+    
+    
     if '/' in modelName:
         name_of_model = re.split('/', modelName)[1]
     else:

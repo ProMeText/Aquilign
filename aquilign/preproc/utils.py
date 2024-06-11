@@ -93,6 +93,7 @@ def get_lang_mapping(tokenizer):
 def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels, adding lang metadata.
+    Returns the data and the tokenizer which vocab can be updated (worth a class transformation)
     """
     if verbose:
         print("Converting to sentences and labels")

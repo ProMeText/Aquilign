@@ -163,7 +163,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter=
     
     
     # Second, model evaluation
-    gt_toks_and_labels = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, tokenizer=tokenizer, delimiter=delimiter)
+    gt_toks_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, tokenizer=tokenizer, delimiter=delimiter)
     for (txt_example, lang), gt in zip(corpus_as_list, gt_toks_and_labels):
         # We get only the text
         example = txt_example.replace(delimiter, "")

@@ -42,7 +42,6 @@ def align_labels(corresp, orig_labels):
 
 # function who gets the max length of tokenized text, used then in the class SentenceBoundaryDataset
 def get_token_max_length(train_texts, tokenizer):
-    print("Retrieving max length")
     lengths_list = []
     for text, lang in train_texts:
         tok_text = tokenizer(text, return_tensors='pt')

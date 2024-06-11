@@ -102,18 +102,18 @@ def unicode_normalise(string:str) -> str:
 
 def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter="£", standalone=False, remove_punctuation=False, lang=None):
     if standalone:
-        with open(data, "r") as input_file:
-            corpus_as_list = [unicode_normalise(item.replace("\n", "")) for item in input_file.readlines()]
         lang = data.split("/")[-2]
+        with open(data, "r") as input_file:
+            corpus_as_list = [(unicode_normalise(item.replace("\n", "")), lang) for item in input_file.readlines()]
     else:
-        corpus_as_list = [unicode_normalise(item) for item in data]
+        corpus_as_list = [(unicode_normalise(item), lang) for item in data]
     
     if remove_punctuation:
-        corpus_as_list = [utils.remove_punctuation(item) for item in corpus_as_list]
+        corpus_as_list = [(utils.remove_punctuation(item), lang) for item in corpus_as_list]
     
     all_preds, all_tgts = [], []
     tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=10)
-    new_model = AutoModelForTokenClassification.from_pretrained(model_path, num_labels=3)
+    new_model = AutoModelForTokenClassification.from_pretrained(model_path, num_labels=4)
     # get the path of the default tokenizer
     result = utils.convertToWordsSentencesAndLabels(corpus_as_list)
     texts, labels = result
@@ -130,7 +130,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter=
                                                         text=example,
                                                         use_punctuation=False,
                                                         lang=lang)
-        formatted_preds = [f" {delimiter}".join(tokenized_text)]
+        formatted_preds = [(f" {delimiter}".join(tokenized_text), lang)]
         preds_to_labels = utils.convertToWordsSentencesAndLabels(formatted_preds)
         if verbose:
             print(f"Example:   {example}")
@@ -166,12 +166,13 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter=
     # Second, model evaluation
     print("Performing bert-based tokenization evaluation")
     gt_toks_and_labels = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, tokenizer=tokenizer, delimiter=delimiter)
-    for txt_example, gt in zip(corpus_as_list, gt_toks_and_labels):
+    for (txt_example, lang), gt in zip(corpus_as_list, gt_toks_and_labels):
         # We get only the text
         example = txt_example.replace(delimiter, "")
-        splitted_example = utils.tokenize_words(example)
+        example_with_lang = f"{lang} {example}"
+        splitted_example = utils.tokenize_words(example_with_lang)
         # BERT-tok
-        enco_nt_tok = tokenizer.encode(example, truncation=True, padding=True, return_tensors="pt")
+        enco_nt_tok = tokenizer.encode(example_with_lang, truncation=True, padding=True, return_tensors="pt")
         # get the predictions from the model
         predictions = new_model(enco_nt_tok)
         
@@ -180,7 +181,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter=
         bert_labels = get_labels_from_preds(preds)
         
         # On crée la table de correspondance entre les words et les subwords
-        human_to_bert, _ = get_correspondence(example, tokenizer)
+        human_to_bert, _ = get_correspondence(example_with_lang, tokenizer)
         unaligned_preds = unalign_labels(human_to_bert, bert_labels, splitted_example)
         unaligned_tgts = unalign_labels(human_to_bert, gt['labels'].tolist(), splitted_example)
         
@@ -225,4 +226,5 @@ if __name__ == '__main__':
     file_to_test = sys.argv[1]
     model_path = sys.argv[2]
     tokenizer_name = sys.argv[3]
-    run_eval(file_to_test, model_path, tokenizer_name, standalone=True)
+    lang = sys.argv[4]
+    run_eval(file_to_test, model_path, tokenizer_name, standalone=True, lang=lang)

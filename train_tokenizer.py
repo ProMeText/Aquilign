@@ -49,15 +49,6 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
                 current_dev_lines = [utils.remove_punctuation(line) for line in current_dev_lines]
             dev_lines.extend(current_dev_lines)
 
-    eval_dataset = glob.glob(f"data/tokenisation/*/*eval.txt")
-    for edataset in eval_dataset:
-        lang = edataset.split("/")[-2]
-        with open(edataset, "r") as eval_files:
-            current_eval_lines = [(item.replace("\n", ""), lang) for item in eval_files.readlines()]
-            if keep_punct is False:
-                current_eval_lines = [utils.remove_punctuation(line) for line in current_eval_lines]
-            eval_lines.extend(current_eval_lines)
-        eval_data_lang = edataset.split("/")[-2]
     
     # Train corpus
     train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=tokenizer, delimiter="£")
@@ -117,11 +108,25 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
     print(f"Best model path according to precision: {best_model_path}")
     print(f"Full metrics: {best_step_metrics}")
     
-    eval_results = evaluation.run_eval(data=eval_lines, 
-                        model_path=best_model_path, 
-                        tokenizer_name=tokenizer.name_or_path, 
-                        verbose=False, 
-                        lang=eval_data_lang)
+    
+
+    eval_dataset = glob.glob(f"data/tokenisation/*/*eval.txt")
+    for edataset in eval_dataset:
+        lang = edataset.split("/")[-2]
+        with open(edataset, "r") as eval_files:
+            eval_lines = [(item.replace("\n", ""), lang) for item in eval_files.readlines()]
+            if keep_punct is False:
+                eval_lines = [utils.remove_punctuation(line) for line in eval_lines]
+        eval_data_lang = edataset.split("/")[-2]
+        print(f"Evaluating model on {eval_data_lang}")
+        eval_results = evaluation.run_eval(data=eval_lines,
+                                           model_path=best_model_path,
+                                           tokenizer_name=tokenizer.name_or_path,
+                                           verbose=False,
+                                           lang=eval_data_lang)
+    
+    
+    
     
 
     # We move the best state dir name to "best"

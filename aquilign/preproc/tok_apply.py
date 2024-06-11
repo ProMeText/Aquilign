@@ -148,7 +148,7 @@ def tokenize_text(input_file:str,
         tokenizer_name = tok_models[codelang]["tokenizer"]
     
     print(f"Using {model_path} model and {tokenizer_name} tokenizer.")
-    new_model = AutoModelForTokenClassification.from_pretrained(model_path, num_labels=3)
+    new_model = AutoModelForTokenClassification.from_pretrained(model_path, num_labels=4)
     # get the path of the default tokenizer
     tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=tokens_per_example)
     new_model.to(device)

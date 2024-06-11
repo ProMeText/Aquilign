@@ -51,11 +51,11 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
 
     
     # Train corpus
-    train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=tokenizer, delimiter="£")
+    train_texts_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=tokenizer, delimiter="£")
     train_dataset = trainer_functions.SentenceBoundaryDataset(train_texts_and_labels, tokenizer)
     
     # Dev corpus
-    dev_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(dev_lines, tokenizer=tokenizer, delimiter="£")
+    dev_texts_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(dev_lines, tokenizer=tokenizer, delimiter="£")
     dev_dataset = trainer_functions.SentenceBoundaryDataset(dev_texts_and_labels, tokenizer)
 
     if '/' in modelName:

@@ -115,7 +115,7 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     # langs = "es it fr"
     # [4, 1058, 4290, 2123, 5]
     lang_mapping, tokens_to_add = get_lang_mapping(tokenizer)
-    tokenizer.add_tokens([tokens_to_add])
+    tokenizer.add_tokens(tokens_to_add)
     for (text, lang), labels in zip(sentencesList, sentencesAsLabels):
         toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=False,
                          return_tensors="pt")
@@ -164,4 +164,4 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         out_toks_and_labels.append({'input_ids': squeezed_toks,
                                     'attention_mask': attention_mask,
                                     'labels': label})
-    return out_toks_and_labels
+    return out_toks_and_labels, tokenizer

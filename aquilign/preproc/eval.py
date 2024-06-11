@@ -106,7 +106,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter=
         with open(data, "r") as input_file:
             corpus_as_list = [(unicode_normalise(item.replace("\n", "")), lang) for item in input_file.readlines()]
     else:
-        corpus_as_list = [(unicode_normalise(item), lang) for item in data]
+        corpus_as_list = [(unicode_normalise(text), lang) for text, lang in data]
     
     if remove_punctuation:
         corpus_as_list = [(utils.remove_punctuation(item), lang) for item in corpus_as_list]

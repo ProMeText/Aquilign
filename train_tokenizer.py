@@ -25,7 +25,7 @@ import glob
 
 # function which produces the train, which first gets texts, transforms them into tokens and labels, then trains model with the specific given arguments
 def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps, keep_punct=True):
-    model = AutoModelForTokenClassification.from_pretrained(modelName, num_labels=3)
+    model = AutoModelForTokenClassification.from_pretrained(modelName, num_labels=4)
     tokenizer = BertTokenizer.from_pretrained(modelName, max_length=10)
     
     train_lines = []

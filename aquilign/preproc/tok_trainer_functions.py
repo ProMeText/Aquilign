@@ -33,15 +33,18 @@ def align_labels(corresp, orig_labels):
         else:
             pass
     # for special tokens (automatically added by BERT tokenizer), value of 2
-    new_labels.insert(0, 2)
     new_labels.append(2)
+    # 1001 will be the label of metadata.
+    new_labels.insert(0, 1001)
+    new_labels.insert(0, 2)
     return new_labels
 
 
 # function who gets the max length of tokenized text, used then in the class SentenceBoundaryDataset
 def get_token_max_length(train_texts, tokenizer):
+    print("Retrieving max length")
     lengths_list = []
-    for text in train_texts:
+    for text, lang in train_texts:
         tok_text = tokenizer(text, return_tensors='pt')
         # get the length for every tok text
         tensor_length = (tok_text['input_ids'].squeeze())

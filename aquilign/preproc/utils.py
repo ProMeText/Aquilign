@@ -73,8 +73,9 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         print("Converting to sentences and labels")
     sentencesList = []
     sentencesAsLabels = []
-    for text in corpus:
+    for text, lang in corpus:
         sentenceAsList = tokenize_words(text)
+        # We start with 2 that represents the lang metadata
         masks = []
         for token in sentenceAsList:
             if delimiter in token:
@@ -83,25 +84,50 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
                 masks.append(0)
         sentencesAsLabels.append(masks)
         sentence = text.replace(delimiter, "")
-        sentencesList.append(sentence)
-
-    num_max_length = functions.get_token_max_length(sentencesList, tokenizer)
+        sentencesList.append((sentence, lang))
+    num_max_length = functions.get_token_max_length(sentencesList, tokenizer) + 1
     out_toks_and_labels = []
-    for text, labels in zip(sentencesList, sentencesAsLabels):
-        toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=True,
+    # langs = "es it fr"
+    # [4, 1058, 4290, 2123, 5]
+    lang_mapping = {"es": 1058, "it": 4290, "fr": 2123}
+    for (text, lang), labels in zip(sentencesList, sentencesAsLabels):
+        toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=False,
                          return_tensors="pt")
-
         # get the text with the similar splits as for the creation of the data
         tokens = tokenize_words(text)
         # get the index correspondences between text and tok text
         corresp = functions.get_index_correspondence(tokens, tokenizer)
         # aligning the label
         new_labels = functions.align_labels(corresp, labels)
+        #print(new_labels)
+        #print(f"New labels: {len(new_labels)}")
+        #print([tokenizer.convert_ids_to_tokens(t) for t in tokenizer.encode(text)])
         # get the length of the tensor
+        
+        # We add the metadata: CONTINUE HEERE
         sq = (toks['input_ids'].squeeze())
+        
+        attention_mask:list = toks['attention_mask'].squeeze().tolist()
+        attention_mask.insert(0, 1)
+        #print(f"Attention: {len(attention_mask)}")
+        attention_mask = torch.tensor(attention_mask)
+        
+        sq = sq.tolist()
+        sq.insert(1, lang_mapping[lang])
+        #print(sq)
+        #print(f"SQ: {len(sq)}")
+        sq = torch.tensor(sq)
+        sq_as_list = sq.tolist()
+        # print(list(zip([tokenizer.convert_ids_to_tokens(t) for t in tokenizer.encode(text)], [t for t in tokenizer.encode(text)], [item for item in new_labels])))
+        
         ### insert 2 for in the new_labels in order to get tensors with the same size !
         if len(sq) == len(new_labels):
             pass
+            print("OK")
+            print(f"{(sq.tolist())}\n" \
+                   f"{(new_labels)}\n" \
+                   f"sq: {len(sq)}\n" \
+                   f"new labels: {len(new_labels)}")
         else:
             diff = len(sq) - len(new_labels)
             for elem in range(diff):
@@ -113,8 +139,9 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
                                            f"sq: {len(sq)}\n" \
                                            f"new labels: {len(new_labels)}"
         # tensorize the new labels
+        # print(list(zip(sq_as_list, new_labels, [tokenizer.convert_ids_to_tokens(t) for t in sq_as_list])))
         label = torch.tensor(new_labels)
-        out_toks_and_labels.append({'input_ids': toks['input_ids'].squeeze(),
-                                    'attention_mask': toks['attention_mask'].squeeze(),
+        out_toks_and_labels.append({'input_ids': sq,
+                                    'attention_mask': attention_mask,
                                     'labels': label})
     return out_toks_and_labels

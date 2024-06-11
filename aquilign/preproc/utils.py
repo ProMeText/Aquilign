@@ -75,10 +75,13 @@ def get_lang_mapping(tokenizer):
     assert len(list_dirs) != 0, "Train data should be in data/tokenisation/{lang} where {lang} is the ISO code of the lang as 2 chars (es, it, en, fr, etc)"
     for dir in list_dirs:
         langs.append(dir.split("/")[-1])
-    
     for lang in langs:
-        lang_mapping[lang] = tokenizer.encode(lang)[1]
-        assert len(tokenizer.encode(lang)) == 3, "Subword found in lang tokenization, please review code"
+        encoded_token = tokenizer.encode(lang)
+        if len(encoded_token) > 3:
+            tokenizer.add_tokens(lang)
+            lang_mapping[lang] = tokenizer.encode(lang)[1]
+        else:
+            lang_mapping[lang] = encoded_token[1]
     
     return lang_mapping
         
@@ -93,7 +96,6 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         print("Converting to sentences and labels")
     sentencesList = []
     sentencesAsLabels = []
-    print(corpus[0])
     for text, lang in corpus:
         sentenceAsList = tokenize_words(text)
         # We start with 2 that represents the lang metadata

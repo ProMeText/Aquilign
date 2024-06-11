@@ -171,7 +171,7 @@ if __name__ == '__main__':
     num_train_epochs = int(sys.argv[5])
     batch_size = int(sys.argv[6])
     logging_steps = int(sys.argv[7])
-    add_lang_metadata = bool(sys.argv[8])
+    add_lang_metadata = True if sys.argv[8] == "True" else False
 
     training_trainer(model, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps, add_lang_metadata)
 

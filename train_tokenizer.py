@@ -63,7 +63,6 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
     # see https://huggingface.co/docs/transformers/main_classes/tokenizer#transformers.PreTrainedTokenizer.add_tokens
     model.resize_token_embeddings(len(tokenizer))
 
-    best_model_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
     
     if '/' in modelName:
         name_of_model = re.split('/', modelName)[1]

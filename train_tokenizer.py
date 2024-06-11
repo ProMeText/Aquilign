@@ -28,19 +28,36 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
     model = AutoModelForTokenClassification.from_pretrained(modelName, num_labels=3)
     tokenizer = BertTokenizer.from_pretrained(modelName, max_length=10)
     
-    with open(train_dataset, "r") as train_file:
-        train_lines = [item.replace("\n", "") for item in train_file.readlines()]
-        if keep_punct is False:
-            train_lines = [utils.remove_punctuation(line) for line in train_lines]
-        
-    with open(dev_dataset, "r") as dev_file:
-        dev_lines = [item.replace("\n", "") for item in dev_file.readlines()]
-        if keep_punct is False:
-            dev_lines = [utils.remove_punctuation(line) for line in dev_lines]
-        
-    with open(eval_dataset, "r") as eval_files:
-        eval_lines = [item.replace("\n", "") for item in eval_files.readlines()]
-    eval_data_lang = eval_dataset.split("/")[-2]
+    train_lines = []
+    dev_lines = []
+    eval_lines = []
+    train_dataset = glob.glob(f"data/tokenisation/*/*train.txt")
+    for tdataset in train_dataset:
+        lang = tdataset.split("/")[-2]
+        with open(tdataset, "r") as train_file:
+            current_train_lines = [(item.replace("\n", ""), lang) for item in train_file.readlines()]
+            if keep_punct is False:
+                current_train_lines = [utils.remove_punctuation(line) for line in current_train_lines]
+            train_lines.extend(current_train_lines)
+
+    dev_dataset = glob.glob(f"data/tokenisation/*/*dev.txt")
+    for ddataset in dev_dataset:
+        lang = ddataset.split("/")[-2]
+        with open(ddataset, "r") as dev_file:
+            current_dev_lines = [(item.replace("\n", ""), lang) for item in dev_file.readlines()]
+            if keep_punct is False:
+                current_dev_lines = [utils.remove_punctuation(line) for line in current_dev_lines]
+            dev_lines.extend(current_dev_lines)
+
+    eval_dataset = glob.glob(f"data/tokenisation/*/*eval.txt")
+    for edataset in eval_dataset:
+        lang = edataset.split("/")[-2]
+        with open(edataset, "r") as eval_files:
+            current_eval_lines = [(item.replace("\n", ""), lang) for item in eval_files.readlines()]
+            if keep_punct is False:
+                current_eval_lines = [utils.remove_punctuation(line) for line in current_eval_lines]
+            eval_lines.extend(current_eval_lines)
+        eval_data_lang = edataset.split("/")[-2]
     
     # Train corpus
     train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=tokenizer, delimiter="£")

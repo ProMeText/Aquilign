@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
-from transformers import BertTokenizer, Trainer, TrainingArguments, AutoModelForTokenClassification
+from transformers import BertTokenizer, Trainer, TrainingArguments, AutoModelForTokenClassification, set_seed
 import aquilign.preproc.tok_trainer_functions as trainer_functions
 import aquilign.preproc.eval as evaluation
 import aquilign.preproc.utils as utils
@@ -164,6 +164,7 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
 
 # list of arguments to provide and application of the main function
 if __name__ == '__main__':
+    set_seed(42)
     model = sys.argv[1]
     train_dataset = sys.argv[2]
     dev_dataset = sys.argv[3]

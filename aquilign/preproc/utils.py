@@ -68,7 +68,7 @@ def convertToWordsSentencesAndLabels(corpus:list, delimiter="£") -> (list, list
 def get_lang_mapping(tokenizer):
     """
     This function gets the token ID for pseudo tokens used as metadata for training and inference. Returns the tokenizer 
-    which vocab can be modified to add a new metadata token
+    which vocab can be modified to add a new token
     """
     langs = []
     lang_mapping = {}
@@ -76,14 +76,16 @@ def get_lang_mapping(tokenizer):
     assert len(list_dirs) != 0, "Train data should be in data/tokenisation/{lang} where {lang} is the ISO code of the lang as 2 chars (es, it, en, fr, etc)"
     for dir in list_dirs:
         langs.append(dir.split("/")[-1])
+    tokens_to_add = []
     for lang in langs:
         encoded_token = tokenizer.encode(lang)
         if len(encoded_token) > 3:
             tokenizer.add_tokens(lang)
+            tokens_to_add.append(lang)
             lang_mapping[lang] = tokenizer.encode(lang)[1]
         else:
             lang_mapping[lang] = encoded_token[1]
-    return lang_mapping, tokenizer
+    return lang_mapping, tokens_to_add
         
 
 
@@ -112,7 +114,8 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     out_toks_and_labels = []
     # langs = "es it fr"
     # [4, 1058, 4290, 2123, 5]
-    tokenizer, lang_mapping = get_lang_mapping(tokenizer)
+    lang_mapping, tokens_to_add = get_lang_mapping(tokenizer)
+    tokenizer.add_tokens([tokens_to_add])
     for (text, lang), labels in zip(sentencesList, sentencesAsLabels):
         toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=False,
                          return_tensors="pt")

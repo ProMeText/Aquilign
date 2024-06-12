@@ -82,13 +82,11 @@ def get_lang_mapping(tokenizer, add_lang_metadata):
         langs.append(dir.split("/")[-1])
     tokens_to_add = []
     for lang in langs:
-        encoded_token = tokenizer.encode(lang)
-        if len(encoded_token) > 3:
-            tokenizer.add_tokens(lang)
-            tokens_to_add.append(lang)
-            lang_mapping[lang] = tokenizer.encode(lang)[1]
-        else:
-            lang_mapping[lang] = encoded_token[1]
+        codelang = f"[{lang.upper()}]"
+        tokenizer.add_tokens(codelang)
+        tokens_to_add.append(codelang)
+        encoded_token = tokenizer.encode(codelang)
+        lang_mapping[codelang] = encoded_token[1]
             
     if not add_lang_metadata:
         all_langs = lang_mapping.keys()

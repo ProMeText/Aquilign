@@ -100,7 +100,15 @@ def get_correspondence(sent, tokenizer):
 def unicode_normalise(string:str) -> str:
     return unicodedata.normalize("NFC", string)
 
-def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter="£", standalone=False, remove_punctuation=False, lang=None):
+def run_eval(data:list|str, 
+             model_path, 
+             tokenizer_name, 
+             verbose=True, 
+             delimiter="£", 
+             standalone=False, 
+             remove_punctuation=False, 
+             lang=None, 
+             add_lang_metadata=True):
     if standalone:
         lang = data.split("/")[-2]
         with open(data, "r") as input_file:
@@ -131,7 +139,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter=
                                                         use_punctuation=False,
                                                         lang=lang)
         formatted_preds = [(f" {delimiter}".join(tokenized_text), lang)]
-        preds_to_labels = utils.convertToWordsSentencesAndLabels(formatted_preds)
+        preds_to_labels = utils.convertToWordsSentencesAndLabels(formatted_preds, delimiter=delimiter)
         if verbose:
             print(f"Example:   {example}")
             print(f"Tokenized text: {tokenized_text}")
@@ -163,8 +171,15 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=True, delimiter=
     
     
     # Second, model evaluation
-    gt_toks_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, tokenizer=tokenizer, delimiter=delimiter)
+    gt_toks_and_labels, tokenizer = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, 
+                                                                              tokenizer=tokenizer, 
+                                                                              delimiter=delimiter, 
+                                                                              add_lang_metadata=add_lang_metadata)
     for (txt_example, lang), gt in zip(corpus_as_list, gt_toks_and_labels):
+        if not add_lang_metadata:
+            lang = "[SEP]"
+        else:
+            lang = f"[{lang.upper()}]"
         # We get only the text
         example = txt_example.replace(delimiter, "")
         example_with_lang = f"{lang} {example}"

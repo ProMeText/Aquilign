@@ -22,7 +22,7 @@ def get_best_step(results):
 
     all_metrics = {}
     for key, value in result_dict.items():
-        metric = (value['eval_precision'][1]*2 + value['eval_recall'])/3
+        metric = (value['eval_precision'][1]*2 + value['eval_recall'][1])/3
         all_metrics[key] = metric
 
     best_step = next(step for step, metric in all_metrics.items() if metric == max(all_metrics.values()))
@@ -30,6 +30,9 @@ def get_best_step(results):
     return best_step, result_dict[best_step]
 
 def remove_punctuation(text:str):
+    """
+    This function removes the punctuation from a string
+    """
     punct = re.compile(r"[\.,;—:\?!’'«»“/\-]")
     cleaned_text = re.sub(punct, "", text)
     return cleaned_text
@@ -66,7 +69,7 @@ def convertToWordsSentencesAndLabels(corpus:list, delimiter="£") -> (list, list
     return sentencesList, sentencesAsLabels
 
 
-def get_lang_mapping(tokenizer, add_lang_metadata):
+def get_lang_mapping(tokenizer, add_lang_metadata) -> Union[dict, list]:
     """
     This function gets the token ID for pseudo tokens used as metadata for training and inference. Returns the tokenizer 
     which vocab can be modified to add a new token
@@ -96,10 +99,11 @@ def get_lang_mapping(tokenizer, add_lang_metadata):
 
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False, add_lang_metadata=True):
+def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False, add_lang_metadata=True) -> list:
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels, adding lang metadata.
-    Returns the data and the tokenizer which vocab can be updated (worth a class transformation)
+    Returns the data and the tokenizer which vocab can be updated (worth a class transformation). 
+    Returns: a list of dictionaries with the following keys as needed by BERT: input_ids, attention_masks, labels
     """
     if verbose:
         print("Converting to sentences and labels")

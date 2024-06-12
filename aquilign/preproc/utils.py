@@ -126,6 +126,7 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     lang_mapping, tokens_to_add = get_lang_mapping(tokenizer, add_lang_metadata=add_lang_metadata)
     tokenizer.add_tokens(tokens_to_add)
     for (text, lang), labels in zip(sentencesList, sentencesAsLabels):
+        lang = f"[{lang.upper()}]"
         toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=False,
                          return_tensors="pt")
         # get the text with the similar splits as for the creation of the data

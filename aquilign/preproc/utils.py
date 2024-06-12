@@ -69,7 +69,7 @@ def convertToWordsSentencesAndLabels(corpus:list, delimiter="£") -> (list, list
     return sentencesList, sentencesAsLabels
 
 
-def get_lang_mapping(tokenizer, add_lang_metadata) -> Union[dict, list]:
+def get_lang_mapping(tokenizer, add_lang_metadata):
     """
     This function gets the token ID for pseudo tokens used as metadata for training and inference. Returns the tokenizer 
     which vocab can be modified to add a new token

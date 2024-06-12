@@ -7,6 +7,7 @@ from transformers import BertTokenizer, AutoModelForTokenClassification
 import re
 import langid
 import tqdm
+import argparse
 
 ## script for applying the tokenisation to text
 ## it produces .txt files which has been tokenized ; each element of tokenisation is marked by a breakline
@@ -55,12 +56,16 @@ def get_correspondence(sent, tokenizer, verbose=False):
             print(tokenized_word)
         out[index] = tuple(item for item in range(tokenized_index, tokenized_index + len(tokenized_word)))
         tokenized_index += len(tokenized_word)
+    print(sent)
+    print(tokenizer.tokenize(" ".join(sent)))
     human_split_to_bert = out
     bert_split_to_human_split = {value: key for key, value in human_split_to_bert.items()}
+    print(human_split_to_bert)
+    print(bert_split_to_human_split)
     return human_split_to_bert, bert_split_to_human_split
 
 def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False):
-    predicted_labels = predicted_labels[1:-1]
+    predicted_labels = predicted_labels[2:-1]
     if verbose:
         print(f"Prediction: {predicted_labels}")
         print(human_to_bert)
@@ -73,7 +78,13 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False
         predicted = human_to_bert[index]
         # if no mismatch, copy the label
         if len(predicted) == 1:
-            correct_label = predicted_labels[predicted[0]]
+            try:
+                correct_label = predicted_labels[predicted[0]]
+            except IndexError:
+                print(human_to_bert)
+                print(splitted_text)
+                print(predicted_labels)
+                exit(0)
             if verbose:
                 print(f"Position {index}")
                 print(predicted_labels)
@@ -93,7 +104,7 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False
         final_prediction.append(correct_label)
 
     assert len(final_prediction) == len(splitted_text), "List mismatch"
-
+    print(list(zip(final_prediction, splitted_text)))
     tokenized_sentence = " ".join(
         [element if final_prediction[index] != 1 else f"\n{element}" for index, element in enumerate(splitted_text)])
     if verbose:
@@ -109,17 +120,20 @@ def tokenize_text(input_file:str,
                   tok_models:dict=None, 
                   corpus_limit=None, 
                   output_dir=None, 
-                  tokens_per_example=None, 
+                  tokens_per_example=30, 
                   device="cpu", 
                   verbose=False,
-                  lang=None):
+                  lang=None, 
+                  lang_metadata=False):
     """
     Performs tokenization with given model, tokenizer on given file
     """
     
     with open(input_file) as f:
         textL = f.read().splitlines()
+    print(input_file)
     localText = " ".join(str(element) for element in textL)
+    print(localText)
     if corpus_limit:
         localText = localText[:round(len(localText)*corpus_limit)]
     if remove_punct:
@@ -150,10 +164,7 @@ def tokenize_text(input_file:str,
     print(f"Using {model_path} model and {tokenizer_name} tokenizer.")
     new_model = AutoModelForTokenClassification.from_pretrained(model_path, num_labels=4)
     # get the path of the default tokenizer
-    if os.path.isdir(f"{model_path}/tokenizer"):
-        tokenizer = BertTokenizer.from_pretrained(f"{model_path}/tokenizer", max_length=tokens_per_example)
-    else:
-        tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=tokens_per_example)
+    tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=tokens_per_example)
     new_model.to(device)
 
     # get the file
@@ -164,21 +175,34 @@ def tokenize_text(input_file:str,
         tokens_per_example = tok_models[codelang]["tokens_per_example"]
     # split the full input text as slices
     text = tokenize(localText, tokens_per_example)
+    print(text)
+    print(tokens_per_example)
     # prepare the data
     restruct = []
     # apply the tok process on each slice of text
+    if lang_metadata:
+        lang = f"[{lang.upper()}]"
+    else:
+        lang = "[PAD]"
     for example in tqdm.tqdm(text):
+        print(example)
         # BERT-tok
         with_lang = f"{lang} {example}"
+        print(with_lang)
         enco_nt_tok = tokenizer.encode(with_lang, truncation=True, padding=True, return_tensors="pt")
+        print(enco_nt_tok)
         enco_nt_tok = enco_nt_tok.to(device)
         # get the predictions from the model
         predictions = new_model(enco_nt_tok)
         preds = predictions[0]
         # apply the functions
+        print(len(preds[-1]))
         bert_labels = get_labels_from_preds(preds)
-        human_to_bert, bert_to_human = get_correspondence(with_lang.split(), tokenizer)
-        new_labels = unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels, splitted_text=with_lang.split())
+        human_to_bert, bert_to_human = get_correspondence(example.split(), tokenizer)
+        new_labels = unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels, splitted_text=example.split())
+        print(example)
+        print(f"Bert labels: {bert_labels}")
+        print("---")
         tokenized = new_labels.split("\n")
         if verbose:
             print(with_lang)
@@ -242,18 +266,21 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--lang", default=None)
     parser.add_argument("-p", "--remove_punct", default=False)
     parser.add_argument("-o", "--output_dir", default=None)
-    parser.add_argument("-e", "--example_length", default=None)
+    parser.add_argument("-e", "--example_length", default=30)
+    parser.add_argument("-met", "--lang_metadata", default=None, help="Whether the model has been trained with lang metadata or not.")
     parser.add_argument("-d", "--device", default='cpu',
                         help="Device to be used (default: cpu).")
     
 
     args = parser.parse_args()
-    out_dir = args.out_dir
+    output_dir = args.output_dir
     model_path = args.model_path
     tokenizer_path = args.tokenizer_path
-    example_length = len(args.example_length)
+    example_length = int(args.example_length)
     lang = args.lang
+    remove_punct = args.remove_punct
     input_file = args.input_file
+    lang_metadata = True if args.lang_metadata == "True" else False
     device = args.device
     
     tokenize_text(model_path=model_path, 
@@ -263,4 +290,5 @@ if __name__ == '__main__':
                   tokens_per_example=example_length, 
                   device=device, 
                   output_dir=output_dir,
-                  lang=lang)
+                  lang=lang, 
+                  lang_metadata=lang_metadata)

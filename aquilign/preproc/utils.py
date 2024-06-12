@@ -8,9 +8,10 @@ def tokenize(text,num):
     return [' '.join(words[i:i+num]) for i in range(0, len(words), num)]
 
 
-def get_best_precision(results):
+def get_best_step(results):
     """
-    This function gets the best precision of label 1 (= delimiter) given the results of the trainer
+    This function gets the best metrics of label 1 (= delimiter) given the results of the trainer.
+    As for now it is the weighted average of precision (w=2) and recall (w=1) 
     """
     result_dict = {}
     for result in results:
@@ -19,12 +20,12 @@ def get_best_precision(results):
         except KeyError:
             result_dict[result['step']] = result
 
-    all_precisions = {}
+    all_metrics = {}
     for key, value in result_dict.items():
-        precision = value['eval_precision'][1]
-        all_precisions[key] = precision
+        metric = (value['eval_precision'][1]*2 + value['eval_recall'])/3
+        all_metrics[key] = metric
 
-    best_step = next(step for step, precision in all_precisions.items() if precision == max(all_precisions.values()))
+    best_step = next(step for step, metric in all_metrics.items() if metric == max(all_metrics.values()))
     print(f"Best step according to precision: {best_step}")
     return best_step, result_dict[best_step]
 

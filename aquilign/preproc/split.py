@@ -24,7 +24,7 @@ def main(in_file, splits):
     with open(in_file.replace(".txt", ".dev.txt"), "w") as output_dev:
         output_dev.write("\n".join(dev_list))
         
-    with open(in_file.replace(".txt", ".test.txt"), "w") as output_test:
+    with open(in_file.replace(".txt", ".eval.txt"), "w") as output_test:
         output_test.write("\n".join(test_list))
     
     regexp = re.compile(r"\$.+", flags=re.MULTILINE)

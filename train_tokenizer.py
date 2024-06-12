@@ -36,7 +36,7 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
         with open(tdataset, "r") as train_file:
             current_train_lines = [(item.replace("\n", ""), lang) for item in train_file.readlines()]
             if keep_punct is False:
-                current_train_lines = [(utils.remove_punctuation(line), line) for line in current_train_lines]
+                current_train_lines = [(utils.remove_punctuation(line), lang) for line in current_train_lines]
             train_lines.extend(current_train_lines)
 
     dev_dataset = glob.glob(f"data/tokenisation/*/*dev.txt")

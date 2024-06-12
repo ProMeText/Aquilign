@@ -55,7 +55,7 @@ def convertToWordsSentencesAndLabels(corpus:list, delimiter="£") -> (list, list
 
     sentencesList = []
     sentencesAsLabels = []
-    for text, lang in corpus:
+    for text, _ in corpus:
         sentenceAsList = tokenize_words(text)
         masks = []
         for token in sentenceAsList:
@@ -89,9 +89,10 @@ def get_lang_mapping(tokenizer, add_lang_metadata):
         lang_mapping[codelang] = encoded_token[1]
             
     if not add_lang_metadata:
+        neutral_token = tokenizer.encode("[SEP]")
         all_langs = lang_mapping.keys()
         all_tokens = lang_mapping.values()
-        lang_mapping = {lang:list(all_tokens)[0] for lang in list(all_langs)}
+        lang_mapping = {lang:neutral_token for lang in list(all_langs)}
     return lang_mapping, tokens_to_add
         
 

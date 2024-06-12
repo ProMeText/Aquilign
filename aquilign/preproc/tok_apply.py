@@ -150,7 +150,10 @@ def tokenize_text(input_file:str,
     print(f"Using {model_path} model and {tokenizer_name} tokenizer.")
     new_model = AutoModelForTokenClassification.from_pretrained(model_path, num_labels=4)
     # get the path of the default tokenizer
-    tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=tokens_per_example)
+    if os.path.isdir(f"{model_path}/tokenizer"):
+        tokenizer = BertTokenizer.from_pretrained(f"{model_path}/tokenizer", max_length=tokens_per_example)
+    else:
+        tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=tokens_per_example)
     new_model.to(device)
 
     # get the file
@@ -229,18 +232,34 @@ def tokenize_text(input_file:str,
 
 ###
 if __name__ == '__main__':
-    model_path = sys.argv[1]
-    tokenizer_name = sys.argv[2]
-    remove_punct = False
-    input_file = sys.argv[3]
-    example_length = int(sys.argv[4])
-    output_dir = sys.argv[5]
-    device = sys.argv[6]
+    
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input_file", default=None)
+    parser.add_argument("-m", "--model_path", default=None)
+    parser.add_argument("-t", "--tokenizer_path", default=None, help="")
+    parser.add_argument("-l", "--lang", default=None)
+    parser.add_argument("-p", "--remove_punct", default=False)
+    parser.add_argument("-o", "--output_dir", default=None)
+    parser.add_argument("-e", "--example_length", default=None)
+    parser.add_argument("-d", "--device", default='cpu',
+                        help="Device to be used (default: cpu).")
+    
+
+    args = parser.parse_args()
+    out_dir = args.out_dir
+    model_path = args.model_path
+    tokenizer_path = args.tokenizer_path
+    example_length = len(args.example_length)
+    lang = args.lang
+    input_file = args.input_file
+    device = args.device
     
     tokenize_text(model_path=model_path, 
-                  tokenizer_name=tokenizer_name, 
+                  tokenizer_name=tokenizer_path, 
                   remove_punct=remove_punct, 
                   input_file=input_file, 
                   tokens_per_example=example_length, 
                   device=device, 
-                  output_dir=output_dir)
+                  output_dir=output_dir,
+                  lang=lang)

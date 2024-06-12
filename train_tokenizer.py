@@ -108,7 +108,7 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
     
     
     # print the whole log_history with the compute metrics
-    best_precision_step, best_step_metrics = utils.get_best_precision(trainer.state.log_history)
+    best_precision_step, best_step_metrics = utils.get_best_step(trainer.state.log_history)
     best_model_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
     
     # We save the tokenizer, in case it's been updated with new data

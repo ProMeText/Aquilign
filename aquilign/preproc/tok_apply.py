@@ -167,20 +167,21 @@ def tokenize_text(input_file:str,
     # prepare the data
     restruct = []
     # apply the tok process on each slice of text
-    for i in tqdm.tqdm(text):
+    for example in tqdm.tqdm(text):
         # BERT-tok
-        enco_nt_tok = tokenizer.encode(i, truncation=True, padding=True, return_tensors="pt")
+        with_lang = f"{lang} {example}"
+        enco_nt_tok = tokenizer.encode(with_lang, truncation=True, padding=True, return_tensors="pt")
         enco_nt_tok = enco_nt_tok.to(device)
         # get the predictions from the model
         predictions = new_model(enco_nt_tok)
         preds = predictions[0]
         # apply the functions
         bert_labels = get_labels_from_preds(preds)
-        human_to_bert, bert_to_human = get_correspondence(i.split(), tokenizer)
-        new_labels = unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels, splitted_text=i.split())
+        human_to_bert, bert_to_human = get_correspondence(with_lang.split(), tokenizer)
+        new_labels = unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels, splitted_text=with_lang.split())
         tokenized = new_labels.split("\n")
         if verbose:
-            print(i)
+            print(with_lang)
             print(new_labels)
             print(tokenized)
         

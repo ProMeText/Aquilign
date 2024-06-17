@@ -56,7 +56,7 @@ def create_clusters(path):
                     interm_list.append([elem[1] for elem in similarities if elem[0] == f"{i}-{j}" or elem[0] == f"{j}-{i}"][0])
             out_list.append(interm_list)
         similarities_as_array = np.asarray(out_list)
-        clusters_1 = AgglomerativeClustering(n_clusters=None, distance_threshold=.5, linkage='ward').fit(similarities_as_array)
+        clusters_1 = AgglomerativeClustering(n_clusters=None, distance_threshold=.7, linkage='ward').fit(similarities_as_array)
         clusters_2 = DBSCAN(min_samples=2).fit(similarities_as_array)
         write_to_log(clusters_1.labels_)
         classes = list(set(clusters_1.labels_.tolist()))

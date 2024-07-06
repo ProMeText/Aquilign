@@ -11,7 +11,7 @@ import aquilign.align.utils as utils
 import aquilign.preproc.tok_apply as tokenize
 import aquilign.preproc.syntactic_tokenization as syntactic_tokenization
 from aquilign.align.encoder import Encoder
-from aquilign.align.aligner import Bertalign
+import aquilign.align.aligner as align_functions
 import pandas as pd
 import argparse
 import glob
@@ -163,7 +163,7 @@ class Aligner:
             else:
                 margin = False
                 len_penality = True
-            aligner = Bertalign(self.model,
+            aligner = align_functions.Bertalign(self.model,
                                 first_tokenized_text, 
                                 second_tokenized_text, 
                                 max_align= self.max_align, 
@@ -180,11 +180,12 @@ class Aligner:
                                          f"{main_wit_name}_{wit_to_compare_name}", self.out_dir)
         utils.write_json(f"result_dir/{self.out_dir}/alignment_dict.json", self.alignment_dict)
 
-    def save_final_result(self, merged_alignments:list, delimiter="\t"):
+    def save_final_result(self, merged_alignments:list, delimiter="\t", text_dict=None):
         """
         Saves result to csv file
         """
-        
+        if text_dict:
+            self.text_dict = text_dict
         all_wits = [self.wit_pairs[0][0]] + [pair[1] for pair in self.wit_pairs]
         filenames = [wit.split("/")[-1].replace(".txt", "") for wit in all_wits]
         with open(f"result_dir/{self.out_dir}/final_result.csv", "w") as output_text:
@@ -194,7 +195,7 @@ class Aligner:
             for alignment_unit in merged_alignments:
                 output_text.write("|".join(value for value in alignment_unit['a']) + delimiter)
                 for index, witness in enumerate(merged_alignments[0]):
-                    output_text.write("|".join(self.text_dict[translation_table[witness]][int(value)] for value in
+                    output_text.write("|".join(self.text_dict[str(translation_table[witness])][int(value)] for value in
                                                alignment_unit[witness]))
                     if index + 1 != len(merged_alignments[0]):
                         output_text.write(delimiter)
@@ -207,7 +208,8 @@ class Aligner:
             translation_table = {letter:index for index, letter in enumerate(string.ascii_lowercase)}
             for alignment_unit in merged_alignments:
                 for index, witness in enumerate(merged_alignments[0]):
-                    output_text.write(" ".join(self.text_dict[translation_table[witness]][int(value)] for value in
+                    current_wit = str(translation_table[witness])
+                    output_text.write(" ".join(self.text_dict[current_wit][int(value)] for value in
                                                alignment_unit[witness]))
                     if index + 1 != len(merged_alignments[0]):
                         output_text.write(delimiter)
@@ -247,10 +249,9 @@ def run_alignments(out_dir, input_dir, main_wit, prefix, device, use_punctuation
     models = {0: "distiluse-base-multilingual-cased-v2", 1: "LaBSE", 2: "Sonar"}
     model = Encoder(models[int(1)], device=device)
     
-    
-    
     print(f"Punctuation for tokenization: {use_punctuation}")
-    MyAligner = Aligner(model, corpus_limit=corpus_limit, 
+    MyAligner = Aligner(model, 
+                        corpus_limit=corpus_limit, 
                         max_align=3, 
                         out_dir=out_dir, 
                         use_punctuation=use_punctuation, 
@@ -261,24 +262,28 @@ def run_alignments(out_dir, input_dir, main_wit, prefix, device, use_punctuation
                         tokenizer=tokenizer, 
                         tok_models=tok_models)
     MyAligner.parallel_align()
-    utils.write_json(f"result_dir/{out_dir}/alignment_dict.json", MyAligner.alignment_dict)
+    # utils.write_json(f"result_dir/{out_dir}/alignment_dict.json", MyAligner.alignment_dict)
+    # utils.write_json(f"result_dir/{out_dir}/text_dict.json", MyAligner.text_dict)
     align_dict = utils.read_json(f"result_dir/{out_dir}/alignment_dict.json")
+    text_dict = utils.read_json(f"result_dir/{out_dir}/text_dict.json")
 
     # Let's merge each alignment table into one and inject the omissions
-    list_of_merged_alignments = graph_merge.merge_alignment_table(align_dict)
+    list_of_merged_alignments = graph_merge.merge_alignment_table(align_dict, rerun_alignments=False)
 
-    # TODO: re-run the alignment on the units that are absent in the base wit.  
-    
-
+    # TODO: re-run the alignment on the units that are absent in the base wit.
+    utils.write_json("/home/mgl/Documents/alignments.json", list_of_merged_alignments)
+    list_of_merged_alignments = utils.read_json("/home/mgl/Documents/alignments.json")
+    list_of_merged_alignments = align_functions.realign_units(list_of_merged_alignments, model)
+    utils.write_json("/home/mgl/Documents/new_units.json", list_of_merged_alignments)
     # On teste si on ne perd pas de noeuds textuels
     print("Testing results consistency")
     possible_witnesses = string.ascii_lowercase[:len(align_dict) + 1]
     tested_table = utils.test_tables_consistency(list_of_merged_alignments, possible_witnesses)
     # TODO: une phase de test pour voir si l'alignement final est cohérent avec les alignements deux à deux
     
-    
     # Let's save the final tables (indices and texts)
-    MyAligner.save_final_result(merged_alignments=list_of_merged_alignments)
+    # text_dict=None
+    MyAligner.save_final_result(merged_alignments=list_of_merged_alignments, text_dict=text_dict)
     
     return tested_table
     

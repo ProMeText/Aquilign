@@ -161,11 +161,9 @@ def test_tables_consistency(align_dict, witnesses):
         ranges = list(range(last_pos + 1))
         is_equal = wit_table == ranges
         if is_equal is False:
-            print("Not right")
-            print(list(zip(ranges, wit_table)))
-            print(type(ranges), type(wit_table))
+            print("Not right. Exiting")
             print([(a, b) for a, b in list(zip(ranges, wit_table)) if a!=b])
-            print(align_dict)
+            # print(align_dict)
             test_table[witness] = False
         else:
             print("OK")

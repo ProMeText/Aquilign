@@ -10,7 +10,7 @@ def tokenize(text,num):
 def get_best_step(results):
     """
     This function gets the best metrics of label 1 (= delimiter) given the results of the trainer.
-    As for now it is the weighted average of precision (w=2) and recall (w=1) 
+    As for now it is the weighted average of recall (w=2) and precision (w=1) 
     """
     result_dict = {}
     for result in results:

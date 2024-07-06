@@ -42,7 +42,7 @@ def deconnect(object:list) -> tuple:
                 final_list.append((item_A, item_B))
     return tuple(final_list)
 
-def merge_alignment_table(alignment_dict:dict) -> list:
+def merge_alignment_table(alignment_dict:dict, rerun_alignments) -> list:
     """
     Cette fonction va permettre de fusionner les items d'alignement à l'aide d'un passage par le graphe.
     Il en ressort une liste de dictionnaires, chaque item consistant en une unité d'alignement.
@@ -57,7 +57,7 @@ def merge_alignment_table(alignment_dict:dict) -> list:
         G.add_edges_from(structured_a)
     connected_nodes = []
     # On prend chaque noeud et on en ressort les noeuds connectés
-    print(alignment_dict)
+    all_nodes = [node for node in G]
     for node in G:
         # https://stackoverflow.com/a/33089602
         connected_components = list(networkx.node_connected_component(G, node))
@@ -66,6 +66,7 @@ def merge_alignment_table(alignment_dict:dict) -> list:
 
     # On supprime les noeuds redondants
     connected_nodes = list(set(connected_nodes))
+    disconnected_nodes = list(set(all_nodes) - set(connected_nodes[0]))
     # Liste de la forme: [('27_a', '27_c', '28_a', '28_c', '29_c', '30_c', '33_b', '34_b'), ('19_c', '20_a', '20_c', '22_b'), etc.]
     
     # Ici c'est un bug: il y a des noeuds qui sont des entiers, je ne sais pas pourquoi. On les supprime.
@@ -86,23 +87,65 @@ def merge_alignment_table(alignment_dict:dict) -> list:
     # Now we have to manage the omissions in the main document.
     omitted_pos = dict()
     # We gather all omissions for each witness in a dict
-    for wit in possible_witnesses:
+    print("Here")
+    for idx, wit in enumerate(possible_witnesses):
         all_positions = [align_dict[wit] for align_dict in nodes_as_dict if align_dict[wit] != []]
         last_position = int(all_positions[-1][-1])
         not_present_positions = list(set(range(last_position + 1)) - set([int(position) for dictionnary in nodes_as_dict for position in dictionnary[wit]]))
         not_present_positions.sort()
         omitted_pos[wit] = not_present_positions
-    # print(omitted_pos)
+    print(f"Omitted pos dict: {omitted_pos}")
     
+    if rerun_alignments:
+        # print(omitted_pos)
+        # On va chercher le dernier témoin
+        # Ici il faut itérer sur chacun de lieux variants du dictionnaire d'alignement 
+        # {0: [([0, 1], [0]), ([2], [])], 1: [([0, 1], [0]), ([2], [])]} où chaque item de liste correspond à une unité alignée
+        print(f"Alignment dict: {alignment_dict}")
+        print([bitext[-1][0] for bitext in alignment_dict.values()])
+        if any([bitext[-1][0] == [] for bitext in alignment_dict.values()]):
+            print("Ok, now we're talking")
+            for idx, bitext in alignment_dict.items():
+                print(f"Testing {idx}: {bitext}")
+                if bitext[-1][0] != []:
+                    continue
+                else:
+                    print("Stop")
+                    print(bitext)
+                    print(nodes_as_dict)
+                    nodes_as_dict.append({possible_witness: [] for possible_witness in possible_witnesses})
+                    # [nodes_as_dict[-1][possible_witnesses[int(idx) + 1]].extend(str(bitext[n][1][0])) for n, couple in enumerate(bitext) if couple[0] == []]
+                    # nodes_as_dict[-1][possible_witnesses[int(idx) + 1]].extend(str(bitext[-1][1][0]))
+                    print(f"Last_value: {bitext[-1][1][0]}")
+                    # omitted_pos[wit].extend(bitext[-1][1])
+                    print([(bitext[n][1]) for n, couple in
+                     enumerate(bitext) if couple[0] == []])
+                    [omitted_pos[wit].extend(bitext[n][1]) for n, couple in
+                     enumerate(bitext) if couple[0] == []]
+
+                    print(omitted_pos)
+                    print(f"Result: {nodes_as_dict}")
+                print(omitted_pos)
+                
+    # Sur ça: {0: [([0], [0, 1])], 1: [([0], [0, 1])], 2: [([0], [0, 1])], 3: [([0], [0, 1])], 
+    #          4: [([0], [0, 1])], 5: [([0], [0, 1]), ([], [2]), ([], [3]), ([], [4])]}
+    # Qui donne: [{'a': ['0'], 'b': ['0', '1'], 'c': ['0', '1'], 'd': ['0', '1'], 'e': ['0', '1'], 'f': ['0', '1'], 'g': ['0', '1']}]
+    # Ça pose problème, il faut voir pourquoi (unité 6 par exemple). 
+    # On peut tester d'ajouter le dernier index de la position 5, et de continuer la suite (détection des omissions), ça devrait marcher
+    # Le problème semble arriver sur les dernières unités d'alignement d'un des témoins, quand il y a omission du témoin base
     
     
     for wit in possible_witnesses:
         print(f"\n{wit}")
+        print(omitted_pos[wit])
         for omitted in omitted_pos[wit]:
-            # print(f"Omitted position {omitted} for wit {wit}")
+            print(f"Omitted position {omitted} for wit {wit}")
             # Let's retrieve the corresponding alignment unit, we keep the index to allow the injection in case B (see below)
             if omitted != 0:
-                corresponding_alignment_unit = [(index, node) for index, node in enumerate(nodes_as_dict) if str(omitted - 1) in node[wit]][0]
+                try:
+                    corresponding_alignment_unit = [(index, node) for index, node in enumerate(nodes_as_dict) if str(omitted - 1) in node[wit]][0]
+                except IndexError:
+                    corresponding_alignment_unit = [(index, node) for index, node in enumerate(nodes_as_dict)][-1]
             else:
                 corresponding_alignment_unit = (0, nodes_as_dict[0])
             # print(corresponding_alignment_unit)
@@ -111,7 +154,7 @@ def merge_alignment_table(alignment_dict:dict) -> list:
             
             # Premier cas: il faut insérer l'omission dans un noeud déjà formé: 66, ['65', '67']
             if any(int(item) > omitted for item in corresponding_alignment_unit[1][wit]):
-                # print("Case A")
+                print("Case A")
                 copied_node = corresponding_alignment_unit[1]
                 list_to_amend = copied_node[wit]
                 list_to_amend.append(str(omitted))
@@ -122,12 +165,16 @@ def merge_alignment_table(alignment_dict:dict) -> list:
                 
             # Deuxième cas, il faut créer une nouvelle unité d'alignement: 2005, ['2003', '2004']
             else:
-                # print("Case B")
+                print("Case B")
                 new_node = {wit:[] for wit in possible_witnesses}
                 new_node[wit] = [str(omitted)]
                 nodes_as_dict.insert(corresponding_alignment_unit[0] + 1, new_node)
                 # print(new_node)
             # print("\n")
+            # print(f"Results: {nodes_as_dict}")
+    # print(f"Omission dict: {omitted_pos}")
+    # print(f"Before reinjection: {alignment_dict}")
+    # print(f"After reinjection: {nodes_as_dict}")
     return nodes_as_dict
 
 

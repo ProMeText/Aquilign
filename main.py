@@ -284,7 +284,8 @@ def run_alignments(out_dir, input_dir, main_wit, prefix, device, use_punctuation
     MyAligner.save_final_result(merged_alignments=list_of_merged_alignments)
     
     return tested_table
-    
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -327,7 +328,7 @@ if __name__ == '__main__':
                   "it": {"model": "models/it", 
                          "tokenizer": "dbmdz/bert-base-italian-xxl-cased", 
                          "tokens_per_example": 12}, 
-                  "la": {"model": "models/la", 
+                  "la": {"model": "ProMeText/aquilign_segmenter_latin", 
                          "tokenizer": "LuisAVasquez/simple-latin-bert-uncased", 
                          "tokens_per_example": 50}}
     assert tokenizer in ["None", "regexp", "bert-based"], "Authorized values for tokenizer are: None, regexp, bert-based"

@@ -20,11 +20,6 @@ import argparse
 import glob
 
 
-class MyClass:
-    def __init__(self):
-        
-        pass
-
 class XMLAligner:
 
     def __init__(self, 
@@ -34,6 +29,7 @@ class XMLAligner:
                  main_wit:str = "Rome_W",
                  tokenization_models:dict = {},
                  device:str = "cpu",
+                 base_div:str = "p",
                  remove_punct:bool = False):
         """
         @param hierarchy: la hiérarchie sur laquelle boucler dans le document XML. Les documents source et cible doivent être
@@ -58,6 +54,7 @@ class XMLAligner:
         self.parsed_witnesses = {}
         self.global_text_dict = {}
         self.main_wit = main_wit
+        self.base_div = base_div
         self.remove_punct = remove_punct
         if self.input_dir[-1] == "/":
             self.out_dir = f"{input_dir}out"
@@ -182,13 +179,14 @@ class XMLAligner:
         as_text = [[word.xpath("descendant::text()")[0] for word in sent] for sent in as_nodes]
         return as_text
     
-    def get_words_from_node(self, node, words_per_batch):
-        all_words, splitted = [], []
-        for paragraph in node.xpath("descendant::tei:p", namespaces=self.ns_decl):
+    def get_words_from_node(self, node, words_per_batch) -> (list, dict):
+        all_words, splitted = [], {}
+        # On va boucler par division de base pour éviter les chevauchements et déplacements de noeuds
+        for idx, paragraph in enumerate(node.xpath(f"descendant::tei:{self.base_div}", namespaces=self.ns_decl)):
             current_tokens_as_nodes = paragraph.xpath("descendant::node()[self::tei:pc|self::tei:w]", namespaces=self.ns_decl)
             all_words.extend(current_tokens_as_nodes)
             all_words_text = paragraph.xpath("descendant::node()[self::tei:pc|self::tei:w]/text()", namespaces=self.ns_decl)
-            splitted.extend(self.split_sentences(words_per_batch, current_tokens_as_nodes))
+            splitted[idx] = self.split_sentences(words_per_batch, current_tokens_as_nodes)
         return all_words, splitted
     
     def bert_segmentation(self, 
@@ -198,7 +196,7 @@ class XMLAligner:
                       xml_node=None,
                       new_model=None,
                       tokenizer=None,
-                    ident=None):
+                      ident=None):
         """
         Performs tokenization with given model, tokenizer on given file
         """
@@ -216,30 +214,49 @@ class XMLAligner:
         all_delimiters = []
         all_lenght = 0
         actual_pos = 0
+        log_preds_list = []
         div_as_string = str()
-        for idx, i in enumerate(tqdm.tqdm(text)):
-            as_string = " ".join(i)
-            # BERT-tok
-            enco_nt_tok = tokenizer.encode(as_string, truncation=True, padding=True, return_tensors="pt")
-            enco_nt_tok = enco_nt_tok.to(device)
-            # get the predictions from the model
-            predictions = new_model(enco_nt_tok)
-            preds = predictions[0]
-            # apply the functions
-            bert_labels = get_labels_from_preds(preds)
-            human_to_bert, bert_to_human = get_correspondence(i, tokenizer)
-            delimiter_index, prediction = unalign_labels_and_get_index(human_to_bert=human_to_bert, predicted_labels=bert_labels,
-                                        splitted_text=i)
-            new_i = copy.deepcopy(i)
-            [new_i.insert(pos, "\n") for pos in reversed(delimiter_index)]
-            div_as_string += " ".join(new_i) + "\n"
-            absolute_delimiter_index = delimiter_index
-            delimiter_index = [item + actual_pos - 1 for item in delimiter_index]
-            delimiter_index.append(len(i) - 1 + actual_pos)
-            actual_pos += len(prediction) 
-            all_delimiters.extend(delimiter_index)
-            all_lenght += len(prediction)
         
+        # Ça ne marchera pas, il faut reprendre ici. text est un dictionnaire
+        for _, batch_examples in tqdm.tqdm(text.items()):
+            current_position = 0
+            actual_pos_blocked = copy.deepcopy(actual_pos)
+            for example in batch_examples:
+                as_string = " ".join(example)
+                # BERT-tok
+                enco_nt_tok = tokenizer.encode(as_string, 
+                                               truncation=True, 
+                                               padding=True, 
+                                               return_tensors="pt")
+                enco_nt_tok = enco_nt_tok.to(device)
+                # get the predictions from the model
+                predictions = new_model(enco_nt_tok)
+                # Ajouter un fichier de log pour vérifier que tout est OK + unittest
+                preds = predictions[0]
+                # apply the functions
+                bert_labels = get_labels_from_preds(preds)
+                human_to_bert, bert_to_human = get_correspondence(example, tokenizer)
+                delimiter_index, prediction = unalign_labels_and_get_index(human_to_bert=human_to_bert, 
+                                                                           predicted_labels=bert_labels,
+                                                                           splitted_text=example)
+                
+                # On logue les résultats
+                log_preds_list.append(list(zip(example, prediction)))
+                copied_example = copy.deepcopy(example)
+                [copied_example.insert(pos, "\n") for pos in reversed(delimiter_index)]
+                div_as_string += " ".join(copied_example) + " "
+                # On logue les résultats
+                
+                absolute_delimiter_index = delimiter_index
+                delimiter_index = [item + actual_pos - 1 for item in delimiter_index]
+                
+                actual_pos += len(prediction) 
+                current_position += len(prediction) 
+                all_delimiters.extend(delimiter_index)
+                all_lenght += len(prediction)
+            all_delimiters.append(current_position - 1 + actual_pos_blocked)
+            div_as_string += "\n"
+            
         # On écrit le fichier de texte
         try:
             os.mkdir(f"{self.out_dir}/logs/")
@@ -247,6 +264,9 @@ class XMLAligner:
             pass
         with open(f"{self.out_dir}/logs/{ident}_{division}_segm.txt", "w") as output_segmentation_file:
             output_segmentation_file.write(div_as_string)
+
+        with open(f"{self.out_dir}/logs/{ident}_{division}_segm.json", "w") as output_segmentation_file:
+            json.dump(log_preds_list, output_segmentation_file)
         
         # On va passer d'une liste de délimiteurs à une liste d'intervales
         all_delimiters.insert(0, 0)
@@ -255,6 +275,7 @@ class XMLAligner:
         # delims_as_intervals.append((delims_as_intervals[-1][1] + 1, all_lenght - 1))
         
         # Il faut supprimer le 2e élément, le code de création des intervalles est pas bon
+        # TODO: corriger ça dans la création de la liste d'intervalles
         delims_as_intervals.pop(1)
         
         # On va créer des noeuds `tei:cl` en utilisant les informations de tokénisation. 
@@ -286,8 +307,8 @@ class XMLAligner:
                     pass
         
         # On va tester que les clauses ne se chevauchent pas et que tous les tei:w ont une clause parent:
-        parent_test = xml_node.xpath("descendant::tei:p/descendant::tei:cl/tei:cl", namespaces=self.ns_decl)
-        orphan_token_test = xml_node.xpath("descendant::tei:p/descendant::node()[self::tei:w or self::tei:pc][not(parent::tei:cl)]", namespaces=self.ns_decl)
+        parent_test = xml_node.xpath(f"descendant::tei:{self.base_div}/descendant::tei:cl/tei:cl", namespaces=self.ns_decl)
+        orphan_token_test = xml_node.xpath(f"descendant::tei:{self.base_div}/descendant::node()[self::tei:w or self::tei:pc][not(parent::tei:cl)]", namespaces=self.ns_decl)
         if len(parent_test) > 0:
             print("Nested clauses, please check encoding and code")
         elif len(orphan_token_test) > 0:
@@ -436,20 +457,19 @@ def generateur_id(size=6, chars=string.ascii_uppercase + string.ascii_lowercase 
     return random_letter + random_string
 
 
-def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, device, remove_punct):
+def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, device, base_div, remove_punct):
     TEIAligner = XMLAligner(input_dir=input_dir,
                             hierarchy=hierarchy,
                             main_wit=main_wit,
                             id_attribute=id_attribute,
                             tokenization_models=tokenization_models,
                             device=device,
+                            base_div=base_div,
                             remove_punct=remove_punct)
 
     # division = "3.3.11"
     division = None
     TEIAligner.segment_corpus(division=division)
-    exit(0)
-    
     # On réécrit la liste des témoins pour aller chercher dans les fichers de sortie
     TEIAligner.segmented_witnesses = glob.glob(f"{TEIAligner.out_dir}/*phrased.xml")
     TEIAligner.parse_witnesses()
@@ -479,6 +499,9 @@ if __name__ == '__main__':
                         default="Val_S")
     parser.add_argument("-a", "--attribute", default="n",
                         help="Attribute used to identify each division.")
+    parser.add_argument("-bd", "--base_element", default="p",
+                        help="Base element to loop on (ab, p). The texts shoud have at least"
+                             "one of them in each division.")
     parser.add_argument("-hr", "--hierarchy", default="tei:div[@type='livre']/tei:div[@type='partie']/tei:div[@type='chapitre']",
                         help="Hierarchy to get to base division (each text must be equally structured).")
     parser.add_argument("-d", "--device", default='cpu',
@@ -489,6 +512,7 @@ if __name__ == '__main__':
                         help="Limit alignment to given proportion of each text (float)")
     args = parser.parse_args()
     attribute = args.attribute
+    base_div = args.base_element
     hierarchy = args.hierarchy
     input_dir = args.input_dir
     remove_punct =  args.remove_punctuation
@@ -504,19 +528,19 @@ if __name__ == '__main__':
                        "tokens_per_example": 12},
                   "es": {"model": "ProMeText/aquilign_spanish_segmenter",
                          "tokenizer": "dccuchile/bert-base-spanish-wwm-cased",
-                         "tokens_per_example": 30},
+                         "tokens_per_example": 100},
                   "it": {"model": "ProMeText/aquilign_italian_segmenter",
                          "tokenizer": "dbmdz/bert-base-italian-xxl-cased",
                          "tokens_per_example": 12},
                   "la": {"model": "ProMeText/aquilign_segmenter_latin",
                          "tokenizer": "LuisAVasquez/simple-latin-bert-uncased",
-                         "tokens_per_example": 50}}
+                         "tokens_per_example": 100}}
     
     assert tokenizer in ["None", "regexp",
                          "bert-based"], "Authorized values for tokenizer are: None, regexp, bert-based"
     assert input_dir != None, "Input dir is mandatory"
     
     
-    main(input_dir, main_wit, hierarchy, attribute, tokenization_models, device, remove_punct=remove_punct)
+    main(input_dir, main_wit, hierarchy, attribute, tokenization_models, device, base_div, remove_punct=remove_punct)
 
 

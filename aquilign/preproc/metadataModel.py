@@ -37,9 +37,9 @@ class BertWithMetadata(nn.Module):
         if labels is not None:
             # Calculate loss (CrossEntropyLoss for token classification)
             loss_fct = nn.CrossEntropyLoss()
+            # Flatten the logits and labels for cross entropy loss
             flattened_logits = logits.view(-1, self.num_classes)
             flattened_labels = labels.view(-1)
-            # Flatten the logits and labels for cross entropy loss
             loss = loss_fct(flattened_logits, flattened_labels)
 
         return (loss, logits) if loss is not None else logits

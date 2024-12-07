@@ -38,6 +38,7 @@ class CustomTrainer(Trainer):
         # Save the model and config file to the given output directory
         self.model.save_pretrained(output_dir)
         self.model.config.save_pretrained(output_dir)
+        print(f"Saving config to {output_dir}")
 
     def on_epoch_end(self, args, state, control, **kwargs):
         # You can customize what happens at the end of an epoch here

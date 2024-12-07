@@ -167,17 +167,10 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     # fine-tune the model
     print("Starting training")
-    # trainer.train()
+    trainer.train()
     print("End of training")
 
-    best_model_path = "results_bert-base-multilingual-cased/epoch1_bs8/checkpoint-4/"
-
-    eval_results = evaluation.run_eval(data=eval_lines,
-                                       model_path=best_model_path,
-                                       tokenizer_name=tokenizer.name_or_path,
-                                       verbose=False)
-    exit(0)
-
+    
     # get the best model path
     best_model_path = trainer.state.best_model_checkpoint
     print(f"Evaluation.")

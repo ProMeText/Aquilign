@@ -29,6 +29,18 @@ import aquilign.preproc.metadataModel as metadataModel
 # batch_size : the batch size (ex : 8)
 # logging_steps : the number of logging steps (ex : 50)
 
+class SaveModelAndConfigCallback(TrainerCallback):
+    def __init__(self, save_dir: str):
+        self.save_dir = save_dir
+
+    def on_epoch_end(self, args, state, control, **kwargs):
+        # Check if we need to save the model at the end of each epoch
+        output_dir = os.path.join(self.save_dir, f"checkpoint-{state.global_step}")
+        os.makedirs(output_dir, exist_ok=True)
+        kwargs['model'].save_pretrained(output_dir)  # Save the model weights
+        kwargs['model'].config.save_pretrained(output_dir)  # Save the config.json
+        print(f"Model and config saved at {output_dir}")
+        return control
 
 class CustomTrainer(Trainer):
     def __init__(self, *args, **kwargs):
@@ -135,12 +147,15 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     )
 
     # define the trainer : model, training args, datasets and the specific compute_metrics defined in functions file
-    trainer = CustomTrainer(
+    save_callback = SaveModelAndConfigCallback(save_dir=training_args.output_dir)
+    
+    trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=dev_dataset,
-        compute_metrics=trainer_functions.compute_metrics
+        compute_metrics=trainer_functions.compute_metrics,
+        callbacks=[save_callback]
     )
 
     # fine-tune the model

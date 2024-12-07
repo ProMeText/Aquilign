@@ -38,7 +38,7 @@ class SaveModelAndConfigCallback(TrainerCallback):
         output_dir = os.path.join(self.save_dir, f"checkpoint-{state.global_step}")
         os.makedirs(output_dir, exist_ok=True)
         kwargs['model'].bert.save_pretrained(output_dir)  # Save the model weights
-        kwargs['model'].bert.config.save_pretrained(output_dir)  # Save the config.json
+        # kwargs['model'].bert.config.save_pretrained(output_dir)  # Save the config.json
         print(f"Model and config saved at {output_dir}")
         return control
 

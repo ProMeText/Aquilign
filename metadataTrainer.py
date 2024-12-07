@@ -67,14 +67,16 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     model = metadataModel.BertWithMetadata(modelName, num_metadata_features=5, num_classes=3)
     tokenizer = BertTokenizer.from_pretrained(modelName, max_length=10)
     
-    datasets = {"train": "data/tokenisation/it/*train.txt",
-                "eval": "data/tokenisation/it/*eval.txt",
-                "dev": "data/tokenisation/it/*dev.txt"}
-    
+
 
     datasets = {"train": "data/tests/it/it.txt",
                  "eval": "data/tests/it/it.txt",
                  "dev": "data/tests/it/it.txt"}
+    
+    datasets = {"train": "data/tokenisation/*/*train.txt",
+                "eval": "data/tokenisation/*/*eval.txt",
+                "dev": "data/tokenisation/it/*dev.txt"}
+    
     
     training_files = glob.glob(datasets['train'])
     dev_files = glob.glob(datasets['dev'])

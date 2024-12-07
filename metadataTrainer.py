@@ -179,7 +179,6 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     best_precision_step, best_step_metrics = utils.get_best_step(trainer.state.log_history)
     best_model_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
     
-    best_model_path = "results_bert-base-multilingual-cased/epoch1_bs8/checkpoint-4/"
     print(f"Best model path according to precision: {best_model_path}")
     print(f"Full metrics: {best_step_metrics}")
 

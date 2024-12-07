@@ -7,6 +7,7 @@ from transformers import BertTokenizer, AutoModelForTokenClassification
 import re
 import langid
 import tqdm
+import metadataModel as metadataModel
 
 ## script for applying the tokenisation to text
 ## it produces .txt files which has been tokenized ; each element of tokenisation is marked by a breakline

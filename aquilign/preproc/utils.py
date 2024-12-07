@@ -77,11 +77,13 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
     """
+    metadata_language_mapping = {"es": 1, "fr": 2, "pt": 3, "it": 4, "la": 0}
     if verbose:
         print("Converting to sentences and labels")
     sentencesList = []
+    metadataList = []
     sentencesAsLabels = []
-    for text in corpus:
+    for text, lang in corpus:
         sentenceAsList = tokenize_words(text, delimiter)
         masks = []
         for token in sentenceAsList:
@@ -92,10 +94,12 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         sentencesAsLabels.append(masks)
         sentence = text.replace(delimiter, "")
         sentencesList.append(sentence)
+        metadataList.append(lang)
 
     num_max_length = functions.get_token_max_length(sentencesList, tokenizer)
     out_toks_and_labels = []
-    for text, labels in zip(sentencesList, sentencesAsLabels):
+    for text, metadata, labels in zip(sentencesList, metadataList, sentencesAsLabels):
+        encoded_lang = metadata_language_mapping[metadata]
         toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=True,
                          return_tensors="pt")
 
@@ -122,7 +126,9 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
                                            f"new labels: {len(new_labels)}"
         # tensorize the new labels
         label = torch.tensor(new_labels)
+        
         out_toks_and_labels.append({'input_ids': toks['input_ids'].squeeze(),
                                     'attention_mask': toks['attention_mask'].squeeze(),
-                                    'labels': label})
+                                    'labels': label, 
+                                    'metadata': torch.tensor([encoded_lang])})
     return out_toks_and_labels

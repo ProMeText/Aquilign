@@ -2,6 +2,7 @@ import aquilign.preproc.tok_trainer_functions as functions
 import aquilign.preproc.syntactic_tokenization as SyntacticTok
 import aquilign.preproc.create_train_data as FormatData
 import aquilign.preproc.utils as utils
+import aquilign.preproc.metadataModel as metadataModel
 import sys
 from transformers import BertTokenizer, AutoModelForTokenClassification, pipeline
 import re
@@ -101,19 +102,21 @@ def unicode_normalise(string:str) -> str:
     return unicodedata.normalize("NFC", string)
 
 def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter="£", standalone=False, remove_punctuation=False, lang=None):
+    # TODO: il faut une évaluation générale, et une évaluation par langue. 
     if standalone:
         with open(data, "r") as input_file:
             corpus_as_list = [unicode_normalise(item.replace("\n", "")) for item in input_file.readlines()]
         lang = data.split("/")[-2]
     else:
-        corpus_as_list = [unicode_normalise(item) for item in data]
+        corpus_as_list = [(unicode_normalise(item), lang) for item, lang in data]
     
     if remove_punctuation:
-        corpus_as_list = [utils.remove_punctuation(item) for item in corpus_as_list]
+        corpus_as_list = [(utils.remove_punctuation(item), lang) for item in corpus_as_list]
     
     all_preds, all_tgts = [], []
     tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=10)
-    new_model = AutoModelForTokenClassification.from_pretrained(model_path, num_labels=3)
+
+    new_model = metadataModel.BertWithMetadata(model_path, num_metadata_features=5, num_classes=3)
     # get the path of the default tokenizer
     texts, labels, tokenized_text = utils.convertToWordsSentencesAndLabels(corpus_as_list)
     assert len(texts) == len(labels),  "Lists mismatch"
@@ -165,12 +168,13 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
     # Second, model evaluation
     print("Performing bert-based tokenization evaluation")
     gt_toks_and_labels = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, tokenizer=tokenizer, delimiter=delimiter)
-    for txt_example, gt in zip(corpus_as_list, gt_toks_and_labels):
+    for (txt_example, lang), gt in zip(corpus_as_list, gt_toks_and_labels):
         # We get only the text
         example = txt_example.replace(delimiter, "")
         splitted_example = utils.tokenize_words(example, delimiter)
         # BERT-tok
         enco_nt_tok = tokenizer.encode(example, truncation=True, padding=True, return_tensors="pt")
+        enco_nt_tok["metadata"] = torch.tensor([encoded_lang])
         # get the predictions from the model
         predictions = new_model(enco_nt_tok)
         

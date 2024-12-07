@@ -37,8 +37,8 @@ class SaveModelAndConfigCallback(TrainerCallback):
         # Check if we need to save the model at the end of each epoch
         output_dir = os.path.join(self.save_dir, f"checkpoint-{state.global_step}")
         os.makedirs(output_dir, exist_ok=True)
-        kwargs['model'].save_pretrained(output_dir)  # Save the model weights
-        kwargs['model'].config.save_pretrained(output_dir)  # Save the config.json
+        kwargs['model'].bert.save_pretrained(output_dir)  # Save the model weights
+        kwargs['model'].bert.config.save_pretrained(output_dir)  # Save the config.json
         print(f"Model and config saved at {output_dir}")
         return control
 
@@ -48,8 +48,8 @@ class CustomTrainer(Trainer):
 
     def save_model_and_config(self, output_dir):
         # Save the model and config file to the given output directory
-        self.model.save_pretrained(output_dir)
-        self.model.config.save_pretrained(output_dir)
+        self.model.bert.save_pretrained(output_dir)
+        self.model.bert.config.save_pretrained(output_dir)
         print(f"Saving config to {output_dir}")
 
     def on_epoch_end(self, args, state, control, **kwargs):
@@ -67,9 +67,14 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     model = metadataModel.BertWithMetadata(modelName, num_metadata_features=5, num_classes=3)
     tokenizer = BertTokenizer.from_pretrained(modelName, max_length=10)
     
-    datasets = {"train": "data/tokenisation/*/*train.txt",
-                "eval": "data/tokenisation/*/*eval.txt",
-                "dev": "data/tokenisation/*/*dev.txt"}
+    datasets = {"train": "data/tokenisation/it/*train.txt",
+                "eval": "data/tokenisation/it/*eval.txt",
+                "dev": "data/tokenisation/it/*dev.txt"}
+    
+
+    # datasets = {"train": "data/tests/it/it.txt",
+    #             "eval": "data/tests/it/it.txt",
+    #             "dev": "data/tests/it/it.txt"}
     
     training_files = glob.glob(datasets['train'])
     dev_files = glob.glob(datasets['dev'])
@@ -140,7 +145,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
         dataloader_num_workers=8,
         dataloader_prefetch_factor=4,
         bf16=False,
-        use_cpu=False,
+        use_cpu=True,
         save_strategy="epoch",
         load_best_model_at_end=True
         # best model is evaluated on loss

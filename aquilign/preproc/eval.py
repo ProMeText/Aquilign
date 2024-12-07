@@ -46,6 +46,7 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text):
 def get_labels_from_preds(preds):
     bert_labels = []
     for pred in preds[-1]:
+        print(pred)
         label = [idx for idx, value in enumerate(pred) if value == max(pred)][0]
         bert_labels.append(label)
     return bert_labels
@@ -129,6 +130,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
         if verbose:
             print("---\nSYNTtok New example")
             print(f"Example:   {example}")
+        lang = "it"
         tokenized_text = SyntacticTok.syntactic_tokenization(input_file=None, 
                                                         standalone=False, 
                                                         text=example,
@@ -170,18 +172,28 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
     print("Performing bert-based tokenization evaluation")
     gt_toks_and_labels = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, tokenizer=tokenizer, delimiter=delimiter)
     for (txt_example, lang), gt in zip(corpus_as_list, gt_toks_and_labels):
+        print(txt_example)
         # We get only the text
         example = txt_example.replace(delimiter, "")
         splitted_example = utils.tokenize_words(example, delimiter)
         # BERT-tok
-        enco_nt_tok = tokenizer.encode(example, truncation=True, padding=True, return_tensors="pt")
+        print(lang)
+        enco_nt_tok = tokenizer(example, truncation=True, padding=True, return_tensors="pt")
+        metadata_language_mapping = {"es": 1, "fr": 2, "pt": 3, "it": 4, "la": 0}
+        encoded_lang = metadata_language_mapping[lang]
+        print(encoded_lang)
         enco_nt_tok["metadata"] = torch.tensor([encoded_lang])
+        print(enco_nt_tok)
         # get the predictions from the model
-        predictions = new_model(enco_nt_tok)
+        predictions = new_model(input_ids=enco_nt_tok['input_ids'], 
+                                attention_mask=enco_nt_tok['attention_mask'], 
+                                metadata=enco_nt_tok['metadata'])
         
-        preds = predictions[0]
+        #preds = predictions[0]
+        #print(predictions)
+        #print(preds)
         # apply the functions
-        bert_labels = get_labels_from_preds(preds)
+        bert_labels = get_labels_from_preds(predictions)
         
         # On crée la table de correspondance entre les words et les subwords
         human_to_bert, _ = get_correspondence(example, tokenizer, delimiter)

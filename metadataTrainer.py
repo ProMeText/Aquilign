@@ -72,9 +72,9 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
                 "dev": "data/tokenisation/it/*dev.txt"}
     
 
-    # datasets = {"train": "data/tests/it/it.txt",
-    #             "eval": "data/tests/it/it.txt",
-    #             "dev": "data/tests/it/it.txt"}
+    datasets = {"train": "data/tests/it/it.txt",
+                 "eval": "data/tests/it/it.txt",
+                 "dev": "data/tests/it/it.txt"}
     
     training_files = glob.glob(datasets['train'])
     dev_files = glob.glob(datasets['dev'])
@@ -145,7 +145,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
         dataloader_num_workers=8,
         dataloader_prefetch_factor=4,
         bf16=False,
-        use_cpu=False,
+        use_cpu=True,
         save_strategy="epoch",
         load_best_model_at_end=True
         # best model is evaluated on loss
@@ -165,8 +165,16 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     # fine-tune the model
     print("Starting training")
-    trainer.train()
+    # trainer.train()
     print("End of training")
+
+    best_model_path = "results_bert-base-multilingual-cased/epoch1_bs8/checkpoint-4/"
+
+    eval_results = evaluation.run_eval(data=eval_lines,
+                                       model_path=best_model_path,
+                                       tokenizer_name=tokenizer.name_or_path,
+                                       verbose=False)
+    exit(0)
 
     # get the best model path
     best_model_path = trainer.state.best_model_checkpoint
@@ -175,6 +183,8 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     # print the whole log_history with the compute metrics
     best_precision_step, best_step_metrics = utils.get_best_step(trainer.state.log_history)
     best_model_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
+    
+    best_model_path = "results_bert-base-multilingual-cased/epoch1_bs8/checkpoint-4/"
     print(f"Best model path according to precision: {best_model_path}")
     print(f"Full metrics: {best_step_metrics}")
 

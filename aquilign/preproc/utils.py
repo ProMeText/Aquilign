@@ -40,7 +40,11 @@ def tokenize_words(sentence:str, delimiter) -> list:
     Cette fonction tokénise une phrase selon un certain nombre de marqueurs
     """
     words_delimiters = re.compile(r"[\.,;——:\?!’'«»“/\-]|[^\.,;——:\?!’'«»“/\-\s]+")
-    sentenceAsList = re.findall(words_delimiters, sentence)
+    if isinstance(sentence, tuple):
+        sentenceAsList = re.findall(words_delimiters, sentence[0])
+    else:
+        sentenceAsList = re.findall(words_delimiters, sentence)
+        
     if delimiter in sentenceAsList:
         # Some workaround for when the delimiter is used on a token in the list of word delimiters.
         alone_delim_index = next(idx for idx, token in enumerate(sentenceAsList) if token == delimiter)
@@ -57,7 +61,12 @@ def convertToWordsSentencesAndLabels(corpus:list, delimiter="£") -> (list, list
     sentencesList = []
     sentencesAsLabels = []
     sentences_as_list_of_tokens = []
-    for text in corpus:
+    for example in corpus:
+        if isinstance(example, tuple):
+            lang = example[1]
+            text = example[0]
+        else:
+            text = example
         sentenceAsList = tokenize_words(text, delimiter)
         sentences_as_list_of_tokens.append(sentenceAsList)
         masks = []

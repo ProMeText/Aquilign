@@ -152,7 +152,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     )
 
     # define the trainer : model, training args, datasets and the specific compute_metrics defined in functions file
-    save_callback = SaveModelAndConfigCallback(save_dir=training_args.output_dir)
+    # save_callback = SaveModelAndConfigCallback(save_dir=training_args.output_dir)
     
     trainer = Trainer(
         model=model,

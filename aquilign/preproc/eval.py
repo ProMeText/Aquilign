@@ -114,8 +114,9 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
         corpus_as_list = [(utils.remove_punctuation(item), lang) for item in corpus_as_list]
     
     all_preds, all_tgts = [], []
+    print("Tok.")
     tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=10)
-
+    print(f"Init: {model_path}")
     new_model = metadataModel.BertWithMetadata(model_path, num_metadata_features=5, num_classes=3)
     # get the path of the default tokenizer
     texts, labels, tokenized_text = utils.convertToWordsSentencesAndLabels(corpus_as_list)

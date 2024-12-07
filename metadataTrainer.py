@@ -29,6 +29,25 @@ import aquilign.preproc.metadataModel as metadataModel
 # batch_size : the batch size (ex : 8)
 # logging_steps : the number of logging steps (ex : 50)
 
+
+class CustomTrainer(Trainer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def save_model_and_config(self, output_dir):
+        # Save the model and config file to the given output directory
+        self.model.save_pretrained(output_dir)
+        self.model.config.save_pretrained(output_dir)
+
+    def on_epoch_end(self, args, state, control, **kwargs):
+        # You can customize what happens at the end of an epoch here
+        # Save the model and config after each epoch
+        output_dir = os.path.join(args.output_dir, f"checkpoint-{state.global_step}")
+        os.makedirs(output_dir, exist_ok=True)
+        self.save_model_and_config(output_dir)
+        return control
+
+
 # function which produces the train, which first gets texts, transforms them into tokens and labels, then trains model with the specific given arguments
 def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_steps,
                      keep_punct=True):
@@ -115,7 +134,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     )
 
     # define the trainer : model, training args, datasets and the specific compute_metrics defined in functions file
-    trainer = Trainer(
+    trainer = CustomTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,

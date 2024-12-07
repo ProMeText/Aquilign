@@ -135,6 +135,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     # print the whole log_history with the compute metrics
     best_precision_step, best_step_metrics = utils.get_best_step(trainer.state.log_history)
     best_model_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
+    self.model.config.save_pretrained(best_model_path)
     print(f"Best model path according to precision: {best_model_path}")
     print(f"Full metrics: {best_step_metrics}")
 

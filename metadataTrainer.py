@@ -159,7 +159,8 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=dev_dataset,
-        compute_metrics=trainer_functions.compute_metrics
+        compute_metrics=trainer_functions.compute_metrics,
+        callbacks=[save_callback]
     )
 
     # fine-tune the model

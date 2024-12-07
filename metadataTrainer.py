@@ -147,7 +147,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
         dataloader_num_workers=8,
         dataloader_prefetch_factor=4,
         bf16=False,
-        use_cpu=True,
+        use_cpu=False,
         save_strategy="epoch",
         load_best_model_at_end=True
         # best model is evaluated on loss

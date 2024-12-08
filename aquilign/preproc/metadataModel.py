@@ -48,7 +48,7 @@ class BertWithMetadata(nn.Module):
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *args, **kwargs):
         # Load the pretrained model
-        model = super(BertWithMetadataForTokenClassification, cls).from_pretrained(
+        model = super(BertWithMetadata, cls).from_pretrained(
             pretrained_model_name_or_path, *args, **kwargs)
 
         # You can load the custom configurations here if you need to (e.g., num_metadata_features, num_classes)

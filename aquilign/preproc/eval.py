@@ -118,7 +118,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
     print("Tok.")
     tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=10)
     print(f"Init: {model_path}")
-    new_model = metadataModel.BertWithMetadata(model_path, num_metadata_features=5, num_classes=3)
+    new_model = metadataModel.BertWithMetadata.from_pretrained(model_path, num_metadata_features=5, num_classes=3)
     # get the path of the default tokenizer
     texts, labels, tokenized_text = utils.convertToWordsSentencesAndLabels(corpus_as_list)
     assert len(texts) == len(labels),  "Lists mismatch"

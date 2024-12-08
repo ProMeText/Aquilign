@@ -6,11 +6,12 @@ from transformers import BertTokenizer, BertModel, AutoModelForTokenClassificati
 class BertWithMetadata(nn.Module):
     def __init__(self, pretrained_model_name, num_metadata_features, num_classes):
         super(BertWithMetadata, self).__init__()
+        self.num_metadata_features = num_metadata_features
         self.num_classes = num_classes
         self.bert = AutoModelForTokenClassification.from_pretrained(pretrained_model_name, num_labels=num_classes)
         hidden_size = self.bert.config.hidden_size
         # Définir une couche d'embedding pour les métadonnées
-        self.metadata_embedding = nn.Embedding(num_metadata_features, hidden_size)
+        self.metadata_embedding = nn.Embedding(self.num_metadata_features, hidden_size)
 
         # Couche de classification
         self.classifier = nn.Linear(hidden_size, num_classes)
@@ -43,6 +44,24 @@ class BertWithMetadata(nn.Module):
             loss = loss_fct(flattened_logits, flattened_labels)
 
         return (loss, logits) if loss is not None else logits
+    
+    @classmethod
+    def from_pretrained(cls, pretrained_model_name_or_path, *args, **kwargs):
+        # Load the pretrained model
+        model = super(BertWithMetadataForTokenClassification, cls).from_pretrained(
+            pretrained_model_name_or_path, *args, **kwargs)
+
+        # You can load the custom configurations here if you need to (e.g., num_metadata_features, num_classes)
+        # Ensure you pass these when loading the model
+        num_metadata_features = kwargs.get("num_metadata_features", 5)  # Default to 5 if not provided
+        num_classes = kwargs.get("num_classes", 3)  # Default to 3 if not provided
+
+        # Initialize the custom layers
+        model.metadata_embedding = torch.nn.Embedding(num_metadata_features, model.config.hidden_size)
+        model.classifier = torch.nn.Linear(model.config.hidden_size, num_classes)
+
+        # Return the model
+        return model
 
 
 if __name__ == '__main__':

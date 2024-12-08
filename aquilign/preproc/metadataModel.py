@@ -3,7 +3,7 @@ import torch.nn as nn
 from transformers import BertTokenizer, BertModel, AutoModelForTokenClassification
 
 
-class BertWithMetadata(nn.Module):
+class BertWithMetadata(AutoModelForTokenClassification):
     def __init__(self, pretrained_model_name, num_metadata_features, num_classes):
         super(BertWithMetadata, self).__init__()
         self.num_metadata_features = num_metadata_features

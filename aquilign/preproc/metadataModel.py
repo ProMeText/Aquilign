@@ -1,17 +1,16 @@
 import torch
 import torch.nn as nn
-from transformers import BertTokenizer, BertModel, AutoModelForTokenClassification
+from transformers import BertTokenizer, BertModel, AutoModelForTokenClassification, BertForTokenClassification
 
 
 class BertWithMetadata(nn.Module):
     def __init__(self, pretrained_model_name, num_metadata_features, num_classes):
         super(BertWithMetadata, self).__init__()
         self.num_classes = num_classes
-        self.bert = AutoModelForTokenClassification.from_pretrained(pretrained_model_name, num_labels=num_classes)
+        self.bert = BertForTokenClassification.from_pretrained(pretrained_model_name, num_labels=num_classes)
         hidden_size = self.bert.config.hidden_size
         # Définir une couche d'embedding pour les métadonnées
         self.metadata_embedding = nn.Embedding(num_metadata_features, hidden_size)
-
         # Couche de classification
         self.classifier = nn.Linear(hidden_size, num_classes)
 
@@ -21,13 +20,11 @@ class BertWithMetadata(nn.Module):
         bert_output = self.bert(input_ids=input_ids, attention_mask=attention_mask, output_hidden_states=True)
         # Extraire la dernière couche du modèle BERT
         cls_output = bert_output.hidden_states[-1]
-        #resized = metadata.view(-1)
-        # print(resized)
+        
         # Passer les métadonnées à travers leur couche d'embedding
         metadata_embed = self.metadata_embedding(metadata)
         # Fusionner la sortie de BERT et l'embed des métadonnées
         combined_output = cls_output + metadata_embed  # Fusionner par addition, vous pouvez aussi essayer la concaténation
-
         # Classifier
         logits = self.classifier(combined_output)
 

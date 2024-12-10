@@ -209,6 +209,10 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     except FileExistsError:
         pass
     try:
+        os.mkdir(f"tokenisation_training_results/results_{train_name}")
+    except FileExistsError:
+        pass
+    try:
         os.rmdir(new_best_path)
     except FileNotFoundError:
         pass

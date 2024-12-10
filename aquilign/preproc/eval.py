@@ -172,12 +172,10 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
     print("Performing bert-based tokenization evaluation")
     gt_toks_and_labels = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, tokenizer=tokenizer, delimiter=delimiter)
     for (txt_example, lang), gt in zip(corpus_as_list, gt_toks_and_labels):
-        print(txt_example)
         # We get only the text
         example = txt_example.replace(delimiter, "")
         splitted_example = utils.tokenize_words(example, delimiter)
         # BERT-tok
-        print(lang)
         enco_nt_tok = tokenizer(example, truncation=True, padding=True, return_tensors="pt")
         metadata_language_mapping = {"es": 1, "fr": 2, "pt": 3, "it": 4, "la": 0}
         encoded_lang = metadata_language_mapping[lang]

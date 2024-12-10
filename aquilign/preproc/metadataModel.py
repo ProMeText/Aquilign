@@ -9,7 +9,7 @@ from transformers import BertTokenizer, BertModel, AutoModelForTokenClassificati
 class BertWithMetadata(PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
-        self.freeze_metadata = True
+        self.freeze_metadata = config.freeze_metadata
         self.num_classes = config.num_labels
         num_metadata_features = config.num_metadata_features
         pretrained_model_name = config.name_or_path
@@ -32,9 +32,6 @@ class BertWithMetadata(PreTrainedModel):
             logits = self.classifier(cls_output)
         else:
             metadata_embed = self.metadata_embedding(metadata)
-            if labels is None:
-                print("Passing metadata")
-                print(metadata_embed.shape)
             # Fusionner la sortie de BERT et l'embed des métadonnées
             combined_output = cls_output + metadata_embed  # Fusionner par addition, vous pouvez aussi essayer la concaténation
             # Classifier

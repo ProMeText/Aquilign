@@ -65,10 +65,11 @@ class CustomTrainer(Trainer):
 
 # function which produces the train, which first gets texts, transforms them into tokens and labels, then trains model with the specific given arguments
 def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_steps,
-                     keep_punct=True):
+                     keep_punct=True, freeze_metadata=False):
     config = BertConfig.from_pretrained("google-bert/bert-base-multilingual-cased")
     config.num_labels = 3  # Exemple : 3 classes
     config.num_metadata_features = 5
+    config.freeze_metadata = freeze_metadata
     config.name_or_path = "google-bert/bert-base-multilingual-cased"
     model = metadataModel.BertWithMetadata(config)
     tokenizer = BertTokenizer.from_pretrained(modelName, max_length=10)
@@ -80,7 +81,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
                  "dev": "data/tests/it/it.txt"}
     
     datasets = {"train": "data/tokenisation/*/*train.txt",
-                "eval": "data/tokenisation/it/*eval.txt",
+                "eval": "data/tokenisation/fr/*eval.txt",
                 "dev": "data/tokenisation/*/*dev.txt"}
     
     
@@ -180,16 +181,20 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     
     # get the best model path
-    best_model_path = trainer.state.best_model_checkpoint
+    # best_model_path = trainer.state.best_model_checkpoint
     print(f"Evaluation.")
 
     # print the whole log_history with the compute metrics
     best_precision_step, best_step_metrics = utils.get_best_step(trainer.state.log_history)
     best_model_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
+    config.to_json_file(json_file_path=f"{best_model_path}/config.json")
     # best_model_path = "results_bert-base-multilingual-cased/epoch1_bs264/checkpoint-1/"
     print(f"Best model path according to precision: {best_model_path}")
     print(f"Full metrics: {best_step_metrics}")
-
+    # model.save_pretrained("results_bert-base-multilingual-cased/before_training/")
+    
+    # Ici il faut faire plusieurs tests différents.
+    # best_model_path = "results_bert-base-multilingual-cased/before_training/"
     eval_results = evaluation.run_eval(data=eval_lines,
                                        model_path=best_model_path,
                                        tokenizer_name=tokenizer.name_or_path,
@@ -236,6 +241,8 @@ if __name__ == '__main__':
                         help="Path to eval dataset.")
     parser.add_argument("-ep", "--epochs", default=10,
                         help="Number of epochs to be realized.")
+    parser.add_argument("-fm", "--freeze_metadata", default=False,
+                        help="Whether to train with or without metadata embedding.")
     parser.add_argument("-b", "--batch_size", default=32,
                         help="Batch size.")
     parser.add_argument("-l", "--logging_steps", default=500)
@@ -245,8 +252,9 @@ if __name__ == '__main__':
     dev_dataset = args.dev_dataset
     eval_dataset = args.eval_dataset
     num_train_epochs = int(args.epochs)
+    freeze_metadata = True if args.freeze_metadata == "True" else False
     batch_size = int(args.batch_size)
     logging_steps = int(args.logging_steps)
     datasets = {}
-    training_trainer(model, datasets, num_train_epochs, batch_size, logging_steps)
+    training_trainer(model, datasets, num_train_epochs, batch_size, logging_steps, freeze_metadata)
 

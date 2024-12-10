@@ -65,7 +65,7 @@ class CustomTrainer(Trainer):
 
 # function which produces the train, which first gets texts, transforms them into tokens and labels, then trains model with the specific given arguments
 def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_steps,
-                     keep_punct=True, freeze_metadata=False):
+                     keep_punct=True, freeze_metadata=False, device="cpu"):
     config = BertConfig.from_pretrained("google-bert/bert-base-multilingual-cased")
     config.num_labels = 3  # Exemple : 3 classes
     config.num_metadata_features = 5
@@ -157,7 +157,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
         dataloader_num_workers=8,
         dataloader_prefetch_factor=4,
         bf16=False,
-        use_cpu=True,
+        use_cpu=True if device == "cpu" else False,
         save_strategy="epoch",
         load_best_model_at_end=True
         # best model is evaluated on loss
@@ -240,6 +240,8 @@ if __name__ == '__main__':
                         help="Path to dev dataset.")
     parser.add_argument("-e", "--eval_dataset", default="",
                         help="Path to eval dataset.")
+    parser.add_argument("-dv", "--device", default="cpu",
+                        help="Device to be used for training.")
     parser.add_argument("-ep", "--epochs", default=10,
                         help="Number of epochs to be realized.")
     parser.add_argument("-fm", "--freeze_metadata", default=False,
@@ -256,6 +258,7 @@ if __name__ == '__main__':
     freeze_metadata = True if args.freeze_metadata == "True" else False
     batch_size = int(args.batch_size)
     logging_steps = int(args.logging_steps)
+    device = args.device
     datasets = {}
-    training_trainer(model, datasets, num_train_epochs, batch_size, logging_steps, freeze_metadata=freeze_metadata)
+    training_trainer(model, datasets, num_train_epochs, batch_size, logging_steps, freeze_metadata=freeze_metadata, device=device)
 

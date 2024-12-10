@@ -180,8 +180,6 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
         print(lang)
         enco_nt_tok = tokenizer(example, truncation=True, padding=True, return_tensors="pt")
         metadata_language_mapping = {"es": 1, "fr": 2, "pt": 3, "it": 4, "la": 0}
-        if freeze_metadata:
-            metadata_language_mapping = {"es": 0, "fr": 0, "pt": 0, "it": 0, "la": 0}
         encoded_lang = metadata_language_mapping[lang]
         enco_nt_tok["metadata"] = torch.tensor([encoded_lang])
         # get the predictions from the model

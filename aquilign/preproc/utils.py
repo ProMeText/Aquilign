@@ -87,8 +87,6 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
     """
     metadata_language_mapping = {"es": 1, "fr": 2, "pt": 3, "it": 4, "la": 0}
-    if freeze_metadata:
-            metadata_language_mapping = {"es": 0, "fr": 0, "pt": 0, "it": 0, "la": 0}
     if verbose:
         print("Converting to sentences and labels")
     sentencesList = []

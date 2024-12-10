@@ -4,7 +4,7 @@ import aquilign.preproc.create_train_data as FormatData
 import aquilign.preproc.utils as utils
 import aquilign.preproc.metadataModel as metadataModel
 import sys
-from transformers import BertTokenizer, AutoModelForTokenClassification, pipeline
+from transformers import BertTokenizer, AutoModelForTokenClassification, pipeline, BertConfig
 import re
 import torch
 import numpy as np
@@ -118,7 +118,8 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
     print("Tok.")
     tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=10)
     print(f"Init: {model_path}")
-    new_model = metadataModel.BertWithMetadata(model_path, num_metadata_features=5, num_classes=3)
+    new_config = BertConfig.from_pretrained(model_path)
+    new_model = metadataModel.BertWithMetadata.from_pretrained(model_path, config=new_config)
     # get the path of the default tokenizer
     texts, labels, tokenized_text = utils.convertToWordsSentencesAndLabels(corpus_as_list)
     assert len(texts) == len(labels),  "Lists mismatch"
@@ -181,9 +182,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
         enco_nt_tok = tokenizer(example, truncation=True, padding=True, return_tensors="pt")
         metadata_language_mapping = {"es": 1, "fr": 2, "pt": 3, "it": 4, "la": 0}
         encoded_lang = metadata_language_mapping[lang]
-        print(encoded_lang)
         enco_nt_tok["metadata"] = torch.tensor([encoded_lang])
-        print(enco_nt_tok)
         # get the predictions from the model
         predictions = new_model(input_ids=enco_nt_tok['input_ids'], 
                                 attention_mask=enco_nt_tok['attention_mask'], 

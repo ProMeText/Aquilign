@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
-from transformers import BertTokenizer, Trainer, TrainingArguments, AutoModelForTokenClassification, set_seed, TrainerCallback
+from transformers import BertTokenizer, Trainer, TrainingArguments, AutoModelForTokenClassification, set_seed, TrainerCallback, BertForTokenClassification, BertConfig, PretrainedConfig
 from accelerate import Accelerator, DataLoaderConfiguration
 import aquilign.preproc.tok_trainer_functions as trainer_functions
 import aquilign.preproc.eval as evaluation
@@ -38,7 +38,7 @@ class SaveModelAndConfigCallback(TrainerCallback):
         output_dir = os.path.join(self.save_dir, f"checkpoint-{state.global_step}")
         os.makedirs(output_dir, exist_ok=True)
         kwargs['model'].bert.save_pretrained(output_dir)  # Save the model weights
-        # kwargs['model'].bert.config.save_pretrained(output_dir)  # Save the config.json
+        kwargs['model'].bert.config.save_pretrained(output_dir)  # Save the config.json
         print(f"Model and config saved at {output_dir}")
         return control
 
@@ -50,9 +50,11 @@ class CustomTrainer(Trainer):
         # Save the model and config file to the given output directory
         self.model.bert.save_pretrained(output_dir)
         self.model.bert.config.save_pretrained(output_dir)
+        print(self.model.metadata_embedding)
         print(f"Saving config to {output_dir}")
+        exit(0)
 
-    def on_epoch_end(self, args, state, control, **kwargs):
+    def on_epoch_begin(self, args, state, control, **kwargs):
         # You can customize what happens at the end of an epoch here
         # Save the model and config after each epoch
         output_dir = os.path.join(args.output_dir, f"checkpoint-{state.global_step}")
@@ -64,7 +66,11 @@ class CustomTrainer(Trainer):
 # function which produces the train, which first gets texts, transforms them into tokens and labels, then trains model with the specific given arguments
 def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_steps,
                      keep_punct=True):
-    model = metadataModel.BertWithMetadata(modelName, num_metadata_features=5, num_classes=3)
+    config = BertConfig.from_pretrained("google-bert/bert-base-multilingual-cased")
+    config.num_labels = 3  # Exemple : 3 classes
+    config.num_metadata_features = 5
+    config.name_or_path = "google-bert/bert-base-multilingual-cased"
+    model = metadataModel.BertWithMetadata(config)
     tokenizer = BertTokenizer.from_pretrained(modelName, max_length=10)
     
 
@@ -74,8 +80,10 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
                  "dev": "data/tests/it/it.txt"}
     
     datasets = {"train": "data/tokenisation/*/*train.txt",
-                "eval": "data/tokenisation/it/*eval.txt",
+                "eval": "data/tokenisation/*/*eval.txt",
                 "dev": "data/tokenisation/*/*dev.txt"}
+    
+    
     
     
     training_files = glob.glob(datasets['train'])
@@ -147,7 +155,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
         dataloader_num_workers=8,
         dataloader_prefetch_factor=4,
         bf16=False,
-        use_cpu=False,
+        use_cpu=True,
         save_strategy="epoch",
         load_best_model_at_end=True
         # best model is evaluated on loss
@@ -156,13 +164,13 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     # define the trainer : model, training args, datasets and the specific compute_metrics defined in functions file
     save_callback = SaveModelAndConfigCallback(save_dir=training_args.output_dir)
     
-    trainer = Trainer(
+    trainer = CustomTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=dev_dataset,
-        compute_metrics=trainer_functions.compute_metrics,
-        callbacks=[save_callback]
+        compute_metrics=trainer_functions.compute_metrics#,
+        #callbacks=[save_callback]
     )
 
     # fine-tune the model
@@ -178,7 +186,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     # print the whole log_history with the compute metrics
     best_precision_step, best_step_metrics = utils.get_best_step(trainer.state.log_history)
     best_model_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
-    
+    # best_model_path = "results_bert-base-multilingual-cased/epoch1_bs264/checkpoint-1/"
     print(f"Best model path according to precision: {best_model_path}")
     print(f"Full metrics: {best_step_metrics}")
 

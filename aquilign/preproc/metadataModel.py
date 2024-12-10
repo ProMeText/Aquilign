@@ -1,18 +1,23 @@
 import torch
 import torch.nn as nn
-from transformers import BertTokenizer, BertModel, AutoModelForTokenClassification, BertForTokenClassification
+from transformers import BertTokenizer, BertModel, AutoModelForTokenClassification, BertForTokenClassification, PreTrainedModel
 
 
-class BertWithMetadata(nn.Module):
-    def __init__(self, pretrained_model_name, num_metadata_features, num_classes):
-        super(BertWithMetadata, self).__init__()
-        self.num_classes = num_classes
-        self.bert = BertForTokenClassification.from_pretrained(pretrained_model_name, num_labels=num_classes)
+# class BertWithMetadata(nn.Module):
+#     def __init__(self, pretrained_model_name, num_metadata_features, num_classes):
+#         super(BertWithMetadata, self).__init__(config)
+class BertWithMetadata(PreTrainedModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.num_classes = config.num_labels
+        num_metadata_features = config.num_metadata_features
+        pretrained_model_name = config.name_or_path
+        self.bert = BertForTokenClassification.from_pretrained(pretrained_model_name, num_labels=self.num_classes)
         hidden_size = self.bert.config.hidden_size
         # Définir une couche d'embedding pour les métadonnées
         self.metadata_embedding = nn.Embedding(num_metadata_features, hidden_size)
         # Couche de classification
-        self.classifier = nn.Linear(hidden_size, num_classes)
+        self.classifier = nn.Linear(hidden_size, self.num_classes)
 
 
     def forward(self, input_ids, attention_mask, metadata, labels=None):
@@ -40,6 +45,8 @@ class BertWithMetadata(nn.Module):
             loss = loss_fct(flattened_logits, flattened_labels)
 
         return (loss, logits) if loss is not None else logits
+    
+        
 
 
 if __name__ == '__main__':

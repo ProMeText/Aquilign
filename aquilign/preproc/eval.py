@@ -130,7 +130,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
         if verbose:
             print("---\nSYNTtok New example")
             print(f"Example:   {example}")
-        lang = "es"
+        lang = "fr"
         tokenized_text = SyntacticTok.syntactic_tokenization(input_file=None, 
                                                         standalone=False, 
                                                         text=example,

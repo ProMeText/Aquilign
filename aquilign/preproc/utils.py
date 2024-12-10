@@ -82,11 +82,13 @@ def convertToWordsSentencesAndLabels(corpus:list, delimiter="£") -> (list, list
 
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False):
+def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False, freeze_metadata = True):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
     """
     metadata_language_mapping = {"es": 1, "fr": 2, "pt": 3, "it": 4, "la": 0}
+    if freeze_metadata:
+            metadata_language_mapping = {"es": 0, "fr": 0, "pt": 0, "it": 0, "la": 0}
     if verbose:
         print("Converting to sentences and labels")
     sentencesList = []

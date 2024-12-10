@@ -80,7 +80,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
                  "dev": "data/tests/it/it.txt"}
     
     datasets = {"train": "data/tokenisation/*/*train.txt",
-                "eval": "data/tokenisation/*/*eval.txt",
+                "eval": "data/tokenisation/it/*eval.txt",
                 "dev": "data/tokenisation/*/*dev.txt"}
     
     

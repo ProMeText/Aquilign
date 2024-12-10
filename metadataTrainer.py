@@ -118,7 +118,8 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     random.shuffle(train_lines)
     random.shuffle(dev_lines)
     random.shuffle(eval_lines)
-
+    
+    
     # Train corpus
     train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=tokenizer, delimiter="£")
     train_dataset = trainer_functions.SentenceBoundaryDataset(train_texts_and_labels, tokenizer)
@@ -156,7 +157,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
         dataloader_num_workers=8,
         dataloader_prefetch_factor=4,
         bf16=False,
-        use_cpu=False,
+        use_cpu=True,
         save_strategy="epoch",
         load_best_model_at_end=True
         # best model is evaluated on loss
@@ -256,5 +257,5 @@ if __name__ == '__main__':
     batch_size = int(args.batch_size)
     logging_steps = int(args.logging_steps)
     datasets = {}
-    training_trainer(model, datasets, num_train_epochs, batch_size, logging_steps, freeze_metadata)
+    training_trainer(model, datasets, num_train_epochs, batch_size, logging_steps, freeze_metadata=freeze_metadata)
 

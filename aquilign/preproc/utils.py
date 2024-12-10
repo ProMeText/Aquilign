@@ -44,7 +44,6 @@ def tokenize_words(sentence:str, delimiter) -> list:
         sentenceAsList = re.findall(words_delimiters, sentence[0])
     else:
         sentenceAsList = re.findall(words_delimiters, sentence)
-        
     if delimiter in sentenceAsList:
         # Some workaround for when the delimiter is used on a token in the list of word delimiters.
         alone_delim_index = next(idx for idx, token in enumerate(sentenceAsList) if token == delimiter)
@@ -82,7 +81,7 @@ def convertToWordsSentencesAndLabels(corpus:list, delimiter="£") -> (list, list
 
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False, freeze_metadata = True):
+def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
     """
@@ -92,7 +91,7 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     sentencesList = []
     metadataList = []
     sentencesAsLabels = []
-    for text, lang in corpus:
+    for idx, (text, lang) in enumerate(corpus):
         sentenceAsList = tokenize_words(text, delimiter)
         masks = []
         for token in sentenceAsList:

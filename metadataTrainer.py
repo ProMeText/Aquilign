@@ -203,7 +203,11 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     # We move the best state dir name to "best"
     #### CONTINUER ICI
-    new_best_path = f"resuts/results_{train_name}/best"
+    new_best_path = f"tokenisation_training_results/results_{train_name}/best"
+    try:
+        os.mkdir("tokenisation_training_results/")
+    except FileExistsError:
+        pass
     try:
         os.rmdir(new_best_path)
     except FileNotFoundError:

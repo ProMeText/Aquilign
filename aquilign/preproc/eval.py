@@ -46,7 +46,6 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text):
 def get_labels_from_preds(preds):
     bert_labels = []
     for pred in preds[-1]:
-        print(pred)
         label = [idx for idx, value in enumerate(pred) if value == max(pred)][0]
         bert_labels.append(label)
     return bert_labels

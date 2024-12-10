@@ -65,7 +65,7 @@ class CustomTrainer(Trainer):
 
 # function which produces the train, which first gets texts, transforms them into tokens and labels, then trains model with the specific given arguments
 def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_steps,
-                     keep_punct=True, freeze_metadata=False, device="cpu"):
+                     keep_punct=True, freeze_metadata=False, device="cpu", train_name="train"):
     config = BertConfig.from_pretrained("google-bert/bert-base-multilingual-cased")
     config.num_labels = 3  # Exemple : 3 classes
     config.num_metadata_features = 5
@@ -182,7 +182,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     
     # get the best model path
-    # best_model_path = trainer.state.best_model_checkpoint
+    best_model_path = trainer.state.best_model_checkpoint
     print(f"Evaluation.")
 
     # print the whole log_history with the compute metrics
@@ -203,7 +203,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     # We move the best state dir name to "best"
     #### CONTINUER ICI
-    new_best_path = f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/best"
+    new_best_path = f"resuts/results_{train_name}/best"
     try:
         os.rmdir(new_best_path)
     except FileNotFoundError:
@@ -238,6 +238,8 @@ if __name__ == '__main__':
                         help="Path to train dataset.")
     parser.add_argument("-d", "--dev_dataset", default="",
                         help="Path to dev dataset.")
+    parser.add_argument("-n", "--name", default="",
+                        help="Training session name (will appear in created dir).")
     parser.add_argument("-e", "--eval_dataset", default="",
                         help="Path to eval dataset.")
     parser.add_argument("-dv", "--device", default="cpu",
@@ -259,6 +261,7 @@ if __name__ == '__main__':
     batch_size = int(args.batch_size)
     logging_steps = int(args.logging_steps)
     device = args.device
+    name = args.name
     datasets = {}
-    training_trainer(model, datasets, num_train_epochs, batch_size, logging_steps, freeze_metadata=freeze_metadata, device=device)
+    training_trainer(model, datasets, num_train_epochs, batch_size, logging_steps, freeze_metadata=freeze_metadata, device=device, train_name=name)
 

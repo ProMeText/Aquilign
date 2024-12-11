@@ -177,7 +177,7 @@ def run_eval(data:list|str, model, tokenizer, verbose=False, delimiter="£", sta
         encoded_lang = metadata_language_mapping[lang]
         enco_nt_tok["metadata"] = torch.tensor([encoded_lang])
         # get the predictions from the model
-        predictions = new_model(input_ids=enco_nt_tok['input_ids'], 
+        predictions = model(input_ids=enco_nt_tok['input_ids'], 
                                 attention_mask=enco_nt_tok['attention_mask'], 
                                 metadata=enco_nt_tok['metadata'])
         

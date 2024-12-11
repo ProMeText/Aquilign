@@ -101,7 +101,7 @@ def get_correspondence(sent, tokenizer, delimiter):
 def unicode_normalise(string:str) -> str:
     return unicodedata.normalize("NFC", string)
 
-def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter="£", standalone=False, remove_punctuation=False, lang=None):
+def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter="£", standalone=False, remove_punctuation=False, corpus_lang=None):
     # TODO: il faut une évaluation générale, et une évaluation par langue. 
     if standalone:
         with open(data, "r") as input_file:
@@ -227,11 +227,11 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
     bert_results = get_metrics(all_preds, all_tgts)
     
     zipped_results = list(zip(['Accuracy', 'Precision', 'Recall', 'F1-score'], synt_results, bert_results))
-    if not lang:
-        lang = "full"
-    print(f"Results for {lang} corpus:")
+    if not corpus_lang:
+        corpus_lang = "full"
+    print(f"Results for {corpus_lang} corpus:")
     print(tabulate(zipped_results, headers=['', 'Synt (None, Delim.)', 'Bert (None, Delim., Pad.)'], tablefmt='orgtbl'))
-    return f"\n\nLang: {lang}\n" + tabulate(zipped_results, headers=['', 'Synt (None, Delim.)', 'Bert (None, Delim., Pad.)'], tablefmt='orgtbl')
+    return f"\n\nLang: {corpus_lang}\n" + tabulate(zipped_results, headers=['', 'Synt (None, Delim.)', 'Bert (None, Delim., Pad.)'], tablefmt='orgtbl')
         
 
 

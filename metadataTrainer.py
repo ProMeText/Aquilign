@@ -240,7 +240,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     # Full dataset evaluation
     eval_results = evaluation.run_eval(data=full_eval_corpus,
-                                       model_path=best_model_path,
+                                       model_path=new_best_path,
                                        tokenizer_name=tokenizer.name_or_path,
                                        verbose=False)
 

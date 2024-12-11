@@ -207,6 +207,21 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     except FileExistsError:
         pass
 
+    try:
+        os.rmdir(new_best_path)
+    except FileNotFoundError:
+        pass
+    os.rename(best_model_path, new_best_path)
+
+    with open(f"{new_best_path}/model_name", "w") as model_name:
+        model_name.write(modelName)
+
+
+    with open(f"{new_best_path}/metrics.json", "w") as metrics:
+        json.dump(best_step_metrics, metrics)
+
+    
+
     # We perform evaluation by lang
     for lang, lines in eval_lines.items():
         eval_results = evaluation.run_eval(data=lines,
@@ -231,19 +246,6 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     # We move the best state dir name to "best"
     #### CONTINUER ICI
-    try:
-        os.rmdir(new_best_path)
-    except FileNotFoundError:
-        pass
-    os.rename(best_model_path, new_best_path)
-
-    with open(f"{new_best_path}/model_name", "w") as model_name:
-        model_name.write(modelName)
-
-
-    with open(f"{new_best_path}/metrics.json", "w") as metrics:
-        json.dump(best_step_metrics, metrics)
-
     print(f"\n\nBest model can be found at : {new_best_path} ")
     print(
         f"You should remove the following directories by using `rm -r results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-*`")

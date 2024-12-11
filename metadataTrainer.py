@@ -10,6 +10,7 @@ import re
 import os
 import json
 import glob
+import shutil
 import argparse
 import aquilign.preproc.metadataModel as metadataModel
 
@@ -66,6 +67,15 @@ class CustomTrainer(Trainer):
 # function which produces the train, which first gets texts, transforms them into tokens and labels, then trains model with the specific given arguments
 def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_steps,
                      keep_punct=True, freeze_metadata=False, device="cpu", train_name="train"):
+    
+    
+    new_best_path = f"tokenisation_training_results/results_{train_name}/best"
+    if os.path.isdir(new_best_path):
+        print(f"This script won't perform dangerous recursive dir deletions. "
+              f"Please remove tokenisation_training_results/results_{train_name}/best and relaunch script. "
+              f"Exiting")
+        exit(0)
+    
     config = BertConfig.from_pretrained("google-bert/bert-base-multilingual-cased")
     config.num_labels = 3  # Exemple : 3 classes
     config.num_metadata_features = 5
@@ -197,7 +207,6 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     
 
 
-    new_best_path = f"tokenisation_training_results/results_{train_name}/best"
     try:
         os.mkdir("tokenisation_training_results/")
     except FileExistsError:

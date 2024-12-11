@@ -196,7 +196,8 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     # best_model_path = "results_bert-base-multilingual-cased/before_training/"
     
 
-    
+
+    new_best_path = f"tokenisation_training_results/results_{train_name}/best"
 
     # We perform evaluation by lang
     for lang, lines in eval_lines.items():
@@ -222,7 +223,6 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     # We move the best state dir name to "best"
     #### CONTINUER ICI
-    new_best_path = f"tokenisation_training_results/results_{train_name}/best"
     try:
         os.mkdir("tokenisation_training_results/")
     except FileExistsError:

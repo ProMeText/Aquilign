@@ -81,7 +81,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
                  "dev": "data/tests/it/it.txt"}
     
     datasets = {"train": "data/tokenisation/*/*train.txt",
-                "eval": "data/tokenisation/fr/*eval.txt",
+                "eval": "data/tokenisation/*/*eval.txt",
                 "dev": "data/tokenisation/*/*dev.txt"}
     
     
@@ -93,7 +93,6 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     print(training_files)
     train_lines = []
     dev_lines = []
-    eval_lines = []
     for file in training_files:
         print(file)
         with open(file, "r") as train_file:
@@ -109,15 +108,25 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
             if keep_punct is False:
                 dev_lines = [(utils.remove_punctuation(line), lang) for line, lang in dev_lines]
     
+    random.shuffle(train_lines)
+    random.shuffle(dev_lines)
+    
+
+    eval_lines = {}
     for file in eval_files:
         with open(file, "r") as eval_files:
             lang = file.split("/")[-2]
-            eval_lines.extend([(item.replace("\n", ""), lang) for item in eval_files.readlines()])
+            as_lines = [(item.replace("\n", ""), lang) for item in eval_files.readlines()]
+            try:
+                eval_lines[lang].extend(as_lines)
+            except KeyError:
+                eval_lines[lang] = as_lines
             if keep_punct is False:
-                dev_lines = [(utils.remove_punctuation(line), lang) for line, lang in eval_lines]
-    random.shuffle(train_lines)
-    random.shuffle(dev_lines)
-    random.shuffle(eval_lines)
+                eval_lines = [(utils.remove_punctuation(line), lang) for line, lang in eval_lines]
+        random.shuffle(eval_lines[lang])
+        
+    # We create full eval corpus too
+    full_eval_corpus = [item for sublist in eval_lines.values() for item in sublist]
     
     
     # Train corpus
@@ -133,19 +142,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     else:
         name_of_model = modelName
 
-    # training arguments
-    # num train epochs, logging_steps and batch_size should be provided
-    # evaluation is done by epoch and the best model of each one is stored in a folder "results_+name"
-
-    # # Define DataLoaderConfiguration
-    # dataloader_config = DataLoaderConfiguration(
-    #     dispatch_batches=False,  # Each process fetches its own batch
-    #     split_batches=True  # Split fetched batches across processes
-    # )
-    # 
-    # # Initialize Accelerator with DataLoaderConfiguration
-    # accelerator = Accelerator(dataloader_config=dataloader_config)
-    # 
+    
     training_args = TrainingArguments(
         output_dir=f"results_{name_of_model}/epoch{num_train_epochs}_bs{batch_size}",
         num_train_epochs=num_train_epochs,
@@ -174,6 +171,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
         compute_metrics=trainer_functions.compute_metrics#,
         #callbacks=[save_callback]
     )
+    # And then a global evaluation
 
     # fine-tune the model
     print("Starting training")
@@ -196,10 +194,31 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     
     # Ici il faut faire plusieurs tests différents.
     # best_model_path = "results_bert-base-multilingual-cased/before_training/"
-    eval_results = evaluation.run_eval(data=eval_lines,
+    
+
+    
+
+    # We perform evaluation by lang
+    for lang, lines in eval_lines.items():
+        eval_results = evaluation.run_eval(data=lines,
+                                           model_path=best_model_path,
+                                           tokenizer_name=tokenizer.name_or_path,
+                                           verbose=False,
+                                           lang=lang)
+
+        with open(f"{new_best_path}/eval_{lang}.txt", "w") as evaluation_results:
+            evaluation_results.write(eval_results)
+
+    # Full dataset evaluation
+    eval_results = evaluation.run_eval(data=full_eval_corpus,
                                        model_path=best_model_path,
                                        tokenizer_name=tokenizer.name_or_path,
                                        verbose=False)
+
+    with open(f"{new_best_path}/eval.txt", "w") as evaluation_results:
+        evaluation_results.write(eval_results)
+    
+
 
     # We move the best state dir name to "best"
     #### CONTINUER ICI
@@ -221,8 +240,6 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     with open(f"{new_best_path}/model_name", "w") as model_name:
         model_name.write(modelName)
 
-    with open(f"{new_best_path}/eval.txt", "w") as evaluation_results:
-        evaluation_results.write(eval_results)
 
     with open(f"{new_best_path}/metrics.json", "w") as metrics:
         json.dump(best_step_metrics, metrics)

@@ -72,7 +72,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     new_best_path = f"tokenisation_training_results/results_{train_name}/best"
     if os.path.isdir(new_best_path):
         print(f"This script won't perform dangerous recursive dir deletions. "
-              f"Please remove tokenisation_training_results/results_{train_name}/best and relaunch script. "
+              f"Please remove tokenisation_training_results/results_{train_name}/best (target dir of training) and relaunch script. "
               f"Exiting")
         exit(0)
     
@@ -216,10 +216,6 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     except FileExistsError:
         pass
 
-    try:
-        os.rmdir(new_best_path)
-    except FileNotFoundError:
-        pass
     os.rename(best_model_path, new_best_path)
 
     with open(f"{new_best_path}/model_name", "w") as model_name:

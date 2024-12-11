@@ -225,7 +225,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
     # We perform evaluation by lang
     for lang, lines in eval_lines.items():
         eval_results = evaluation.run_eval(data=lines,
-                                           model_path=best_model_path,
+                                           model_path=new_best_path,
                                            tokenizer_name=tokenizer.name_or_path,
                                            verbose=False,
                                            lang=lang)

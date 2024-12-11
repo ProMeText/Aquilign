@@ -227,7 +227,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
 
     
     # Let's instantiate the tokenizer and model.
-    tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=10)
+    tokenizer = BertTokenizer.from_pretrained(tokenizer.name_or_path, max_length=10)
     new_config = BertConfig.from_pretrained(new_best_path)
     model_to_evaluate = metadataModel.BertWithMetadata.from_pretrained(new_best_path, config=new_config)
     # We perform evaluation by lang

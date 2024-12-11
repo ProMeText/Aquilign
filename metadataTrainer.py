@@ -226,22 +226,25 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
         json.dump(best_step_metrics, metrics)
 
     
-
+    # Let's instantiate the tokenizer and model.
+    tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=10)
+    new_config = BertConfig.from_pretrained(new_best_path)
+    model_to_evaluate = metadataModel.BertWithMetadata.from_pretrained(new_best_path, config=new_config)
     # We perform evaluation by lang
     for lang, lines in eval_lines.items():
         eval_results = evaluation.run_eval(data=lines,
-                                           model_path=new_best_path,
-                                           tokenizer_name=tokenizer.name_or_path,
+                                           model=model_to_evaluate,
+                                           tokenizer=tokenizer,
                                            verbose=False,
-                                           lang=lang)
+                                           corpus_lang=lang)
 
         with open(f"{new_best_path}/eval_{lang}.txt", "w") as evaluation_results:
             evaluation_results.write(eval_results)
 
     # Full dataset evaluation
     eval_results = evaluation.run_eval(data=full_eval_corpus,
-                                       model_path=new_best_path,
-                                       tokenizer_name=tokenizer.name_or_path,
+                                       model=model_to_evaluate,
+                                       tokenizer=tokenizer,
                                        verbose=False)
 
     with open(f"{new_best_path}/eval.txt", "w") as evaluation_results:

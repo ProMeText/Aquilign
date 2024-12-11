@@ -101,7 +101,7 @@ def get_correspondence(sent, tokenizer, delimiter):
 def unicode_normalise(string:str) -> str:
     return unicodedata.normalize("NFC", string)
 
-def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter="£", standalone=False, remove_punctuation=False, corpus_lang=None):
+def run_eval(data:list|str, model, tokenizer, verbose=False, delimiter="£", standalone=False, remove_punctuation=False, corpus_lang=None):
     # TODO: il faut une évaluation générale, et une évaluation par langue. 
     if standalone:
         with open(data, "r") as input_file:
@@ -115,10 +115,6 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
     
     all_preds, all_tgts = [], []
     print("Tok.")
-    tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=10)
-    print(f"Init: {model_path}")
-    new_config = BertConfig.from_pretrained(model_path)
-    new_model = metadataModel.BertWithMetadata.from_pretrained(model_path, config=new_config)
     # get the path of the default tokenizer
     texts, labels, tokenized_text = utils.convertToWordsSentencesAndLabels(corpus_as_list)
     assert len(texts) == len(labels),  "Lists mismatch"

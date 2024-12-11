@@ -231,7 +231,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
         lang = "full"
     print(f"Results for {lang} corpus:")
     print(tabulate(zipped_results, headers=['', 'Synt (None, Delim.)', 'Bert (None, Delim., Pad.)'], tablefmt='orgtbl'))
-    return tabulate(zipped_results, headers=['', 'Synt (None, Delim.)', 'Bert (None, Delim., Pad.)'], tablefmt='orgtbl')
+    return f"\n\nLang: {lang}\n" + tabulate(zipped_results, headers=['', 'Synt (None, Delim.)', 'Bert (None, Delim., Pad.)'], tablefmt='orgtbl')
         
 
 

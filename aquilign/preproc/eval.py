@@ -2,8 +2,9 @@ import aquilign.preproc.tok_trainer_functions as functions
 import aquilign.preproc.syntactic_tokenization as SyntacticTok
 import aquilign.preproc.create_train_data as FormatData
 import aquilign.preproc.utils as utils
+import aquilign.preproc.metadataModel as metadataModel
 import sys
-from transformers import BertTokenizer, AutoModelForTokenClassification, pipeline
+from transformers import BertTokenizer, AutoModelForTokenClassification, pipeline, BertConfig
 import re
 import torch
 import numpy as np
@@ -100,20 +101,20 @@ def get_correspondence(sent, tokenizer, delimiter):
 def unicode_normalise(string:str) -> str:
     return unicodedata.normalize("NFC", string)
 
-def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter="£", standalone=False, remove_punctuation=False, lang=None):
+def run_eval(data:list|str, model, tokenizer, verbose=False, delimiter="£", standalone=False, remove_punctuation=False, corpus_lang=None):
+    # TODO: il faut une évaluation générale, et une évaluation par langue. 
     if standalone:
         with open(data, "r") as input_file:
             corpus_as_list = [unicode_normalise(item.replace("\n", "")) for item in input_file.readlines()]
         lang = data.split("/")[-2]
     else:
-        corpus_as_list = [unicode_normalise(item) for item in data]
+        corpus_as_list = [(unicode_normalise(item), lang) for item, lang in data]
     
     if remove_punctuation:
-        corpus_as_list = [utils.remove_punctuation(item) for item in corpus_as_list]
+        corpus_as_list = [(utils.remove_punctuation(item), lang) for item in corpus_as_list]
     
     all_preds, all_tgts = [], []
-    tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=10)
-    new_model = AutoModelForTokenClassification.from_pretrained(model_path, num_labels=3)
+    print("Tok.")
     # get the path of the default tokenizer
     texts, labels, tokenized_text = utils.convertToWordsSentencesAndLabels(corpus_as_list)
     assert len(texts) == len(labels),  "Lists mismatch"
@@ -125,6 +126,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
         if verbose:
             print("---\nSYNTtok New example")
             print(f"Example:   {example}")
+        lang = "fr"
         tokenized_text = SyntacticTok.syntactic_tokenization(input_file=None, 
                                                         standalone=False, 
                                                         text=example,
@@ -165,18 +167,25 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
     # Second, model evaluation
     print("Performing bert-based tokenization evaluation")
     gt_toks_and_labels = utils.convertToSubWordsSentencesAndLabels(corpus_as_list, tokenizer=tokenizer, delimiter=delimiter)
-    for txt_example, gt in zip(corpus_as_list, gt_toks_and_labels):
+    for (txt_example, lang), gt in zip(corpus_as_list, gt_toks_and_labels):
         # We get only the text
         example = txt_example.replace(delimiter, "")
         splitted_example = utils.tokenize_words(example, delimiter)
         # BERT-tok
-        enco_nt_tok = tokenizer.encode(example, truncation=True, padding=True, return_tensors="pt")
+        enco_nt_tok = tokenizer(example, truncation=True, padding=True, return_tensors="pt")
+        metadata_language_mapping = {"es": 1, "fr": 2, "pt": 3, "it": 4, "la": 0}
+        encoded_lang = metadata_language_mapping[lang]
+        enco_nt_tok["metadata"] = torch.tensor([encoded_lang])
         # get the predictions from the model
-        predictions = new_model(enco_nt_tok)
+        predictions = model(input_ids=enco_nt_tok['input_ids'], 
+                                attention_mask=enco_nt_tok['attention_mask'], 
+                                metadata=enco_nt_tok['metadata'])
         
-        preds = predictions[0]
+        #preds = predictions[0]
+        #print(predictions)
+        #print(preds)
         # apply the functions
-        bert_labels = get_labels_from_preds(preds)
+        bert_labels = get_labels_from_preds(predictions)
         
         # On crée la table de correspondance entre les words et les subwords
         human_to_bert, _ = get_correspondence(example, tokenizer, delimiter)
@@ -214,8 +223,11 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
     bert_results = get_metrics(all_preds, all_tgts)
     
     zipped_results = list(zip(['Accuracy', 'Precision', 'Recall', 'F1-score'], synt_results, bert_results))
+    if not corpus_lang:
+        corpus_lang = "full"
+    print(f"Results for {corpus_lang} corpus:")
     print(tabulate(zipped_results, headers=['', 'Synt (None, Delim.)', 'Bert (None, Delim., Pad.)'], tablefmt='orgtbl'))
-    return tabulate(zipped_results, headers=['', 'Synt (None, Delim.)', 'Bert (None, Delim., Pad.)'], tablefmt='orgtbl')
+    return f"\n\nLang: {corpus_lang}\n" + tabulate(zipped_results, headers=['', 'Synt (None, Delim.)', 'Bert (None, Delim., Pad.)'], tablefmt='orgtbl')
         
 
 

@@ -118,8 +118,8 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
             if keep_punct is False:
                 dev_lines = [(utils.remove_punctuation(line), lang) for line, lang in dev_lines]
     
-    random.shuffle(train_lines)
-    random.shuffle(dev_lines)
+    # random.shuffle(train_lines)
+    # random.shuffle(dev_lines)
     
 
     eval_lines = {}
@@ -133,7 +133,7 @@ def training_trainer(modelName, datasets, num_train_epochs, batch_size, logging_
                 eval_lines[lang] = as_lines
             if keep_punct is False:
                 eval_lines = [(utils.remove_punctuation(line), lang) for line, lang in eval_lines]
-        random.shuffle(eval_lines[lang])
+        # random.shuffle(eval_lines[lang])
         
     # We create full eval corpus too
     full_eval_corpus = [item for sublist in eval_lines.values() for item in sublist]

@@ -33,7 +33,7 @@ class BertWithMetadata(PreTrainedModel):
         else:
             metadata_embed = self.metadata_embedding(metadata)
             # Fusionner la sortie de BERT et l'embed des métadonnées
-            combined_output = cls_output + metadata_embed  # Fusionner par addition, vous pouvez aussi essayer la concaténation
+            combined_output = cls_output + metadata_embed  # Fusionner par addition
             # Classifier
             
             logits = self.classifier(combined_output)

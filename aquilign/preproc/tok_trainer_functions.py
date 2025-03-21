@@ -20,16 +20,25 @@ def get_index_correspondence(sent, tokenizer):
     return correspondence
 
 
-def align_labels(corresp, orig_labels):
+def align_labels(corresp, orig_labels, text):
 # function to align labels between the tokens in input and the tokenized tokens
     new_labels = [0 for r in range(corresp[-1][1])]
     for index, label in enumerate(orig_labels):
         # label which is interesting : 1
         if label == 1:
-            if len(new_labels) == corresp[index][1]:
-                new_labels[(corresp[index][1]) - 1] = 1
+            try:
+                if len(new_labels) == corresp[index][1]:
+                    new_labels[(corresp[index][1]) - 1] = 1
+            except IndexError:
+                print(new_labels)
+                print("Error.")
+                exit(0)
             else:
-                new_labels[(corresp[index][1])] = 1
+                try:
+                    new_labels[(corresp[index][1])] = 1
+                except IndexError:
+                    print(f"Error with example:\n {text}.\n"
+                          f"Exiting.")
         else:
             pass
     # for special tokens (automatically added by BERT tokenizer), value of 2

@@ -1,6 +1,32 @@
 import sys
 import random
 import re
+import random
+
+def dice_roll():
+    if random.random() < .5:
+        result = False
+    else:
+        result = True
+    return result
+
+
+def add_noise(corpus:list):
+    """
+    This function randomly adds noise to a corpus. It removes the punctuation for half of it
+    """
+    punctuation_regexp = re.compile(r'[\.,:;?\(\)!]')
+    modified_examples = []
+    for example in corpus:
+        example_lenght = len(example.split())
+        if example_lenght > 200:
+            print(example_lenght)
+            print(example)
+        if dice_roll():
+            example = re.sub(punctuation_regexp, "", example)
+            modified_examples.append(example) 
+    return modified_examples
+        
 
 def main(in_file, splits, extension):
     random.seed(1234)
@@ -17,6 +43,11 @@ def main(in_file, splits, extension):
             dev_list.append(example)
         else:
             test_list.append(example)
+
+    #train_list.extend(add_noise(train_list))
+    #dev_list.extend(add_noise(dev_list))
+    #test_list.extend(add_noise(test_list))
+    #[random.shuffle(the_list) for the_list in [train_list, dev_list, test_list]]
     
     with open(in_file.replace(f".{extension}", f".train.{extension}"), "w") as output_train:
         output_train.write("\n".join(train_list))

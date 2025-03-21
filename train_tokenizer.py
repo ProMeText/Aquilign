@@ -35,7 +35,19 @@ class SaveEveryNEpochsCallback(TrainerCallback):
 # logging_steps : the number of logging steps (ex : 50)
 
 # function which produces the train, which first gets texts, transforms them into tokens and labels, then trains model with the specific given arguments
-def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps, use_cpu, bf_16, out_name, save_every, keep_punct=True):
+def training_trainer(modelName, 
+                     train_dataset, 
+                     dev_dataset, 
+                     eval_dataset, 
+                     num_train_epochs, 
+                     batch_size, 
+                     logging_steps, 
+                     use_cpu, 
+                     bf_16, 
+                     out_name, 
+                     save_every, 
+                     early_stopping,
+                     keep_punct=True):
     model = AutoModelForTokenClassification.from_pretrained(modelName, num_labels=3)
     tokenizer = BertTokenizer.from_pretrained(modelName, max_length=10)
     
@@ -52,6 +64,7 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
     with open(eval_dataset, "r") as eval_files:
         eval_lines = [item.replace("\n", "") for item in eval_files.readlines()]
     eval_data_lang = eval_dataset.split("/")[-2]
+    print(eval_data_lang)
     
     # Train corpus
     train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=tokenizer, delimiter="£")
@@ -92,7 +105,8 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
         train_dataset=train_dataset,
         eval_dataset=dev_dataset,
         compute_metrics=trainer_functions.compute_metrics,
-        callbacks=[SaveEveryNEpochsCallback(save_every=save_every), EarlyStoppingCallback(early_stopping_patience=8)]
+        callbacks=[SaveEveryNEpochsCallback(save_every=save_every), 
+                   EarlyStoppingCallback(early_stopping_patience=early_stopping)]
 
     )
 
@@ -111,9 +125,17 @@ def training_trainer(modelName, train_dataset, dev_dataset, eval_dataset, num_tr
     best_precision_step, best_step_metrics = utils.get_best_step(trainer.state.log_history)
 
     # On s'assure de prendre le step le plus proche
-    best_precision_step = best_precision_step - best_precision_step % save_every
+    all_checkpoints = glob.glob(f"results_{out_name}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-*")
+    as_ints = [int(checkpoint.replace(f"results_{out_name}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-", "")) 
+               for checkpoint in all_checkpoints]
+    
+    all_diffs = [abs(best_precision_step - checkpoint) for checkpoint in as_ints]
+    min_index = all_diffs.index(min(all_diffs))
+    best_model_path = all_checkpoints[min_index]
+    
+    # best_precision_step = best_precision_step - best_precision_step % save_every
 
-    best_model_path = f"results_{out_name}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{best_precision_step}"
+    # best_model_path = f"results_{out_name}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{nearest_model}"
     print(f"Best model path according to precision: {best_model_path}")
     print(f"Full metrics: {best_step_metrics}")
     
@@ -169,6 +191,7 @@ if __name__ == '__main__':
     parser.add_argument("-b", "--batch_size", default=32,
                         help="Batch size.")
     parser.add_argument("-l", "--logging_steps", default=500)
+    parser.add_argument("-es", "--early_stopping", default=8)
     parser.add_argument("-dev", "--device", default="cpu")
     parser.add_argument("-s", "--save_every", default=1)
     parser.add_argument("-bf16", "--bfloat16", action=argparse.BooleanOptionalAction, default=False)
@@ -178,6 +201,7 @@ if __name__ == '__main__':
     save_every = int(args.save_every)
     dev_dataset = args.dev_dataset
     eval_dataset = args.eval_dataset
+    early_stopping = int(args.early_stopping)
     num_train_epochs = int(args.epochs)
     batch_size = int(args.batch_size)
     logging_steps = int(args.logging_steps)
@@ -187,5 +211,16 @@ if __name__ == '__main__':
     bf_16 = args.bfloat16
     use_cpu = True if device == "cpu" else False
 
-    training_trainer(model, train_dataset, dev_dataset, eval_dataset, num_train_epochs, batch_size, logging_steps, use_cpu, bf_16, out_name, save_every)
+    training_trainer(model, 
+                     train_dataset, 
+                     dev_dataset, 
+                     eval_dataset, 
+                     num_train_epochs, 
+                     batch_size, 
+                     logging_steps, 
+                     use_cpu, 
+                     bf_16, 
+                     out_name, 
+                     save_every,
+                     early_stopping)
 

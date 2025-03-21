@@ -136,6 +136,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
             print(f"Tokenized text: {tokenized_text}")
             print(f"Formatted: {formatted_preds}")
             print(f"As labels: {preds_to_labels}")
+            print(list(zip(preds_to_labels[1][0], preds_to_labels[2][0])))
         
         # Si la fonction words_to_labels ne renvoie que des listes vides, c'est que la tokénisation n'a rien donné.
         if preds_to_labels == ([], [], []):
@@ -157,7 +158,10 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
 
         assert len(predicted) == len(label), f"Length mismatch, please check the regular expressions don't split any word:\n" \
                                              f"{example}\n" \
-                                             f"(label: {len(label)} and predicted: {len(predicted)})"
+                                             f"(label: {len(label)} and predicted: {len(predicted)})" \
+                                             f"Labels: {label}" \
+                                             f"Preds: {predicted}"
+            
     synt_results = get_metrics(syntactic_preds, all_syntactic_gt)
     print(synt_results)
     

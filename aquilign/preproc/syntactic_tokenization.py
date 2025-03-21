@@ -30,6 +30,8 @@ def syntactic_tokenization(input_file:str,
             codelang = "fr"
         if codelang == "jv":
             codelang = "it"
+    elif lang == "multilingual":
+        codelang = "la"
     else:
         codelang = lang
         
@@ -47,9 +49,9 @@ def syntactic_tokenization(input_file:str,
     multiple_tokens_punct = "|".join(multiple_tokens_punctuation)
     punctuation_subregex = f"{multiple_tokens_punct}|[{single_token_punct}]"
     if use_punctuation:
-        tokens_subregex = "(" + " | ".join(dictionary[codelang]['word_delimiters']) + " |" + punctuation_subregex + ")"
+        tokens_subregex = "( " + " | ".join(dictionary[codelang]['word_delimiters']) + " |" + punctuation_subregex + " )"
     else:
-        tokens_subregex = "(" + " | ".join(dictionary[codelang]['word_delimiters']) + ")"
+        tokens_subregex = "( " + " | ".join(dictionary[codelang]['word_delimiters']) + " )"
     delimiter = re.compile(tokens_subregex)
     search = re.search(delimiter, text)
     tokenized_text = []

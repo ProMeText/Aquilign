@@ -1,0 +1,1562 @@
+---
+New pair
+Source sentence: et il regarde de lautrepart de leaue 
+Target sentence: Ed elli isguarda d’altra parte dell’acqua,
+[0] et===Ed [0]
+[2] regarde===isguarda [2]
+[3] de===d’altra [3]
+[4] lautrepart===d’altra [3]
+---
+New pair
+Source sentence: Et il regarde de lautre part de laigue 
+Target sentence: Ed elli isguarda d’altra parte dell’acqua,
+[0] Et===Ed [0]
+[2] regarde===isguarda [2]
+[3] de===d’altra [3]
+[4] lautre===d’altra [3]
+[5] part===parte [4]
+[6] de===dell’acqua, [5]
+---
+New pair
+Source sentence: et il regarde de lautrepart de leaue 
+Target sentence: Sy regarde de laultre part de leaue 
+[1] il===Sy [0]
+[2] regarde===regarde [1]
+[3] de===de [2]
+[4] lautrepart===laultre [3]
+[4] lautrepart===part [4]
+[5] de===de [5]
+[6] leaue===leaue [6]
+---
+New pair
+Source sentence: Et il regarde de lautre part de laigue 
+Target sentence: Sy regarde de laultre part de leaue 
+[2] regarde===regarde [1]
+[3] de===de [2]
+[4] lautre===laultre [3]
+[5] part===part [4]
+[6] de===de [5]
+[7] laigue===leaue [6]
+---
+New pair
+Source sentence: et lors regarde il dautre part de leue. 
+Target sentence: Et il regarde de lautre part de laigue 
+[0] et===Et [0]
+[2] regarde===regarde [2]
+[3] il===il [1]
+[4] dautre===lautre [4]
+[5] part===part [5]
+[6] de===de [6]
+[7] leue.===laigue [7]
+---
+New pair
+Source sentence: et lors regarde il dautre part de leue. 
+Target sentence: Ed elli isguarda d’altra parte dell’acqua,
+[0] et===Ed [0]
+[2] regarde===isguarda [2]
+[4] dautre===d’altra [3]
+[5] part===parte [4]
+[6] de===dell’acqua, [5]
+[7] leue.===dell’acqua, [5]
+---
+New pair
+Source sentence: Et il regarde d’autre part de l’eve, 
+Target sentence: et lors regarde il dautre part de leue. 
+[0] Et===et [0]
+[1] il===il [3]
+[2] regarde===regarde [2]
+[3] d’autre===dautre [4]
+[4] part===part [5]
+[5] de===de [6]
+[6] l’eve,===leue. [7]
+---
+New pair
+Source sentence: et lors regarde il dautre part de leue. 
+Target sentence: Sy regarde de laultre part de leaue 
+[2] regarde===regarde [1]
+[4] dautre===laultre [3]
+[5] part===part [4]
+[6] de===de [5]
+[7] leue.===leaue [6]
+---
+New pair
+Source sentence: et il regarde de lautrepart de leaue 
+Target sentence: e cato dela otra parte Del agua 
+[0] et===e [0]
+[2] regarde===cato [1]
+[3] de===dela [2]
+[4] lautrepart===otra [3]
+[4] lautrepart===parte [4]
+[5] de===Del [5]
+[6] leaue===agua [6]
+---
+New pair
+Source sentence: Et il regarde de lautre part de laigue 
+Target sentence: e cato dela otra parte Del agua 
+[0] Et===e [0]
+[2] regarde===cato [1]
+[3] de===dela [2]
+[5] part===parte [4]
+[6] de===Del [5]
+[7] laigue===agua [6]
+---
+New pair
+Source sentence: Sy regarde de laultre part de leaue 
+Target sentence: Ed elli isguarda d’altra parte dell’acqua,
+[0] Sy===Ed [0]
+[1] regarde===isguarda [2]
+[2] de===d’altra [3]
+[4] part===parte [4]
+[6] leaue===dell’acqua, [5]
+---
+New pair
+Source sentence: Et il regarde d’autre part de l’eve, 
+Target sentence: Et il regarde de lautre part de laigue 
+[0] Et===Et [0]
+[1] il===il [1]
+[2] regarde===regarde [2]
+[4] part===part [5]
+[5] de===de [6]
+[6] l’eve,===lautre [4]
+---
+New pair
+Source sentence: Et il regarde d’autre part de l’eve, 
+Target sentence: Ed elli isguarda d’altra parte dell’acqua,
+[0] Et===Ed [0]
+[2] regarde===isguarda [2]
+[3] d’autre===d’altra [3]
+[4] part===parte [4]
+[6] l’eve,===dell’acqua, [5]
+---
+New pair
+Source sentence: et lors regarde il dautre part de leue. 
+Target sentence: e cato dela otra parte Del agua 
+[0] et===e [0]
+[2] regarde===cato [1]
+[4] dautre===otra [3]
+[5] part===parte [4]
+[6] de===Del [5]
+[7] leue.===agua [6]
+---
+New pair
+Source sentence: Et il regarde d’autre part de l’eve, 
+Target sentence: Sy regarde de laultre part de leaue 
+[2] regarde===regarde [1]
+[4] part===part [4]
+[5] de===de [2]
+---
+New pair
+Source sentence: e cato dela otra parte Del agua 
+Target sentence: Ed elli isguarda d’altra parte dell’acqua,
+[0] e===Ed [0]
+[2] dela===d’altra [3]
+[3] otra===d’altra [3]
+[4] parte===parte [4]
+[5] Del===dell’acqua, [5]
+[6] agua===dell’acqua, [5]
+---
+New pair
+Source sentence: Sy regarde de laultre part de leaue 
+Target sentence: e cato dela otra parte Del agua 
+[1] regarde===cato [1]
+[2] de===dela [2]
+[4] part===parte [4]
+[5] de===Del [5]
+[6] leaue===agua [6]
+---
+New pair
+Source sentence: Et il regarde de lautre part de laigue 
+Target sentence: et il regarde de lautrepart de leaue 
+[0] Et===et [0]
+[1] il===il [1]
+[2] regarde===regarde [2]
+[3] de===de [3]
+[4] lautre===lautrepart [4]
+[5] part===lautrepart [4]
+[6] de===de [5]
+[7] laigue===leaue [6]
+---
+New pair
+Source sentence: Et il regarde d’autre part de l’eve, 
+Target sentence: e cato dela otra parte Del agua 
+[0] Et===e [0]
+[3] d’autre===dela [2]
+[3] d’autre===otra [3]
+[4] part===parte [4]
+[5] de===Del [5]
+[6] l’eve,===cato [1]
+[6] l’eve,===agua [6]
+---
+New pair
+Source sentence: et lors regarde il dautre part de leue. 
+Target sentence: et il regarde de lautrepart de leaue 
+[0] et===et [0]
+[2] regarde===regarde [2]
+[3] il===il [1]
+[4] dautre===lautrepart [4]
+[5] part===lautrepart [4]
+[6] de===de [5]
+[7] leue.===leaue [6]
+---
+New pair
+Source sentence: Et il regarde d’autre part de l’eve, 
+Target sentence: et il regarde de lautrepart de leaue 
+[0] Et===et [0]
+[1] il===il [1]
+[2] regarde===regarde [2]
+[4] part===lautrepart [4]
+[5] de===de [3]
+---
+New pair
+Source sentence: Si uoit .i. petit chastelet mout bien feant qui estoit clos de murs batilliez de toutes pars enuiron a la roonde Il esgarde Longuement le chastel
+Target sentence: si vide uno piccolo castello molto ben sedente, chiuso d’uno muro battagliato tutto intorno alla ritonda. eElli riguarda gran peza il castello, 
+[0] Si===si [0]
+[2] .i.===ritonda. [15]
+[2] .i.===eElli [16]
+[3] petit===piccolo [3]
+[6] bien===ben [6]
+[7] feant===sedente, [7]
+[10] clos===chiuso [8]
+[11] de===d’uno [9]
+[12] murs===muro [10]
+[19] la===alla [14]
+[20] roonde===ritonda. [15]
+[23] Longuement===peza [19]
+[24] le===il [20]
+[25] chastel===castello, [21]
+---
+New pair
+Source sentence: si uoit ung petit chastel moult bien seant clos de mur bataille tout entour a la ronde . Il regarde grant piece le chastel 
+Target sentence: et uoit ung beau chastel monlt bien seant et bien cloz de muraille tout entour. Il regarde le chastel grant pieche 
+[0] si===et [0]
+[1] uoit===uoit [1]
+[2] ung===ung [2]
+[3] petit===beau [3]
+[4] chastel===chastel [4]
+[5] moult===monlt [5]
+[6] bien===bien [6]
+[7] seant===seant [7]
+[8] clos===cloz [10]
+[9] de===de [11]
+[10] mur===muraille [12]
+[12] tout===tout [13]
+[13] entour===entour. [14]
+[17] .===entour. [14]
+[18] Il===Il [15]
+[19] regarde===regarde [16]
+[20] grant===grant [19]
+[22] le===le [17]
+[23] chastel===chastel [18]
+---
+New pair
+Source sentence: si voit I. petit chastel molt bien seant, clos de mur bateillié tot entor a la roonde. ll regarde grant piece le chastel 
+Target sentence: et uoit ung beau chastel monlt bien seant et bien cloz de muraille tout entour. Il regarde le chastel grant pieche 
+[0] si===et [0]
+[3] petit===beau [3]
+[4] chastel===chastel [4]
+[6] bien===bien [6]
+[7] seant,===seant [7]
+[7] seant,===et [8]
+[8] clos===cloz [10]
+[9] de===de [11]
+[10] mur===muraille [12]
+[11] bateillié===cloz [10]
+[12] tot===tout [13]
+[13] entor===entour. [14]
+[16] roonde.===muraille [12]
+[16] roonde.===entour. [14]
+[18] regarde===regarde [16]
+[19] grant===grant [19]
+[20] piece===pieche [20]
+[21] le===le [17]
+[22] chastel===chastel [18]
+---
+New pair
+Source sentence: e vio vn castillo muy bien asentado çercado de muy buen muro todo enderredor e el cato gran pieça el castillo 
+Target sentence: si vide uno piccolo castello molto ben sedente, chiuso d’uno muro battagliato tutto intorno alla ritonda. eElli riguarda gran peza il castello, 
+[0] e===si [0]
+[1] vio===vide [1]
+[3] castillo===castello [4]
+[4] muy===molto [5]
+[5] bien===ben [6]
+[6] asentado===sedente, [7]
+[7] çercado===chiuso [8]
+[8] de===d’uno [9]
+[10] buen===d’uno [9]
+[11] muro===muro [10]
+[12] todo===tutto [12]
+[13] enderredor===ritonda. [15]
+[16] cato===peza [19]
+[17] gran===gran [18]
+[18] pieça===peza [19]
+[19] el===il [20]
+[20] castillo===castello, [21]
+---
+New pair
+Source sentence: et uoit ung beau chastel monlt bien seant et bien cloz de muraille tout entour. Il regarde le chastel grant pieche 
+Target sentence: e vio vn castillo muy bien asentado çercado de muy buen muro todo enderredor e el cato gran pieça el castillo 
+[0] et===e [0]
+[1] uoit===vio [1]
+[1] uoit===çercado [7]
+[3] beau===buen [10]
+[4] chastel===castillo [3]
+[6] bien===bien [5]
+[7] seant===cato [16]
+[10] cloz===çercado [7]
+[11] de===de [8]
+[12] muraille===muro [11]
+[13] tout===todo [12]
+[14] entour.===enderredor [13]
+[17] le===el [19]
+[18] chastel===castillo [20]
+[20] pieche===pieça [18]
+---
+New pair
+Source sentence: si y uoit. j. castel moult bien seant. clos de mur bateillie tout entor a la reonde. Il regarde le chastel grant piece 
+Target sentence: e vio vn castillo muy bien asentado çercado de muy buen muro todo enderredor e el cato gran pieça el castillo 
+[0] si===e [0]
+[3] j.===vn [2]
+[4] castel===castillo [3]
+[6] bien===bien [5]
+[9] de===de [8]
+[10] mur===muro [11]
+[11] bateillie===asentado [6]
+[12] tout===todo [12]
+[13] entor===enderredor [13]
+[13] entor===cato [16]
+[14] a===e [14]
+[18] regarde===pieça [18]
+[19] le===el [19]
+[20] chastel===castillo [20]
+[21] grant===gran [17]
+---
+New pair
+Source sentence: si voit I. petit chastel molt bien seant, clos de mur bateillié tot entor a la roonde. ll regarde grant piece le chastel 
+Target sentence: si y uoit. j. castel moult bien seant. clos de mur bateillie tout entor a la reonde. Il regarde le chastel grant piece 
+[0] si===si [0]
+[1] voit===uoit. [2]
+[2] I.===j. [3]
+[6] bien===bien [6]
+[7] seant,===seant. [7]
+[8] clos===clos [8]
+[9] de===de [9]
+[10] mur===mur [10]
+[11] bateillié===bateillie [11]
+[12] tot===tout [12]
+[13] entor===entor [13]
+[14] a===a [14]
+[15] la===la [15]
+[16] roonde.===seant. [7]
+[16] roonde.===reonde. [16]
+[17] ll===Il [17]
+[18] regarde===regarde [18]
+[19] grant===grant [21]
+[20] piece===piece [22]
+[21] le===le [19]
+[22] chastel===chastel [20]
+---
+New pair
+Source sentence: Si uoit .i. petit chastelet mout bien feant qui estoit clos de murs batilliez de toutes pars enuiron a la roonde Il esgarde Longuement le chastel
+Target sentence: e vio vn castillo muy bien asentado çercado de muy buen muro todo enderredor e el cato gran pieça el castillo 
+[0] Si===e [0]
+[1] uoit===çercado [7]
+[2] .i.===vn [2]
+[6] bien===bien [5]
+[7] feant===asentado [6]
+[10] clos===çercado [7]
+[11] de===de [8]
+[12] murs===muro [11]
+[13] batilliez===pieça [18]
+[15] toutes===todo [12]
+[17] enuiron===cato [16]
+[18] a===e [14]
+[19] la===el [15]
+[20] roonde===cato [16]
+[24] le===el [19]
+[25] chastel===castillo [20]
+---
+New pair
+Source sentence: si voit I. petit chastel molt bien seant, clos de mur bateillié tot entor a la roonde. ll regarde grant piece le chastel 
+Target sentence: si uoit ung petit chastel moult bien seant clos de mur bataille tout entour a la ronde . Il regarde grant piece le chastel 
+[0] si===si [0]
+[1] voit===uoit [1]
+[3] petit===petit [3]
+[4] chastel===chastel [4]
+[6] bien===bien [6]
+[7] seant,===seant [7]
+[8] clos===clos [8]
+[9] de===de [9]
+[10] mur===mur [10]
+[12] tot===tout [12]
+[13] entor===entour [13]
+[14] a===a [14]
+[15] la===la [15]
+[16] roonde.===ronde [16]
+[16] roonde.===. [17]
+[17] ll===Il [18]
+[18] regarde===regarde [19]
+[19] grant===grant [20]
+[20] piece===piece [21]
+[21] le===le [22]
+[22] chastel===chastel [23]
+---
+New pair
+Source sentence: si uoit ung petit chastel moult bien seant clos de mur bataille tout entour a la ronde . Il regarde grant piece le chastel 
+Target sentence: si vide uno piccolo castello molto ben sedente, chiuso d’uno muro battagliato tutto intorno alla ritonda. eElli riguarda gran peza il castello, 
+[0] si===si [0]
+[1] uoit===vide [1]
+[2] ung===uno [2]
+[3] petit===piccolo [3]
+[4] chastel===castello [4]
+[7] seant===battagliato [11]
+[8] clos===chiuso [8]
+[9] de===d’uno [9]
+[10] mur===muro [10]
+[11] bataille===battagliato [11]
+[12] tout===tutto [12]
+[15] la===alla [14]
+[16] ronde===ritonda. [15]
+[17] .===ritonda. [15]
+[19] regarde===riguarda [17]
+[20] grant===gran [18]
+[21] piece===peza [19]
+[22] le===il [20]
+[23] chastel===castello, [21]
+---
+New pair
+Source sentence: si voit I. petit chastel molt bien seant, clos de mur bateillié tot entor a la roonde. ll regarde grant piece le chastel 
+Target sentence: si vide uno piccolo castello molto ben sedente, chiuso d’uno muro battagliato tutto intorno alla ritonda. eElli riguarda gran peza il castello, 
+[0] si===si [0]
+[1] voit===vide [1]
+[3] petit===piccolo [3]
+[4] chastel===castello [4]
+[5] molt===molto [5]
+[6] bien===ben [6]
+[7] seant,===sedente, [7]
+[7] seant,===battagliato [11]
+[8] clos===chiuso [8]
+[9] de===d’uno [9]
+[10] mur===muro [10]
+[11] bateillié===battagliato [11]
+[12] tot===tutto [12]
+[13] entor===intorno [13]
+[16] roonde.===ritonda. [15]
+[17] ll===eElli [16]
+[19] grant===gran [18]
+[21] le===il [20]
+[22] chastel===castello, [21]
+---
+New pair
+Source sentence: si y uoit. j. castel moult bien seant. clos de mur bateillie tout entor a la reonde. Il regarde le chastel grant piece 
+Target sentence: et uoit ung beau chastel monlt bien seant et bien cloz de muraille tout entour. Il regarde le chastel grant pieche 
+[0] si===et [0]
+[2] uoit.===uoit [1]
+[5] moult===monlt [5]
+[6] bien===bien [6]
+[7] seant.===seant [7]
+[8] clos===cloz [10]
+[9] de===de [11]
+[10] mur===muraille [12]
+[11] bateillie===muraille [12]
+[12] tout===tout [13]
+[13] entor===entour. [14]
+[16] reonde.===entour. [14]
+[17] Il===Il [15]
+[18] regarde===regarde [16]
+[19] le===le [17]
+[20] chastel===chastel [18]
+[21] grant===grant [19]
+[22] piece===pieche [20]
+---
+New pair
+Source sentence: Si uoit .i. petit chastelet mout bien feant qui estoit clos de murs batilliez de toutes pars enuiron a la roonde Il esgarde Longuement le chastel
+Target sentence: et uoit ung beau chastel monlt bien seant et bien cloz de muraille tout entour. Il regarde le chastel grant pieche 
+[0] Si===et [0]
+[1] uoit===uoit [1]
+[2] .i.===entour. [14]
+[3] petit===beau [3]
+[4] chastelet===chastel [4]
+[5] mout===monlt [5]
+[6] bien===bien [6]
+[7] feant===seant [7]
+[10] clos===cloz [10]
+[11] de===de [11]
+[12] murs===muraille [12]
+[13] batilliez===cloz [10]
+[20] roonde===muraille [12]
+[21] Il===Il [15]
+[24] le===le [17]
+[25] chastel===chastel [18]
+---
+New pair
+Source sentence: si voit I. petit chastel molt bien seant, clos de mur bateillié tot entor a la roonde. ll regarde grant piece le chastel 
+Target sentence: Si uoit .i. petit chastelet mout bien feant qui estoit clos de murs batilliez de toutes pars enuiron a la roonde Il esgarde Longuement le chastel
+[0] si===Si [0]
+[1] voit===uoit [1]
+[2] I.===.i. [2]
+[3] petit===petit [3]
+[4] chastel===chastelet [4]
+[6] bien===bien [6]
+[7] seant,===feant [7]
+[8] clos===clos [10]
+[9] de===de [11]
+[10] mur===murs [12]
+[11] bateillié===feant [7]
+[11] bateillié===batilliez [13]
+[12] tot===toutes [15]
+[13] entor===enuiron [17]
+[14] a===a [18]
+[15] la===la [19]
+[16] roonde.===.i. [2]
+[16] roonde.===roonde [20]
+[19] grant===pars [16]
+[20] piece===Longuement [23]
+[21] le===le [24]
+[22] chastel===chastel [25]
+---
+New pair
+Source sentence: Si uoit .i. petit chastelet mout bien feant qui estoit clos de murs batilliez de toutes pars enuiron a la roonde Il esgarde Longuement le chastel
+Target sentence: si y uoit. j. castel moult bien seant. clos de mur bateillie tout entor a la reonde. Il regarde le chastel grant piece 
+[0] Si===si [0]
+[1] uoit===uoit. [2]
+[2] .i.===uoit. [2]
+[2] .i.===j. [3]
+[4] chastelet===castel [4]
+[5] mout===moult [5]
+[6] bien===bien [6]
+[10] clos===clos [8]
+[11] de===de [9]
+[12] murs===mur [10]
+[13] batilliez===bateillie [11]
+[15] toutes===tout [12]
+[17] enuiron===entor [13]
+[18] a===a [14]
+[19] la===la [15]
+[20] roonde===reonde. [16]
+[21] Il===Il [17]
+[22] esgarde===piece [22]
+[24] le===le [19]
+[25] chastel===chastel [20]
+---
+New pair
+Source sentence: et uoit ung beau chastel monlt bien seant et bien cloz de muraille tout entour. Il regarde le chastel grant pieche 
+Target sentence: si vide uno piccolo castello molto ben sedente, chiuso d’uno muro battagliato tutto intorno alla ritonda. eElli riguarda gran peza il castello, 
+[0] et===si [0]
+[2] ung===uno [2]
+[3] beau===piccolo [3]
+[4] chastel===castello [4]
+[6] bien===ben [6]
+[7] seant===battagliato [11]
+[11] de===d’uno [9]
+[12] muraille===muro [10]
+[13] tout===tutto [12]
+[14] entour.===intorno [13]
+[14] entour.===ritonda. [15]
+[17] le===il [20]
+[18] chastel===castello, [21]
+[19] grant===gran [18]
+[20] pieche===peza [19]
+---
+New pair
+Source sentence: si y uoit. j. castel moult bien seant. clos de mur bateillie tout entor a la reonde. Il regarde le chastel grant piece 
+Target sentence: si uoit ung petit chastel moult bien seant clos de mur bataille tout entour a la ronde . Il regarde grant piece le chastel 
+[0] si===si [0]
+[2] uoit.===uoit [1]
+[5] moult===moult [5]
+[6] bien===bien [6]
+[7] seant.===seant [7]
+[8] clos===clos [8]
+[9] de===de [9]
+[10] mur===mur [10]
+[12] tout===tout [12]
+[13] entor===entour [13]
+[14] a===a [14]
+[15] la===la [15]
+[16] reonde.===ronde [16]
+[16] reonde.===. [17]
+[17] Il===Il [18]
+[18] regarde===regarde [19]
+[19] le===le [22]
+[20] chastel===chastel [23]
+[21] grant===grant [20]
+[22] piece===piece [21]
+---
+New pair
+Source sentence: si uoit ung petit chastel moult bien seant clos de mur bataille tout entour a la ronde . Il regarde grant piece le chastel 
+Target sentence: e vio vn castillo muy bien asentado çercado de muy buen muro todo enderredor e el cato gran pieça el castillo 
+[0] si===e [0]
+[1] uoit===vio [1]
+[1] uoit===çercado [7]
+[4] chastel===castillo [3]
+[6] bien===bien [5]
+[7] seant===vn [2]
+[8] clos===çercado [7]
+[9] de===de [8]
+[10] mur===muro [11]
+[12] tout===todo [12]
+[13] entour===enderredor [13]
+[14] a===e [14]
+[15] la===el [15]
+[20] grant===gran [17]
+[21] piece===pieça [18]
+[22] le===el [19]
+[23] chastel===castillo [20]
+---
+New pair
+Source sentence: Si uoit .i. petit chastelet mout bien feant qui estoit clos de murs batilliez de toutes pars enuiron a la roonde Il esgarde Longuement le chastel
+Target sentence: si uoit ung petit chastel moult bien seant clos de mur bataille tout entour a la ronde . Il regarde grant piece le chastel 
+[0] Si===si [0]
+[1] uoit===uoit [1]
+[3] petit===petit [3]
+[4] chastelet===chastel [4]
+[5] mout===moult [5]
+[6] bien===bien [6]
+[7] feant===seant [7]
+[10] clos===clos [8]
+[11] de===de [9]
+[12] murs===mur [10]
+[18] a===a [14]
+[19] la===la [15]
+[20] roonde===ronde [16]
+[21] Il===Il [18]
+[24] le===le [22]
+[25] chastel===chastel [23]
+---
+New pair
+Source sentence: si voit I. petit chastel molt bien seant, clos de mur bateillié tot entor a la roonde. ll regarde grant piece le chastel 
+Target sentence: e vio vn castillo muy bien asentado çercado de muy buen muro todo enderredor e el cato gran pieça el castillo 
+[0] si===e [0]
+[1] voit===vio [1]
+[4] chastel===castillo [3]
+[5] molt===muy [4]
+[6] bien===bien [5]
+[7] seant,===asentado [6]
+[8] clos===çercado [7]
+[9] de===de [8]
+[10] mur===muro [11]
+[11] bateillié===asentado [6]
+[12] tot===todo [12]
+[13] entor===enderredor [13]
+[15] la===el [15]
+[19] grant===gran [17]
+[20] piece===pieça [18]
+[21] le===el [19]
+[22] chastel===castillo [20]
+---
+New pair
+Source sentence: si y uoit. j. castel moult bien seant. clos de mur bateillie tout entor a la reonde. Il regarde le chastel grant piece 
+Target sentence: si vide uno piccolo castello molto ben sedente, chiuso d’uno muro battagliato tutto intorno alla ritonda. eElli riguarda gran peza il castello, 
+[0] si===si [0]
+[2] uoit.===ritonda. [15]
+[3] j.===eElli [16]
+[4] castel===castello [4]
+[6] bien===ben [6]
+[7] seant.===battagliato [11]
+[9] de===d’uno [9]
+[10] mur===muro [10]
+[11] bateillie===battagliato [11]
+[12] tout===tutto [12]
+[13] entor===peza [19]
+[15] la===alla [14]
+[16] reonde.===ritonda. [15]
+[18] regarde===peza [19]
+[19] le===il [20]
+[20] chastel===castello, [21]
+[21] grant===gran [18]
+[22] piece===castello, [21]
+---
+New pair
+Source sentence: dont la façons li plest molt a regarder, 
+Target sentence: donde la fazion gli piace molto al riguardare, 
+[0] dont===donde [0]
+[1] la===la [1]
+[2] façons===fazion [2]
+[3] li===gli [3]
+[4] plest===piace [4]
+[5] molt===molto [5]
+[6] a===al [6]
+[7] regarder,===riguardare, [7]
+---
+New pair
+Source sentence: ca mucho se pagaua delo catar 
+Target sentence: donde la fazion gli piace molto al riguardare, 
+[0] ca===donde [0]
+[1] mucho===molto [5]
+[2] se===gli [3]
+[5] catar===riguardare, [7]
+---
+New pair
+Source sentence: dont Ia fasons li plait mout a esgarder. 
+Target sentence: ca mucho se pagaua delo catar 
+[2] fasons===pagaua [3]
+[4] plait===pagaua [3]
+[7] esgarder.===catar [5]
+---
+New pair
+Source sentence: dont Ia fasons li plait mout a esgarder. 
+Target sentence: dont la facon luy plaist moult a regarder 
+[0] dont===dont [0]
+[4] plait===plaist [4]
+[5] mout===moult [5]
+[6] a===a [6]
+[7] esgarder.===regarder [7]
+---
+New pair
+Source sentence: dont la fachons li plaisoit moult a regarder. 
+Target sentence: car monlt luy plaisoit a uoir/ 
+[0] dont===car [0]
+[2] fachons===monlt [1]
+[4] plaisoit===plaisoit [3]
+[6] a===a [4]
+[7] regarder.===uoir/ [5]
+---
+New pair
+Source sentence: dont la facon luy plaist moult a regarder 
+Target sentence: car monlt luy plaisoit a uoir/ 
+[0] dont===car [0]
+[3] luy===luy [2]
+[4] plaist===plaisoit [3]
+[6] a===a [4]
+[7] regarder===uoir/ [5]
+---
+New pair
+Source sentence: dont la fachons li plaisoit moult a regarder. 
+Target sentence: donde la fazion gli piace molto al riguardare, 
+[0] dont===donde [0]
+[1] la===la [1]
+[2] fachons===fazion [2]
+[3] li===gli [3]
+[4] plaisoit===piace [4]
+[5] moult===molto [5]
+[6] a===al [6]
+[7] regarder.===riguardare, [7]
+---
+New pair
+Source sentence: dont la facon luy plaist moult a regarder 
+Target sentence: donde la fazion gli piace molto al riguardare, 
+[0] dont===donde [0]
+[1] la===la [1]
+[2] facon===fazion [2]
+[4] plaist===piace [4]
+[6] a===al [6]
+[7] regarder===riguardare, [7]
+---
+New pair
+Source sentence: dont Ia fasons li plait mout a esgarder. 
+Target sentence: car monlt luy plaisoit a uoir/ 
+[0] dont===car [0]
+[4] plait===plaisoit [3]
+[6] a===a [4]
+[7] esgarder.===uoir/ [5]
+---
+New pair
+Source sentence: car monlt luy plaisoit a uoir/ 
+Target sentence: ca mucho se pagaua delo catar 
+[0] car===ca [0]
+[3] plaisoit===pagaua [3]
+[5] uoir/===catar [5]
+---
+New pair
+Source sentence: dont Ia fasons li plait mout a esgarder. 
+Target sentence: dont la fachons li plaisoit moult a regarder. 
+[0] dont===dont [0]
+[2] fasons===fachons [2]
+[3] li===li [3]
+[4] plait===plaisoit [4]
+[5] mout===moult [5]
+[6] a===a [6]
+[7] esgarder.===regarder. [7]
+---
+New pair
+Source sentence: dont la façons li plest molt a regarder, 
+Target sentence: ca mucho se pagaua delo catar 
+[0] dont===ca [0]
+[3] li===se [2]
+[5] molt===mucho [1]
+[7] regarder,===catar [5]
+---
+New pair
+Source sentence: dont la façons li plest molt a regarder, 
+Target sentence: dont la facon luy plaist moult a regarder 
+[0] dont===dont [0]
+[1] la===la [1]
+[2] façons===facon [2]
+[4] plest===plaist [4]
+[6] a===a [6]
+[7] regarder,===regarder [7]
+---
+New pair
+Source sentence: dont Ia fasons li plait mout a esgarder. 
+Target sentence: donde la fazion gli piace molto al riguardare, 
+[0] dont===donde [0]
+[1] Ia===la [1]
+[3] li===gli [3]
+[4] plait===piace [4]
+[6] a===al [6]
+[7] esgarder.===riguardare, [7]
+---
+New pair
+Source sentence: dont la façons li plest molt a regarder, 
+Target sentence: dont Ia fasons li plait mout a esgarder. 
+[0] dont===dont [0]
+[2] façons===fasons [2]
+[3] li===li [3]
+[4] plest===plait [4]
+[6] a===a [6]
+[7] regarder,===esgarder. [7]
+---
+New pair
+Source sentence: dont la fachons li plaisoit moult a regarder. 
+Target sentence: ca mucho se pagaua delo catar 
+[3] li===se [2]
+[4] plaisoit===pagaua [3]
+[7] regarder.===catar [5]
+---
+New pair
+Source sentence: dont la facon luy plaist moult a regarder 
+Target sentence: ca mucho se pagaua delo catar 
+[0] dont===ca [0]
+[3] luy===pagaua [3]
+[7] regarder===catar [5]
+---
+New pair
+Source sentence: dont la façons li plest molt a regarder, 
+Target sentence: car monlt luy plaisoit a uoir/ 
+[0] dont===car [0]
+[2] façons===monlt [1]
+[4] plest===plaisoit [3]
+[6] a===a [4]
+[7] regarder,===uoir/ [5]
+---
+New pair
+Source sentence: dont la fachons li plaisoit moult a regarder. 
+Target sentence: dont la facon luy plaist moult a regarder 
+[0] dont===dont [0]
+[1] la===la [1]
+[2] fachons===facon [2]
+[4] plaisoit===plaist [4]
+[5] moult===moult [5]
+[6] a===a [6]
+[7] regarder.===regarder [7]
+---
+New pair
+Source sentence: dont la façons li plest molt a regarder, 
+Target sentence: dont la fachons li plaisoit moult a regarder. 
+[0] dont===dont [0]
+[1] la===la [1]
+[2] façons===fachons [2]
+[3] li===li [3]
+[4] plest===plaisoit [4]
+[6] a===a [6]
+[7] regarder,===regarder. [7]
+---
+New pair
+Source sentence: car monlt luy plaisoit a uoir/ 
+Target sentence: donde la fazion gli piace molto al riguardare, 
+[0] car===donde [0]
+[1] monlt===fazion [2]
+[3] plaisoit===piace [4]
+[4] a===al [6]
+[5] uoir/===fazion [2]
+[5] uoir/===riguardare, [7]
+---
+New pair
+Source sentence: puis sen tourne contre ual la riuiere pour scauoir sil pouroit trouuer ne pont ne gue par le quel il puisse passer/ 
+Target sentence: e despues torno la rribera ayuso Por saber si podria fallar puente 
+[0] puis===e [0]
+[2] tourne===torno [2]
+[4] ual===despues [1]
+[5] la===la [3]
+[6] riuiere===rribera [4]
+[8] scauoir===despues [1]
+[8] scauoir===fallar [10]
+[11] trouuer===ayuso [5]
+[13] pont===puente [11]
+[20] puisse===podria [9]
+[21] passer/===fallar [10]
+---
+New pair
+Source sentence: puis sen torne contremont la riuiere pour sauoir se il troueroit ne pont ne gue. 
+Target sentence: poscia ritorna tutto contravalle la rivieraper sapere se potrebbe trovare né ponte né guado, 
+[0] puis===poscia [0]
+[2] torne===poscia [0]
+[2] torne===ritorna [1]
+[3] contremont===contravalle [3]
+[4] la===la [4]
+[5] riuiere===rivieraper [5]
+[7] sauoir===sapere [6]
+[8] se===se [7]
+[9] il===potrebbe [8]
+[11] ne===né [10]
+[12] pont===ponte [11]
+[14] gue.===guado, [13]
+---
+New pair
+Source sentence: puis s’en torne contreval la rivierepor savoir s’il i peust trover ne pont ne gué, 
+Target sentence: puis sen retourne tout contreual la riuiere pour sauoir sil pourroit trouuer ne pont ne gue 
+[0] puis===puis [0]
+[1] s’en===sen [1]
+[2] torne===retourne [2]
+[3] contreval===contreual [4]
+[4] la===la [5]
+[5] rivierepor===riuiere [6]
+[7] s’il===sil [9]
+[9] peust===pourroit [10]
+[10] trover===trouuer [11]
+[11] ne===ne [12]
+[12] pont===pont [13]
+[13] ne===ne [14]
+[14] gué,===gue [15]
+---
+New pair
+Source sentence: puis sen retourne tout contreual la riuiere pour sauoir sil pourroit trouuer ne pont ne gue 
+Target sentence: poscia ritorna tutto contravalle la rivieraper sapere se potrebbe trovare né ponte né guado, 
+[0] puis===poscia [0]
+[2] retourne===ritorna [1]
+[3] tout===tutto [2]
+[4] contreual===contravalle [3]
+[4] contreual===rivieraper [5]
+[5] la===la [4]
+[6] riuiere===rivieraper [5]
+[9] sil===sapere [6]
+[10] pourroit===potrebbe [8]
+[12] ne===né [10]
+[13] pont===ponte [11]
+[15] gue===guado, [13]
+---
+New pair
+Source sentence: et puis sen torne tot contreual la riuere. Por sauoir se il i troueroit ne pont ne gue. 
+Target sentence: e despues torno la rribera ayuso Por saber si podria fallar puente 
+[0] et===e [0]
+[3] torne===despues [1]
+[5] contreual===torno [2]
+[6] la===la [3]
+[7] riuere.===rribera [4]
+[7] riuere.===ayuso [5]
+[8] Por===Por [6]
+[9] sauoir===saber [7]
+[9] sauoir===fallar [10]
+[10] se===si [8]
+[15] pont===puente [11]
+---
+New pair
+Source sentence: et puis sen torne tot contreual la riuere. Por sauoir se il i troueroit ne pont ne gue. 
+Target sentence: puis sen tourne contre ual la riuiere pour scauoir sil pouroit trouuer ne pont ne gue par le quel il puisse passer/ 
+[1] puis===puis [0]
+[2] sen===sen [1]
+[3] torne===tourne [2]
+[5] contreual===contre [3]
+[5] contreual===ual [4]
+[6] la===la [5]
+[7] riuere.===riuiere [6]
+[8] Por===pour [7]
+[9] sauoir===trouuer [11]
+[11] il===il [19]
+[13] troueroit===pouroit [10]
+[13] troueroit===trouuer [11]
+[14] ne===ne [12]
+[15] pont===pont [13]
+[16] ne===ne [14]
+[17] gue.===gue [15]
+[17] gue.===passer/ [21]
+---
+New pair
+Source sentence: e despues torno la rribera ayuso Por saber si podria fallar puente 
+Target sentence: poscia ritorna tutto contravalle la rivieraper sapere se potrebbe trovare né ponte né guado, 
+[0] e===poscia [0]
+[1] despues===poscia [0]
+[2] torno===contravalle [3]
+[3] la===la [4]
+[7] saber===sapere [6]
+[8] si===se [7]
+[9] podria===potrebbe [8]
+[11] puente===ponte [11]
+---
+New pair
+Source sentence: puis s’en torne contreval la rivierepor savoir s’il i peust trover ne pont ne gué, 
+Target sentence: poscia ritorna tutto contravalle la rivieraper sapere se potrebbe trovare né ponte né guado, 
+[0] puis===poscia [0]
+[3] contreval===contravalle [3]
+[4] la===la [4]
+[5] rivierepor===rivieraper [5]
+[6] savoir===sapere [6]
+[7] s’il===se [7]
+[7] s’il===potrebbe [8]
+[10] trover===trovare [9]
+[11] ne===né [10]
+[12] pont===ponte [11]
+[13] ne===né [12]
+[14] gué,===guado, [13]
+---
+New pair
+Source sentence: et puis sen torne tot contreual la riuere. Por sauoir se il i troueroit ne pont ne gue. 
+Target sentence: puis sen torne contremont la riuiere pour sauoir se il troueroit ne pont ne gue. 
+[1] puis===puis [0]
+[2] sen===sen [1]
+[3] torne===torne [2]
+[5] contreual===contremont [3]
+[6] la===la [4]
+[7] riuere.===riuiere [5]
+[8] Por===pour [6]
+[9] sauoir===sauoir [7]
+[10] se===se [8]
+[11] il===il [9]
+[13] troueroit===troueroit [10]
+[14] ne===ne [11]
+[15] pont===pont [12]
+[16] ne===ne [13]
+[17] gue.===gue. [14]
+---
+New pair
+Source sentence: puis sen torne contremont la riuiere pour sauoir se il troueroit ne pont ne gue. 
+Target sentence: e despues torno la rribera ayuso Por saber si podria fallar puente 
+[0] puis===e [0]
+[2] torne===despues [1]
+[3] contremont===torno [2]
+[4] la===la [3]
+[5] riuiere===rribera [4]
+[6] pour===Por [6]
+[7] sauoir===ayuso [5]
+[8] se===si [8]
+[12] pont===puente [11]
+---
+New pair
+Source sentence: puis sen torne contremont la riuiere pour sauoir se il troueroit ne pont ne gue. 
+Target sentence: puis sen tourne contre ual la riuiere pour scauoir sil pouroit trouuer ne pont ne gue par le quel il puisse passer/ 
+[0] puis===puis [0]
+[1] sen===sen [1]
+[2] torne===tourne [2]
+[3] contremont===contre [3]
+[3] contremont===ual [4]
+[4] la===la [5]
+[5] riuiere===riuiere [6]
+[6] pour===pour [7]
+[7] sauoir===trouuer [11]
+[9] il===il [19]
+[10] troueroit===pouroit [10]
+[10] troueroit===trouuer [11]
+[11] ne===ne [12]
+[12] pont===pont [13]
+[13] ne===ne [14]
+[14] gue.===gue [15]
+[14] gue.===passer/ [21]
+---
+New pair
+Source sentence: puis sen retourne tout contreual la riuiere pour sauoir sil pourroit trouuer ne pont ne gue 
+Target sentence: e despues torno la rribera ayuso Por saber si podria fallar puente 
+[0] puis===e [0]
+[2] retourne===torno [2]
+[5] la===la [3]
+[6] riuiere===rribera [4]
+[7] pour===Por [6]
+[8] sauoir===ayuso [5]
+[10] pourroit===despues [1]
+[10] pourroit===podria [9]
+[11] trouuer===fallar [10]
+[13] pont===puente [11]
+---
+New pair
+Source sentence: et puis sen torne tot contreual la riuere. Por sauoir se il i troueroit ne pont ne gue. 
+Target sentence: puis sen retourne tout contreual la riuiere pour sauoir sil pourroit trouuer ne pont ne gue 
+[1] puis===puis [0]
+[2] sen===sen [1]
+[3] torne===retourne [2]
+[4] tot===tout [3]
+[5] contreual===contreual [4]
+[6] la===la [5]
+[7] riuere.===riuiere [6]
+[8] Por===pour [7]
+[9] sauoir===sauoir [8]
+[13] troueroit===pourroit [10]
+[13] troueroit===trouuer [11]
+[14] ne===ne [12]
+[15] pont===pont [13]
+[16] ne===ne [14]
+[17] gue.===gue [15]
+---
+New pair
+Source sentence: puis sen retourne tout contreual la riuiere pour sauoir sil pourroit trouuer ne pont ne gue 
+Target sentence: puis sen tourne contre ual la riuiere pour scauoir sil pouroit trouuer ne pont ne gue par le quel il puisse passer/ 
+[0] puis===puis [0]
+[1] sen===sen [1]
+[2] retourne===tourne [2]
+[4] contreual===contre [3]
+[4] contreual===ual [4]
+[5] la===la [5]
+[6] riuiere===riuiere [6]
+[7] pour===pour [7]
+[8] sauoir===scauoir [8]
+[9] sil===sil [9]
+[10] pourroit===pouroit [10]
+[11] trouuer===trouuer [11]
+[12] ne===ne [12]
+[13] pont===pont [13]
+[14] ne===ne [14]
+[15] gue===gue [15]
+---
+New pair
+Source sentence: puis sen tourne contre ual la riuiere pour scauoir sil pouroit trouuer ne pont ne gue par le quel il puisse passer/ 
+Target sentence: poscia ritorna tutto contravalle la rivieraper sapere se potrebbe trovare né ponte né guado, 
+[0] puis===poscia [0]
+[2] tourne===ritorna [1]
+[3] contre===contravalle [3]
+[4] ual===contravalle [3]
+[5] la===la [4]
+[6] riuiere===rivieraper [5]
+[9] sil===sapere [6]
+[12] ne===né [10]
+[13] pont===ponte [11]
+[15] gue===guado, [13]
+[20] puisse===potrebbe [8]
+[21] passer/===trovare [9]
+[21] passer/===guado, [13]
+---
+New pair
+Source sentence: puis s’en torne contreval la rivierepor savoir s’il i peust trover ne pont ne gué, 
+Target sentence: e despues torno la rribera ayuso Por saber si podria fallar puente 
+[0] puis===e [0]
+[2] torne===rribera [4]
+[3] contreval===torno [2]
+[4] la===la [3]
+[5] rivierepor===rribera [4]
+[6] savoir===saber [7]
+[7] s’il===si [8]
+[10] trover===fallar [10]
+[12] pont===puente [11]
+---
+New pair
+Source sentence: puis s’en torne contreval la rivierepor savoir s’il i peust trover ne pont ne gué, 
+Target sentence: puis sen tourne contre ual la riuiere pour scauoir sil pouroit trouuer ne pont ne gue par le quel il puisse passer/ 
+[0] puis===puis [0]
+[1] s’en===sen [1]
+[2] torne===tourne [2]
+[3] contreval===contre [3]
+[3] contreval===ual [4]
+[4] la===la [5]
+[5] rivierepor===riuiere [6]
+[7] s’il===il [19]
+[9] peust===pouroit [10]
+[9] peust===puisse [20]
+[10] trover===trouuer [11]
+[11] ne===ne [12]
+[12] pont===pont [13]
+[13] ne===ne [14]
+[14] gué,===gue [15]
+[14] gué,===passer/ [21]
+---
+New pair
+Source sentence: et puis sen torne tot contreual la riuere. Por sauoir se il i troueroit ne pont ne gue. 
+Target sentence: poscia ritorna tutto contravalle la rivieraper sapere se potrebbe trovare né ponte né guado, 
+[0] et===poscia [0]
+[3] torne===ritorna [1]
+[4] tot===tutto [2]
+[5] contreual===contravalle [3]
+[6] la===la [4]
+[7] riuere.===rivieraper [5]
+[9] sauoir===sapere [6]
+[10] se===se [7]
+[11] il===potrebbe [8]
+[14] ne===né [10]
+[15] pont===ponte [11]
+[16] ne===né [12]
+[17] gue.===guado, [13]
+---
+New pair
+Source sentence: puis s’en torne contreval la rivierepor savoir s’il i peust trover ne pont ne gué, 
+Target sentence: puis sen torne contremont la riuiere pour sauoir se il troueroit ne pont ne gue. 
+[0] puis===puis [0]
+[1] s’en===sen [1]
+[2] torne===torne [2]
+[3] contreval===contremont [3]
+[4] la===la [4]
+[5] rivierepor===riuiere [5]
+[6] savoir===sauoir [7]
+[7] s’il===se [8]
+[7] s’il===il [9]
+[9] peust===troueroit [10]
+[10] trover===troueroit [10]
+[11] ne===ne [11]
+[12] pont===pont [12]
+[13] ne===ne [13]
+[14] gué,===gue. [14]
+---
+New pair
+Source sentence: puis s’en torne contreval la rivierepor savoir s’il i peust trover ne pont ne gué, 
+Target sentence: et puis sen torne tot contreual la riuere. Por sauoir se il i troueroit ne pont ne gue. 
+[0] puis===puis [1]
+[1] s’en===sen [2]
+[2] torne===torne [3]
+[3] contreval===contreual [5]
+[4] la===la [6]
+[5] rivierepor===riuere. [7]
+[6] savoir===sauoir [9]
+[7] s’il===se [10]
+[7] s’il===il [11]
+[8] i===i [12]
+[9] peust===troueroit [13]
+[10] trover===troueroit [13]
+[11] ne===ne [14]
+[12] pont===pont [15]
+[13] ne===ne [16]
+[14] gué,===gue. [17]
+---
+New pair
+Source sentence: puis sen torne contremont la riuiere pour sauoir se il troueroit ne pont ne gue. 
+Target sentence: puis sen retourne tout contreual la riuiere pour sauoir sil pourroit trouuer ne pont ne gue 
+[0] puis===puis [0]
+[1] sen===sen [1]
+[2] torne===retourne [2]
+[3] contremont===contreual [4]
+[4] la===la [5]
+[5] riuiere===riuiere [6]
+[6] pour===pour [7]
+[7] sauoir===sauoir [8]
+[10] troueroit===pourroit [10]
+[10] troueroit===trouuer [11]
+[11] ne===ne [12]
+[12] pont===pont [13]
+[13] ne===ne [14]
+[14] gue.===gue [15]
+---
+New pair
+Source sentence: mais il ni trueue nul passage. Etquant il voit chou si ne set que faire 
+Target sentence: Mais il ny en treuue point. Et quant il uoit quil ne puet passer si ne scet que faire 
+[0] mais===Mais [0]
+[1] il===il [1]
+[2] ni===ny [2]
+[3] trueue===treuue [4]
+[5] passage.===point. [5]
+[6] Etquant===Et [6]
+[6] Etquant===quant [7]
+[7] il===il [8]
+[8] voit===uoit [9]
+[9] chou===quil [10]
+[10] si===si [14]
+[11] ne===ne [15]
+[12] set===scet [16]
+[13] que===que [17]
+[14] faire===faire [18]
+---
+New pair
+Source sentence: mais il n’en trueve point et quant il voit qu’il n’i passera, si ne set que fere, 
+Target sentence: mes il nen truue point.Et il uoit ce si ne scait que faire/ 
+[0] mais===mes [0]
+[1] il===il [1]
+[3] trueve===truue [3]
+[4] point===point.Et [4]
+[7] il===il [5]
+[11] passera,===point.Et [4]
+[12] si===si [8]
+[13] ne===ne [9]
+[14] set===scait [10]
+[15] que===que [11]
+[16] fere,===faire/ [12]
+---
+New pair
+Source sentence: mais il nen i trurue point : si ne sotque faire 
+Target sentence: mais il ni trueue nul passage. Etquant il voit chou si ne set que faire 
+[0] mais===mais [0]
+[1] il===il [1]
+[2] nen===ni [2]
+[4] trurue===trueue [3]
+[5] point===passage. [5]
+[6] :===passage. [5]
+[7] si===si [10]
+[8] ne===ne [11]
+[9] sotque===set [12]
+[9] sotque===que [13]
+[10] faire===faire [14]
+---
+New pair
+Source sentence: mais il nen i trurue point : si ne sotque faire 
+Target sentence: ma e non ve ne truova punto, e quand’e vede che non potrà passare, si non sa che fare, 
+[0] mais===ma [0]
+[2] nen===non [2]
+[3] i===ne [4]
+[4] trurue===truova [5]
+[5] point===punto, [6]
+[6] :===passare, [13]
+[7] si===si [14]
+[8] ne===non [15]
+[9] sotque===sa [16]
+[9] sotque===che [17]
+[10] faire===fare, [18]
+---
+New pair
+Source sentence: mais il ni trueue nul passage. Etquant il voit chou si ne set que faire 
+Target sentence: mes il nen truue point.Et il uoit ce si ne scait que faire/ 
+[0] mais===mes [0]
+[1] il===il [1]
+[2] ni===nen [2]
+[3] trueue===truue [3]
+[5] passage.===point.Et [4]
+[6] Etquant===point.Et [4]
+[7] il===il [5]
+[8] voit===uoit [6]
+[10] si===si [8]
+[11] ne===ne [9]
+[12] set===scait [10]
+[13] que===que [11]
+[14] faire===faire/ [12]
+---
+New pair
+Source sentence: Mais il ny en treuue point. Et quant il uoit quil ne puet passer si ne scet que faire 
+Target sentence: Por do pasase mas el no pudo fallar ninguna e boores desque esto vido no sabia que se façer 
+[0] Mais===mas [3]
+[1] il===el [4]
+[4] treuue===pasase [2]
+[6] Et===e [9]
+[7] quant===desque [11]
+[9] uoit===boores [10]
+[9] uoit===vido [13]
+[10] quil===vido [13]
+[11] ne===no [14]
+[16] scet===sabia [15]
+[17] que===que [16]
+[18] faire===façer [18]
+---
+New pair
+Source sentence: mais il n’en trueve point et quant il voit qu’il n’i passera, si ne set que fere, 
+Target sentence: mais il ni trueue nul passage. Etquant il voit chou si ne set que faire 
+[0] mais===mais [0]
+[1] il===il [1]
+[3] trueve===trueue [3]
+[3] trueve===nul [4]
+[4] point===passage. [5]
+[6] quant===Etquant [6]
+[7] il===il [7]
+[8] voit===voit [8]
+[11] passera,===passage. [5]
+[12] si===si [10]
+[13] ne===ne [11]
+[14] set===set [12]
+[15] que===que [13]
+[16] fere,===chou [9]
+[16] fere,===faire [14]
+---
+New pair
+Source sentence: mais il nen i trurue point : si ne sotque faire 
+Target sentence: Por do pasase mas el no pudo fallar ninguna e boores desque esto vido no sabia que se façer 
+[0] mais===mas [3]
+[1] il===el [4]
+[2] nen===no [5]
+[4] trurue===pasase [2]
+[5] point===ninguna [8]
+[7] si===se [17]
+[8] ne===no [14]
+[9] sotque===desque [11]
+[10] faire===façer [18]
+---
+New pair
+Source sentence: Por do pasase mas el no pudo fallar ninguna e boores desque esto vido no sabia que se façer 
+Target sentence: ma e non ve ne truova punto, e quand’e vede che non potrà passare, si non sa che fare, 
+[2] pasase===passare, [13]
+[3] mas===ma [0]
+[5] no===non [2]
+[6] pudo===truova [5]
+[9] e===quand’e [8]
+[14] no===non [15]
+[15] sabia===sa [16]
+[16] que===che [17]
+[17] se===si [14]
+[18] façer===fare, [18]
+---
+New pair
+Source sentence: mais il n’en trueve point et quant il voit qu’il n’i passera, si ne set que fere, 
+Target sentence: ma e non ve ne truova punto, e quand’e vede che non potrà passare, si non sa che fare, 
+[0] mais===ma [0]
+[3] trueve===truova [5]
+[4] point===punto, [6]
+[5] et===e [7]
+[6] quant===quand’e [8]
+[8] voit===vede [9]
+[9] qu’il===quand’e [8]
+[9] qu’il===che [10]
+[11] passera,===potrà [12]
+[11] passera,===passare, [13]
+[12] si===si [14]
+[13] ne===non [15]
+[14] set===sa [16]
+[15] que===che [17]
+[16] fere,===fare, [18]
+---
+New pair
+Source sentence: Mais il ny en treuue point. Et quant il uoit quil ne puet passer si ne scet que faire 
+Target sentence: mes il nen truue point.Et il uoit ce si ne scait que faire/ 
+[0] Mais===mes [0]
+[1] il===il [1]
+[4] treuue===truue [3]
+[5] point.===point.Et [4]
+[6] Et===point.Et [4]
+[8] il===il [5]
+[9] uoit===uoit [6]
+[12] puet===scait [10]
+[14] si===si [8]
+[15] ne===ne [9]
+[16] scet===scait [10]
+[17] que===que [11]
+[18] faire===faire/ [12]
+---
+New pair
+Source sentence: mais il nen i trurue point : si ne sotque faire 
+Target sentence: Mais il ny en treuue point. Et quant il uoit quil ne puet passer si ne scet que faire 
+[0] mais===Mais [0]
+[1] il===il [1]
+[2] nen===ny [2]
+[3] i===en [3]
+[4] trurue===treuue [4]
+[5] point===point. [5]
+[6] :===point. [5]
+[7] si===si [14]
+[8] ne===ne [15]
+[9] sotque===que [17]
+[10] faire===faire [18]
+---
+New pair
+Source sentence: mais il ni trueue nul passage. Etquant il voit chou si ne set que faire 
+Target sentence: ma e non ve ne truova punto, e quand’e vede che non potrà passare, si non sa che fare, 
+[0] mais===ma [0]
+[3] trueue===truova [5]
+[5] passage.===punto, [6]
+[6] Etquant===quand’e [8]
+[7] il===quand’e [8]
+[8] voit===vede [9]
+[10] si===si [14]
+[11] ne===non [15]
+[12] set===sa [16]
+[13] que===che [17]
+[14] faire===fare, [18]
+---
+New pair
+Source sentence: mais il n’en trueve point et quant il voit qu’il n’i passera, si ne set que fere, 
+Target sentence: mais il nen i trurue point : si ne sotque faire 
+[0] mais===mais [0]
+[1] il===il [1]
+[2] n’en===nen [2]
+[3] trueve===trurue [4]
+[4] point===point [5]
+[10] n’i===i [3]
+[11] passera,===trurue [4]
+[11] passera,===: [6]
+[12] si===si [7]
+[13] ne===ne [8]
+[14] set===sotque [9]
+[15] que===sotque [9]
+[16] fere,===faire [10]
+---
+New pair
+Source sentence: mais il nen i trurue point : si ne sotque faire 
+Target sentence: mes il nen truue point.Et il uoit ce si ne scait que faire/ 
+[0] mais===mes [0]
+[1] il===il [1]
+[2] nen===nen [2]
+[4] trurue===truue [3]
+[5] point===point.Et [4]
+[6] :===point.Et [4]
+[7] si===si [8]
+[8] ne===ne [9]
+[9] sotque===scait [10]
+[9] sotque===que [11]
+[10] faire===faire/ [12]
+---
+New pair
+Source sentence: mes il nen truue point.Et il uoit ce si ne scait que faire/ 
+Target sentence: ma e non ve ne truova punto, e quand’e vede che non potrà passare, si non sa che fare, 
+[0] mes===ma [0]
+[1] il===e [1]
+[2] nen===non [2]
+[3] truue===truova [5]
+[4] point.Et===punto, [6]
+[4] point.Et===e [7]
+[7] ce===che [10]
+[8] si===si [14]
+[9] ne===non [11]
+[10] scait===sa [16]
+[11] que===che [17]
+[12] faire/===fare, [18]
+---
+New pair
+Source sentence: mais il n’en trueve point et quant il voit qu’il n’i passera, si ne set que fere, 
+Target sentence: Por do pasase mas el no pudo fallar ninguna e boores desque esto vido no sabia que se façer 
+[0] mais===mas [3]
+[1] il===el [4]
+[5] et===e [9]
+[11] passera,===pasase [2]
+[12] si===se [17]
+[13] ne===no [14]
+[14] set===sabia [15]
+[15] que===que [16]
+[16] fere,===façer [18]
+---
+New pair
+Source sentence: mais il ni trueue nul passage. Etquant il voit chou si ne set que faire 
+Target sentence: Por do pasase mas el no pudo fallar ninguna e boores desque esto vido no sabia que se façer 
+[0] mais===mas [3]
+[1] il===el [4]
+[5] passage.===pasase [2]
+[6] Etquant===e [9]
+[8] voit===pudo [6]
+[9] chou===boores [10]
+[9] chou===vido [13]
+[10] si===se [17]
+[11] ne===no [14]
+[12] set===sabia [15]
+[13] que===que [16]
+[14] faire===façer [18]
+---
+New pair
+Source sentence: mais il n’en trueve point et quant il voit qu’il n’i passera, si ne set que fere, 
+Target sentence: Mais il ny en treuue point. Et quant il uoit quil ne puet passer si ne scet que faire 
+[0] mais===Mais [0]
+[1] il===il [1]
+[2] n’en===en [3]
+[2] n’en===uoit [9]
+[3] trueve===treuue [4]
+[4] point===point. [5]
+[5] et===Et [6]
+[6] quant===quant [7]
+[9] qu’il===il [8]
+[11] passera,===point. [5]
+[11] passera,===puet [12]
+[11] passera,===passer [13]
+[12] si===si [14]
+[13] ne===ne [15]
+[14] set===scet [16]
+[15] que===que [17]
+[16] fere,===faire [18]
+---
+New pair
+Source sentence: Mais il ny en treuue point. Et quant il uoit quil ne puet passer si ne scet que faire 
+Target sentence: ma e non ve ne truova punto, e quand’e vede che non potrà passare, si non sa che fare, 
+[0] Mais===ma [0]
+[1] il===e [1]
+[3] en===ne [4]
+[4] treuue===truova [5]
+[5] point.===punto, [6]
+[6] Et===e [7]
+[7] quant===quand’e [8]
+[8] il===quand’e [8]
+[10] quil===che [10]
+[11] ne===non [11]
+[12] puet===potrà [12]
+[13] passer===passare, [13]
+[14] si===si [14]
+[15] ne===non [15]
+[16] scet===sa [16]
+[17] que===che [17]
+[18] faire===fare, [18]
+---
+New pair
+Source sentence: mes il nen truue point.Et il uoit ce si ne scait que faire/ 
+Target sentence: Por do pasase mas el no pudo fallar ninguna e boores desque esto vido no sabia que se façer 
+[0] mes===mas [3]
+[1] il===el [4]
+[2] nen===no [5]
+[3] truue===fallar [7]
+[4] point.Et===e [9]
+[6] uoit===boores [10]
+[7] ce===esto [12]
+[9] ne===no [14]
+[10] scait===sabia [15]
+[11] que===que [16]
+[12] faire/===façer [18]

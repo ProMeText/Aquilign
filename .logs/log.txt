@@ -1,0 +1,24 @@
+
+
+New unit
+Pivot text: que lor dame estoit delivree par I. chevalier
+Other texts:
+commen lor dame estoit deliuree par .i. cheualier 
+comment lor dame estoit deliuree par. j. cheualier 
+que leur dame estoit deliuree par ung cheualier 
+comment leur dame estoit del iuree par ung cheualier 
+como su señora hera ya librada Porvn cauallero 
+come lor dama era dilivera per uno cavaliere 
+---
+New pair
+Source sentence: que lor dame estoit delivree par I. chevalier
+Target sentence: commen lor dame estoit deliuree par .i. cheualier 
+[0] que===commen [0]
+[1] lor===lor [1]
+[2] dame===dame [2]
+[3] estoit===estoit [3]
+[4] delivree===deliuree [4]
+[5] par===par [5]
+[6] I===i [7]
+[7] .===. [8]
+[8] chevalier===cheualier [9]

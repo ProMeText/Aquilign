@@ -8,6 +8,7 @@ import re
 import langid
 import tqdm
 
+
 ## script for applying the tokenisation to text
 ## it produces .txt files which has been tokenized ; each element of tokenisation is marked by a breakline
 
@@ -20,7 +21,6 @@ import tqdm
 # output_dir is the name of the output directory, where the produced files will be saved
 
 
-
 ### functions
 
 
@@ -31,18 +31,19 @@ def remove_punctuation(text: str):
 
 
 # tokenize text (BERT as a max length of 512) ; recommended : get the same length as for the training
-def tokenize(text,tokens_per_example):
+def tokenize(text, tokens_per_example):
     words = text.split(" ")
-    return [' '.join(words[i:i+tokens_per_example]) for i in range(0, len(words), tokens_per_example)]
+    return [' '.join(words[i:i + tokens_per_example]) for i in range(0, len(words), tokens_per_example)]
 
 
-#get the labels
+# get the labels
 def get_labels_from_preds(preds):
     bert_labels = []
     for pred in preds[-1]:
         label = [idx for idx, value in enumerate(pred) if value == max(pred)][0]
         bert_labels.append(label)
     return bert_labels
+
 
 # correspondences between our labels and labels from the BERT-tok
 def get_correspondence(sent, tokenizer, verbose=False):
@@ -59,6 +60,7 @@ def get_correspondence(sent, tokenizer, verbose=False):
     bert_split_to_human_split = {value: key for key, value in human_split_to_bert.items()}
     return human_split_to_bert, bert_split_to_human_split
 
+
 def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False):
     predicted_labels = predicted_labels[1:-1]
     if verbose:
@@ -66,7 +68,7 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False
         print(human_to_bert)
         print(splitted_text)
     realigned_list = []
-    
+
     # itering on original text
     final_prediction = []
     for index, value in enumerate(splitted_text):
@@ -102,29 +104,29 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False
     return tokenized_sentence
 
 
-def tokenize_text(input_file:str, 
-                  model_path=None, 
-                  tokenizer_name=None, 
-                  remove_punct=False, 
-                  tok_models:dict=None, 
-                  corpus_limit=None, 
-                  output_dir=None, 
-                  tokens_per_example=None, 
-                  device="cpu", 
+def tokenize_text(input_file: str,
+                  model_path=None,
+                  tokenizer_name=None,
+                  remove_punct=False,
+                  tok_models: dict = None,
+                  corpus_limit=None,
+                  output_dir=None,
+                  tokens_per_example=None,
+                  device="cpu",
                   verbose=False,
                   lang=None):
     """
     Performs tokenization with given model, tokenizer on given file
     """
-    
+
     with open(input_file) as f:
         textL = f.read().splitlines()
     localText = " ".join(str(element) for element in textL)
     if corpus_limit:
-        localText = localText[:round(len(localText)*corpus_limit)]
+        localText = localText[:round(len(localText) * corpus_limit)]
     if remove_punct:
         localText = remove_punctuation(localText)
-        
+
     if not lang:
         codelang, _ = langid.classify(localText[:300])
         # Il ne reconnaît pas toujours le castillan
@@ -136,9 +138,9 @@ def tokenize_text(input_file:str,
             codelang = "it"
         print(f"Detected lang: {codelang}")
     else:
-        
+
         codelang = lang
-    
+
     # get the path of the model
     if model_path:
         pass
@@ -146,15 +148,12 @@ def tokenize_text(input_file:str,
         model_path = tok_models[codelang]["model"]
         tokens_per_example = tok_models[codelang]["tokens_per_example"]
         tokenizer_name = tok_models[codelang]["tokenizer"]
-    
+
     print(f"Using {model_path} model and {tokenizer_name} tokenizer.")
     new_model = AutoModelForTokenClassification.from_pretrained(model_path, num_labels=3)
     # get the path of the default tokenizer
     tokenizer = BertTokenizer.from_pretrained(tokenizer_name, max_length=tokens_per_example)
     new_model.to(device)
-
-    # get the file
-
 
     # get the number of tokens per fragment to tokenize
     if not tokens_per_example:
@@ -164,6 +163,7 @@ def tokenize_text(input_file:str,
     # prepare the data
     restruct = []
     # apply the tok process on each slice of text
+    id_to_token = {i: token for i, token in enumerate(tokenizer.get_vocab().keys())}
     for i in tqdm.tqdm(text):
         # BERT-tok
         enco_nt_tok = tokenizer.encode(i, truncation=True, padding=True, return_tensors="pt")
@@ -180,8 +180,7 @@ def tokenize_text(input_file:str,
             print(i)
             print(new_labels)
             print(tokenized)
-        
-        
+
         # Gestion du premier token.
         try:
             if tokenized[0] == "":
@@ -196,15 +195,15 @@ def tokenize_text(input_file:str,
                 restruct.extend(tokenized[1:])
             else:
                 restruct.extend(tokenized)
-                
+
     # On teste la non perte de tokens
     input_text_length = len(localText.split())
     output_text_length = len(" ".join(restruct).split())
-    
+
     assert input_text_length == input_text_length, "Length of input text and tokenized text mismatch, something went wrong: " \
                                                    f"Input: {input_text_length}, output: {output_text_length}"
     print("No tokens were lost during the process.")
-    
+
     # prepare the name of the output file
     if '/' in input_file:
         filename_corr = input_file.rpartition('/')[-1].split('.')[0]
@@ -212,7 +211,6 @@ def tokenize_text(input_file:str,
         filename_corr = input_file.split('.')[0]
 
     output_file = join(output_dir, f'{filename_corr}-tok.txt')
-    
 
     # create or no the directory
     # TODO: corriger ça
@@ -237,11 +235,11 @@ if __name__ == '__main__':
     example_length = int(sys.argv[4])
     output_dir = sys.argv[5]
     device = sys.argv[6]
-    
-    tokenize_text(model_path=model_path, 
-                  tokenizer_name=tokenizer_name, 
-                  remove_punct=remove_punct, 
-                  input_file=input_file, 
-                  tokens_per_example=example_length, 
-                  device=device, 
+
+    tokenize_text(model_path=model_path,
+                  tokenizer_name=tokenizer_name,
+                  remove_punct=remove_punct,
+                  input_file=input_file,
+                  tokens_per_example=example_length,
+                  device=device,
                   output_dir=output_dir)

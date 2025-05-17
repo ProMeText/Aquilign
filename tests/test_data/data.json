@@ -1,0 +1,15 @@
+{"metadata": 
+  {
+    "lang": ["la", "it", "es", "fr", "en", "ca", "pt"],
+    "centuries": [13, 14, 15, 16], 
+      "delimiter": "£"
+  },
+"examples": 
+    [
+      {"example": "que mi padre me diese £por muger a un su fijo del Rey", 
+        "lang": "es", 
+       "test": "1"},
+      {"example": "Per fé, disse Lion, £i v’andasse volentieri, £ma i vo veggio £qui", 
+        "lang": "it"}
+    ]
+}

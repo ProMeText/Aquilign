@@ -1,5 +1,5 @@
 import aquilign.preproc.tok_trainer_functions as functions
-import aquilign.preproc.syntactic_tokenization as SyntacticTok
+import aquilign.preproc.regex_tokenization as RegexTok
 import aquilign.preproc.create_train_data as FormatData
 import aquilign.preproc.utils as utils
 import sys
@@ -123,7 +123,7 @@ def run_eval(data:list|str, model_path, tokenizer_name, verbose=False, delimiter
         if verbose:
             print("---\nSYNTtok New example")
             print(f"Example:   {example}")
-        tokenized_text = SyntacticTok.syntactic_tokenization(input_file=None, 
+        tokenized_text = RegexTok.regex_tokenization(input_file=None,
                                                         standalone=False, 
                                                         text=example,
                                                         use_punctuation=False,

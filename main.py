@@ -119,7 +119,6 @@ class Aligner:
 
         # Let's loop and align each pair
         # We randomize the pairs. It can help resolving memory issue.
-        random.shuffle(self.wit_pairs)
         for index, (main_wit, wit_to_compare) in enumerate(self.wit_pairs):
             main_wit_name = main_wit.split("/")[-1].split(".")[0]
             wit_to_compare_name = wit_to_compare.split("/")[-1].split(".")[0]

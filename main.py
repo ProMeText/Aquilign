@@ -243,13 +243,13 @@ class Aligner:
 
 
 def run_alignments(out_dir, input_dir, main_wit, prefix, device, use_punctuation, tokenizer, tok_models, multilingual,
-                   corpus_limit=None):
+                   corpus_limit=None, model_name_or_path="LaBSE"):
     # TODO: augmenter la sensibilité à la différence sémantique pour apporter plus d'omissions dans le texte. La fin
     # Est beaucoup trop mal alignée, alors que ça irait bien avec + d'absence. Ça doit être possible vu que des omissions sont créés.
 
     # Initialize model 
-    models = {0: "distiluse-base-multilingual-cased-v2", 1: "LaBSE", 2: "Sonar"}
-    model = Encoder(models[int(1)], device=device)
+    # models = {0: "distiluse-base-multilingual-cased-v2", 1: "LaBSE", 2: "Sonar"}
+    model = Encoder(model_name_or_path, device=device)
 
     print(f"Punctuation for tokenization: {use_punctuation}")
     MyAligner = Aligner(model, corpus_limit=corpus_limit,
@@ -295,6 +295,8 @@ if __name__ == '__main__':
                         help="Use punctuation to tokenize texts (default: True).")
     parser.add_argument("-ml", "--multilingual", default=True,
                         help="Use multilingual segmentation model.")
+    parser.add_argument("-m", "--model", default=True,
+                        help="Name or path to model.")
     parser.add_argument("-mw", "--main_wit",
                         help="Path to pivot witness.")
     parser.add_argument("-p", "--prefix", default=None,
@@ -313,6 +315,7 @@ if __name__ == '__main__':
     assert input_dir != None, "Input dir is mandatory"
     assert main_wit != None, "Main wit path is mandatory"
     prefix = args.prefix
+    model = args.model
     device = args.device
     corpus_limit = args.corpus_limit
     if corpus_limit:
@@ -343,5 +346,14 @@ if __name__ == '__main__':
     if device != "cpu":
         print("The segmentation will be performed on the GPU, as for the sentence embeddings, but "
               "alignment will be realized on the CPU for code maintenance reasons.")
-    run_alignments(out_dir, input_dir, main_wit, prefix, device, use_punctuation, tokenizer, tok_models, multilingual,
-                   corpus_limit)
+    run_alignments(out_dir,
+                   input_dir,
+                   main_wit,
+                   prefix,
+                   device,
+                   use_punctuation,
+                   tokenizer,
+                   tok_models,
+                   multilingual,
+                   corpus_limit,
+                   model)

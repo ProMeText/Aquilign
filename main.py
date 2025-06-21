@@ -47,6 +47,7 @@ class Aligner:
         self.alignment_dict = dict()
         self.text_dict = dict()
         self.files_path = glob.glob(f"{input_dir}/*/*.txt")
+        self.files_path.sort()
         self.device = device
         self.multilingual_segmentation_model = multilingual
         assert any([main_wit in path for path in

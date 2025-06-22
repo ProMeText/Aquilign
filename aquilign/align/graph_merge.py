@@ -57,7 +57,6 @@ def merge_alignment_table(alignment_dict:dict) -> list:
         G.add_edges_from(structured_a)
     connected_nodes = []
     # On prend chaque noeud et on en ressort les noeuds connectés
-    print(alignment_dict)
     for node in G:
         # https://stackoverflow.com/a/33089602
         connected_components = list(networkx.node_connected_component(G, node))

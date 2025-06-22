@@ -28,11 +28,14 @@ class Encoder:
         overlaps = []
         for line in yield_overlaps(sents, num_overlaps):
             overlaps.append(line)
-        
-        if self.model_name == "LaBSE":
-            sent_vecs = self.model.encode(overlaps, device=self.device)
-        else:
-            sents_vecs = self.t2vec_model.predict()
+
+        sent_vecs = self.model.encode(overlaps, device=self.device)
+
+        # TODO: remove this.
+        # if self.model_name == "LaBSE":
+        #     sent_vecs = self.model.encode(overlaps, device=self.device)
+        # else:
+        #     sents_vecs = self.t2vec_model.predict()
         embedding_dim = sent_vecs.size // (len(sents) * num_overlaps)
         sent_vecs.resize(num_overlaps, len(sents), embedding_dim)
 

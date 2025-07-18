@@ -113,14 +113,6 @@ class XMLAligner:
                                 margin=margin,
                                 len_penalty=len_penality,
                                  device=self.device)
-            # aligner = Bertalign(self.sentences_model,
-            #                     main_wit_text,
-            #                     other_wit_text,
-            #                     max_align=self.max_align,
-            #                     win=5, skip=-.2,
-            #                     margin=margin,
-            #                     len_penalty=len_penality,
-            #                     device=self.device)
             aligner.align_sents()
             all_orig_clauses = divs[self.main_wit].xpath("descendant::tei:cl", namespaces=self.ns_decl)
             all_target_clauses = divs[other_wit].xpath("descendant::tei:cl", namespaces=self.ns_decl)
@@ -186,6 +178,7 @@ class XMLAligner:
                     self.global_text_dict[div_identifier][wit_identifier] = minimal_division
                 except KeyError:
                     self.global_text_dict[div_identifier] = {wit_identifier: minimal_division}
+        print(self.global_text_dict)
         print("Corpus imported")
         
         
@@ -485,7 +478,6 @@ def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, devi
                             base_div=base_div,
                             remove_punct=remove_punct)
 
-    # division = "3.3.11"
     division = None
     TEIAligner.segment_corpus(lang, division=division)
     # On réécrit la liste des témoins pour aller chercher dans les fichers de sortie

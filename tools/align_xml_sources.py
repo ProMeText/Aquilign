@@ -138,15 +138,16 @@ class XMLAligner:
                 print(f"Error with witness {witness}: please add sigla as xml:id")
             self.parsed_witnesses[ID] = as_tree
 
-    def basic_validation(self):
+    def basic_validation(self, lang):
         all_good = {ID:True for ID, witness in self.parsed_witnesses.items()}
         for ID, witness in self.parsed_witnesses.items():
             try:
                 lang = witness.xpath("descendant::tei:profileDesc/tei:langUsage/tei:language/@ident", namespaces=self.ns_decl)[0]
             except IndexError:
-                print(f"Error with witness {ID}: please add language specification in "
-                      f"descendant::tei:profileDesc/tei:langUsage/tei:language/@ident")
-                all_good[ID] = False
+                if not lang:
+                    print(f"Error with witness {ID}: please add language specification in "
+                          f"descendant::tei:profileDesc/tei:langUsage/tei:language/@ident")
+                    all_good[ID] = False
         
         if False in all_good.values():
             print("Validation not passed, exiting")
@@ -474,7 +475,7 @@ def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, devi
     # On réécrit la liste des témoins pour aller chercher dans les fichers de sortie
     TEIAligner.segmented_witnesses = glob.glob(f"{TEIAligner.out_dir}/*phrased.xml")
     TEIAligner.parse_witnesses()
-    TEIAligner.basic_validation()
+    TEIAligner.basic_validation(lang=lang)
     TEIAligner.align_divisions()
     TEIAligner.align_corpus(division=division)
     
@@ -488,10 +489,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--input_dir", default=None,
-                        help="Input directory where the .txt files are stored. Each XML document must state its language in "
+                        help="Input directory (absolute path) where the .txt files are stored. Each XML document must state its language in "
                              "a @ident attribute in a `tei:profileDesc/tei:langUsage/tei:language`")
     parser.add_argument("-o", "--out_dir", default="out",
-                        help="Path to output dir.")
+                        help="Path to output dir (absolute path).")
     parser.add_argument("-rmp", "--remove_punctuation", action='store_true', default=False,
                         help="Remove punctuation before tokenizing texts (default: False).")
     parser.add_argument("-mw", "--main_wit",

@@ -13,8 +13,8 @@ import random
 import aquilign.align.utils as utils
 import aquilign.preproc.regex_tokenization as syntactic_tokenization
 from transformers import BertTokenizer, AutoModelForTokenClassification
-from aquilign.align.encoder import Encoder
-from aquilign.align.aligner import Bertalign
+from ..aquilign.align.encoder import Encoder
+from ..aquilign.align.aligner import Bertalign
 import pandas as pd
 import argparse
 import glob

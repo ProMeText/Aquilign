@@ -324,10 +324,10 @@ class XMLAligner:
         for file in self.witnesses:
             command = ["java", 
                             "-jar", 
-                            "aquilign/preproc/xsl/saxon9he.jar", 
+                            "tools/xsl/saxon9he.jar",
                             "-xi:on", 
                             file,
-                            "aquilign/preproc/xsl/tokenisation.xsl", 
+                            "tools/xsl/tokenisation.xsl",
                             f"output_dir={self.out_dir}"]
             subprocess.run(command)
             
@@ -507,8 +507,7 @@ if __name__ == '__main__':
                         help="Hierarchy to get to base division (each text must be equally structured).")
     parser.add_argument("-d", "--device", default='cpu',
                         help="Device to be used (default: cpu).")
-    parser.add_argument("-ml", "--multilingual", default=True,
-                        help="Tokenizer to be used (None, regexp, bert-based)")
+    parser.add_argument("-ml", "--multilingual", default=True)
     parser.add_argument("-l", "--corpus_limit", default=None,
                         help="Limit alignment to given proportion of each text (float)")
     args = parser.parse_args()

@@ -13,7 +13,7 @@ import tqdm
 import random
 from transformers import BertTokenizer, AutoModelForTokenClassification
 from aquilign.align.encoder import Encoder
-from aquilign.align.aligner import Bertalign
+from aquilign.align.aligner import Bertalign, Bertalign_Embbed
 import argparse
 import glob
 
@@ -97,14 +97,30 @@ class XMLAligner:
             else:
                 margin = False
                 len_penality = True
-            aligner = Bertalign(self.sentences_model,
-                                main_wit_text,
-                                other_wit_text,
+            sentence_embeddings = Bertalign_Embbed(model=self.sentences_model,
+                                                   max_align=self.max_align,
+                                                   sents=main_wit_text)
+            pivot_vecs, pivot_lens, pivot_search_simple_vecs = sentence_embeddings.return_embbeds()
+            aligner = Bertalign(model=self.sentences_model,
+                                src_sents=main_wit_text,
+                                src_lens=pivot_lens,
+                                src_vecs=pivot_vecs,
+                                search_simple_vecs=pivot_search_simple_vecs,
+                                tgt=other_wit_text,
                                 max_align=self.max_align,
-                                win=5, skip=-.2,
+                                win=5,
+                                skip=-.2,
                                 margin=margin,
                                 len_penalty=len_penality,
-                                device=self.device)
+                                 device=self.device)
+            # aligner = Bertalign(self.sentences_model,
+            #                     main_wit_text,
+            #                     other_wit_text,
+            #                     max_align=self.max_align,
+            #                     win=5, skip=-.2,
+            #                     margin=margin,
+            #                     len_penalty=len_penality,
+            #                     device=self.device)
             aligner.align_sents()
             all_orig_clauses = divs[self.main_wit].xpath("descendant::tei:cl", namespaces=self.ns_decl)
             all_target_clauses = divs[other_wit].xpath("descendant::tei:cl", namespaces=self.ns_decl)

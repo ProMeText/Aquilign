@@ -171,14 +171,14 @@ class XMLAligner:
         """
         for wit_identifier, witness in self.parsed_witnesses.items():
             path = "descendant::" + self.hierarchy
+            all_divs = witness.xpath(path, namespaces=self.ns_decl)
             # On itère sur chaque niveau hiérarchique. Un système récursif devrait fonctionner mieux.
-            for minimal_division in witness.xpath(path, namespaces=self.ns_decl):
+            for minimal_division in all_divs:
                 div_identifier = minimal_division.xpath(f"@{self.id_attribute}", namespaces=self.ns_decl)[0]
                 try:
                     self.global_text_dict[div_identifier][wit_identifier] = minimal_division
                 except KeyError:
                     self.global_text_dict[div_identifier] = {wit_identifier: minimal_division}
-        print(self.global_text_dict)
         print("Corpus imported")
         
         
@@ -485,7 +485,7 @@ def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, devi
     TEIAligner.parse_witnesses()
     TEIAligner.basic_validation(lang=lang)
     TEIAligner.align_divisions()
-    TEIAligner.align_corpus(division=division)
+    # TEIAligner.align_corpus(division=division)
     
     for wit_ID, tree in TEIAligner.parsed_witnesses.items():
         with open(f"data/XML_test/out/{wit_ID}.aligned.xml", "w") as output_sp:

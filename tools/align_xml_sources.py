@@ -485,7 +485,7 @@ def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, devi
     TEIAligner.parse_witnesses()
     TEIAligner.basic_validation(lang=lang)
     TEIAligner.align_divisions()
-    # TEIAligner.align_corpus(division=division)
+    TEIAligner.align_corpus(division=division)
     
     for wit_ID, tree in TEIAligner.parsed_witnesses.items():
         with open(f"data/XML_test/out/{wit_ID}.aligned.xml", "w") as output_sp:

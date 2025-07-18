@@ -509,8 +509,6 @@ if __name__ == '__main__':
                         help="Hierarchy to get to base division (each text must be equally structured).")
     parser.add_argument("-d", "--device", default='cpu',
                         help="Device to be used (default: cpu).")
-    parser.add_argument("-t", "--tokenizer", default='bert-based',
-                        help="Tokenizer to be used (None, regexp, bert-based)")
     parser.add_argument("-ml", "--multilingual", default=True,
                         help="Tokenizer to be used (None, regexp, bert-based)")
     parser.add_argument("-l", "--corpus_limit", default=None,
@@ -531,7 +529,6 @@ if __name__ == '__main__':
     corpus_limit = args.corpus_limit
     if corpus_limit:
         corpus_limit = float(corpus_limit)
-    tokenizer = args.tokenizer
     tokenization_models = {"fr":
                       {"model": "ProMeText/aquilign_french_segmenter",
                        "tokenizer": "dbmdz/bert-base-french-europeana-cased",
@@ -549,9 +546,7 @@ if __name__ == '__main__':
                          "tokenizer": "google-bert/bert-base-multilingual-cased",
                          "tokens_per_example": 100}
                            }
-    
-    assert tokenizer in ["None", "regexp",
-                         "bert-based"], "Authorized values for tokenizer are: None, regexp, bert-based"
+
     assert input_dir is not None, "Input dir is mandatory"
     
     

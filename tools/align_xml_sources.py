@@ -2,17 +2,18 @@ import json
 import os
 import lxml.etree as etree
 import string
-from numpyencoder import NumpyEncoder
 import sys
-import numpy as np
+from pathlib import Path
+modules_path = str(Path(__file__).parent.parent)
+if modules_path not in sys.path:
+    sys.path.append(modules_path)
 import subprocess
 import copy
 import tqdm
 import random
 from transformers import BertTokenizer, AutoModelForTokenClassification
-from ..aquilign.align.encoder import Encoder
-from ..aquilign.align.aligner import Bertalign
-import pandas as pd
+from aquilign.align.encoder import Encoder
+from aquilign.align.aligner import Bertalign
 import argparse
 import glob
 

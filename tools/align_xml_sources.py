@@ -9,9 +9,6 @@ import subprocess
 import copy
 import tqdm
 import random
-# import collatex
-import aquilign.align.utils as utils
-import aquilign.preproc.regex_tokenization as syntactic_tokenization
 from transformers import BertTokenizer, AutoModelForTokenClassification
 from ..aquilign.align.encoder import Encoder
 from ..aquilign.align.aligner import Bertalign

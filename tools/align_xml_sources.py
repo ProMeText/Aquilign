@@ -11,7 +11,7 @@ import tqdm
 import random
 # import collatex
 import aquilign.align.utils as utils
-import aquilign.preproc.syntactic_tokenization as syntactic_tokenization
+import aquilign.preproc.regex_tokenization as syntactic_tokenization
 from transformers import BertTokenizer, AutoModelForTokenClassification
 from aquilign.align.encoder import Encoder
 from aquilign.align.aligner import Bertalign
@@ -528,13 +528,17 @@ if __name__ == '__main__':
                        "tokens_per_example": 12},
                   "es": {"model": "ProMeText/aquilign_spanish_segmenter",
                          "tokenizer": "dccuchile/bert-base-spanish-wwm-cased",
-                         "tokens_per_example": 100},
+                         "tokens_per_example": 30},
                   "it": {"model": "ProMeText/aquilign_italian_segmenter",
                          "tokenizer": "dbmdz/bert-base-italian-xxl-cased",
                          "tokens_per_example": 12},
                   "la": {"model": "ProMeText/aquilign_segmenter_latin",
                          "tokenizer": "LuisAVasquez/simple-latin-bert-uncased",
-                         "tokens_per_example": 100}}
+                         "tokens_per_example": 50},
+                  "ml": {"model": "ProMeText/aquilign-multilingual-segmenter",
+                         "tokenizer": "google-bert/bert-base-multilingual-cased",
+                         "tokens_per_example": 100}
+                           }
     
     assert tokenizer in ["None", "regexp",
                          "bert-based"], "Authorized values for tokenizer are: None, regexp, bert-based"

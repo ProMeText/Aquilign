@@ -21,7 +21,7 @@
 
     <xsl:template match="/">
         <xsl:variable name="path">
-            <xsl:value-of select="concat('../../../', $output_dir, '?select=*tokenized.xml')"></xsl:value-of>
+            <xsl:value-of select="concat($output_dir, '?select=*tokenized.xml')"/>
         </xsl:variable>
         <xsl:for-each select="collection($path)//tei:TEI">
             <xsl:variable name="nom_fichier" select="@xml:id"/>

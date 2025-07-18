@@ -319,7 +319,7 @@ class XMLAligner:
 
     
     
-    def segment_corpus(self, division=None):
+    def segment_corpus(self, lang, division=None):
         """
         Tokénisation des documents XML en mots `tei:w|tei:pc`, puis en segments `tei:cl` 
         """
@@ -340,10 +340,10 @@ class XMLAligner:
                     token.set("{http://www.w3.org/XML/1998/namespace}id", generateur_id(6))
                 
             regularisation = ["java", "-jar", 
-                            "aquilign/preproc/xsl/saxon9he.jar",
+                            "tools/xsl/saxon9he.jar",
                               "-xi:on", 
                               file,
-                              "aquilign/preproc/xsl/regularisation.xsl", 
+                              "tools/xsl/regularisation.xsl",
                               f"output_dir={self.out_dir}"]
             subprocess.run(regularisation)
             
@@ -354,7 +354,10 @@ class XMLAligner:
                 all_pc = as_tree.xpath("descendant::tei:pc", namespaces=self.ns_decl)
                 [pc.getparent().remove(pc) for pc in all_pc]
             ID = as_tree.xpath("@xml:id")[0]
-            codelang = as_tree.xpath("descendant::tei:profileDesc/tei:langUsage/tei:language/@ident", namespaces=self.ns_decl)[0]
+            if lang != "ml":
+                codelang = as_tree.xpath("descendant::tei:profileDesc/tei:langUsage/tei:language/@ident", namespaces=self.ns_decl)[0]
+            else:
+                codelang = "ml"
             model_path = self.tok_models[codelang]["model"]
             tokens_per_example = self.tok_models[codelang]["tokens_per_example"]
             tokenizer_name = self.tok_models[codelang]["tokenizer"]
@@ -457,7 +460,7 @@ def generateur_id(size=6, chars=string.ascii_uppercase + string.ascii_lowercase 
     return random_letter + random_string
 
 
-def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, device, base_div, remove_punct):
+def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, device, base_div, remove_punct, lang):
     TEIAligner = XMLAligner(input_dir=input_dir,
                             hierarchy=hierarchy,
                             main_wit=main_wit,
@@ -469,7 +472,7 @@ def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, devi
 
     # division = "3.3.11"
     division = None
-    TEIAligner.segment_corpus(division=division)
+    TEIAligner.segment_corpus(lang, division=division)
     # On réécrit la liste des témoins pour aller chercher dans les fichers de sortie
     TEIAligner.segmented_witnesses = glob.glob(f"{TEIAligner.out_dir}/*phrased.xml")
     TEIAligner.parse_witnesses()
@@ -508,11 +511,18 @@ if __name__ == '__main__':
                         help="Device to be used (default: cpu).")
     parser.add_argument("-t", "--tokenizer", default='bert-based',
                         help="Tokenizer to be used (None, regexp, bert-based)")
+    parser.add_argument("-ml", "--multilingual", default=True,
+                        help="Tokenizer to be used (None, regexp, bert-based)")
     parser.add_argument("-l", "--corpus_limit", default=None,
                         help="Limit alignment to given proportion of each text (float)")
     args = parser.parse_args()
     attribute = args.attribute
     base_div = args.base_element
+    multilingual = args.multilingual
+    if multilingual:
+        lang = "ml"
+    else:
+        lang = None
     hierarchy = args.hierarchy
     input_dir = args.input_dir
     remove_punct =  args.remove_punctuation
@@ -542,9 +552,9 @@ if __name__ == '__main__':
     
     assert tokenizer in ["None", "regexp",
                          "bert-based"], "Authorized values for tokenizer are: None, regexp, bert-based"
-    assert input_dir != None, "Input dir is mandatory"
+    assert input_dir is not None, "Input dir is mandatory"
     
     
-    main(input_dir, main_wit, hierarchy, attribute, tokenization_models, device, base_div, remove_punct=remove_punct)
+    main(input_dir, main_wit, hierarchy, attribute, tokenization_models, device, base_div, remove_punct=remove_punct, lang=lang)
 
 

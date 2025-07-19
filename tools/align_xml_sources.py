@@ -28,6 +28,7 @@ class XMLAligner:
                  tokenization_models:dict = {},
                  device:str = "cpu",
                  base_div:str = "p",
+                 sentence_model:str = "LaBSE",
                  remove_punct:bool = False):
         """
         @param hierarchy: la hiérarchie sur laquelle boucler dans le document XML. Les documents source et cible doivent être
@@ -63,7 +64,7 @@ class XMLAligner:
         except FileExistsError:
             pass
 
-        self.sentences_model = Encoder("LaBSE", device=device)
+        self.sentences_model = Encoder(model_name=sentence_model, device=device)
         self.max_align = 3
         
     
@@ -468,13 +469,14 @@ def generateur_id(size=6, chars=string.ascii_uppercase + string.ascii_lowercase 
     return random_letter + random_string
 
 
-def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, device, base_div, remove_punct, lang):
+def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, device, base_div, remove_punct, lang, sentence_model):
     TEIAligner = XMLAligner(input_dir=input_dir,
                             hierarchy=hierarchy,
                             main_wit=main_wit,
                             id_attribute=id_attribute,
                             tokenization_models=tokenization_models,
                             device=device,
+                            sentence_model=sentence_model,
                             base_div=base_div,
                             remove_punct=remove_punct)
 
@@ -516,6 +518,8 @@ if __name__ == '__main__':
                         help="Hierarchy to get to base division (each text must be equally structured).")
     parser.add_argument("-d", "--device", default='cpu',
                         help="Device to be used (default: cpu).")
+    parser.add_argument("-m", "--model", default='LaBSE',
+                        help="Model to use for the alignment of the corpus. Default: LaBSE")
     parser.add_argument("-ml", "--multilingual", default=True)
     parser.add_argument("-l", "--corpus_limit", default=None,
                         help="Limit alignment to given proportion of each text (float)")
@@ -529,6 +533,7 @@ if __name__ == '__main__':
         lang = None
     hierarchy = args.hierarchy
     input_dir = args.input_dir
+    model = args.model
     remove_punct =  args.remove_punctuation
     main_wit = args.main_wit
     device = args.device
@@ -556,6 +561,15 @@ if __name__ == '__main__':
     assert input_dir is not None, "Input dir is mandatory"
     
     
-    main(input_dir, main_wit, hierarchy, attribute, tokenization_models, device, base_div, remove_punct=remove_punct, lang=lang)
+    main(input_dir,
+         main_wit,
+         hierarchy,
+         attribute,
+         tokenization_models,
+         device,
+         base_div,
+         remove_punct=remove_punct,
+         lang=lang,
+         sentence_model=model)
 
 

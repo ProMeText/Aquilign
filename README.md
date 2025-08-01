@@ -205,8 +205,6 @@ We welcome questions, feedback, and contributions to improve the Aquilign pipeli
   ➡️ Reach out via [GitHub Discussions](https://github.com/ProMeText/Aquilign/discussions) or contact the authors directly
 
 ---
-
---
 ## 📚 Citation
 
 If you use this tool in your research, please cite:

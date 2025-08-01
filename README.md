@@ -177,7 +177,7 @@ In W. Haverals, M. Koolen, & L. Thompson (Eds.), *Proceedings of the Computation
 
 **Aquilign** is part of a broader ecosystem of tools and corpora developed for the computational study of medieval multilingual textual traditions. The following repositories provide aligned datasets, segmentation resources, and use cases for the Aquilign pipeline:
 
-- [Multilingual Segmentation Data](https://github.com/ProMeText/multilingual-segmentation-data)  
+- [Multilingual Segmentation Dataset](https://github.com/carolisteia/multilingual-segmentation-dataset)
   Sentence and clause-level segmentation datasets in seven medieval languages, used to train and evaluate the segmentation model integrated into Aquilign.
 
 - [Parallelium – an aligned scriptures dataset](https://github.com/carolisteia/parallelium-scriptures-alignment-dataset)  

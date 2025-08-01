@@ -23,7 +23,7 @@ Originally presented at the *Computational Humanities Research Conference (CHR 2
 - 🧩 **Collation-ready architecture** (stemmatology support in development)  
 - 📚 Optimized for **premodern and historical corpora**
 
-AQUILIGN builds on a fork of [Bertalign]((https://github.com/bfsujason/bertalign), customized for historical languages and alignment evaluation.
+AQUILIGN builds on a fork of [Bertalign](https://github.com/bfsujason/bertalign), customized for historical languages and alignment evaluation.
 
 ---
 

@@ -140,37 +140,7 @@ To view all available options:
 ```bash
 python3 main.py --help
 ```
----
-## 📚 Citation
 
-If you use this tool in your research, please cite:
-
-Gille Levenson, M., Ing, L., & Camps, J.-B. (2024).  
-**Textual Transmission without Borders: Multiple Multilingual Alignment and Stemmatology of the _Lancelot en prose_ (Medieval French, Castilian, Italian).**  
-In W. Haverals, M. Koolen, & L. Thompson (Eds.), *Proceedings of the Computational Humanities Research Conference 2024* (Vol. 3834, pp. 65–92). CEUR.  
-🔗 [https://ceur-ws.org/Vol-3834/#paper104](https://ceur-ws.org/Vol-3834/#paper104)
-
-### 📄 BibTeX
-
-```bibtex
-@inproceedings{gillelevenson_TextualTransmissionBorders_2024a,
-  title = {Textual Transmission without Borders: Multiple Multilingual Alignment and Stemmatology of the ``Lancelot En Prose'' (Medieval French, Castilian, Italian)},
-  shorttitle = {Textual Transmission without Borders},
-  booktitle = {Proceedings of the Computational Humanities Research Conference 2024},
-  author = {Gille Levenson, Matthias and Ing, Lucence and Camps, Jean-Baptiste},
-  editor = {Haverals, Wouter and Koolen, Marijn and Thompson, Laure},
-  date = {2024},
-  series = {CEUR Workshop Proceedings},
-  volume = {3834},
-  pages = {65--92},
-  publisher = {CEUR},
-  location = {Aarhus, Denmark},
-  issn = {1613-0073},
-  url = {https://ceur-ws.org/Vol-3834/#paper104},
-  urldate = {2024-12-09},
-  eventtitle = {Computational Humanities Research 2024},
-  langid = {english}
-}
 ```
 
 ## 🔗 Related Projects
@@ -236,6 +206,40 @@ We welcome questions, feedback, and contributions to improve the Aquilign pipeli
   ➡️ Reach out via [GitHub Discussions](https://github.com/ProMeText/Aquilign/discussions) or contact the authors directly
 
 ---
+
+--
+## 📚 Citation
+
+If you use this tool in your research, please cite:
+
+Gille Levenson, M., Ing, L., & Camps, J.-B. (2024).  
+**Textual Transmission without Borders: Multiple Multilingual Alignment and Stemmatology of the _Lancelot en prose_ (Medieval French, Castilian, Italian).**  
+In W. Haverals, M. Koolen, & L. Thompson (Eds.), *Proceedings of the Computational Humanities Research Conference 2024* (Vol. 3834, pp. 65–92). CEUR.  
+🔗 [https://ceur-ws.org/Vol-3834/#paper104](https://ceur-ws.org/Vol-3834/#paper104)
+
+### 📄 BibTeX
+
+```bibtex
+@inproceedings{gillelevenson_TextualTransmissionBorders_2024a,
+  title = {Textual Transmission without Borders: Multiple Multilingual Alignment and Stemmatology of the ``Lancelot En Prose'' (Medieval French, Castilian, Italian)},
+  shorttitle = {Textual Transmission without Borders},
+  booktitle = {Proceedings of the Computational Humanities Research Conference 2024},
+  author = {Gille Levenson, Matthias and Ing, Lucence and Camps, Jean-Baptiste},
+  editor = {Haverals, Wouter and Koolen, Marijn and Thompson, Laure},
+  date = {2024},
+  series = {CEUR Workshop Proceedings},
+  volume = {3834},
+  pages = {65--92},
+  publisher = {CEUR},
+  location = {Aarhus, Denmark},
+  issn = {1613-0073},
+  url = {https://ceur-ws.org/Vol-3834/#paper104},
+  urldate = {2024-12-09},
+  eventtitle = {Computational Humanities Research 2024},
+  langid = {english}
+}
+```
+--- 
 ## 💰 Funding
 
 This work benefited from national funding managed by the **Agence Nationale de la Recherche**  

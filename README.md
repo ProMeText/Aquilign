@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/github/ProMeText/Aquilign/graph/badge.svg?token=TY5HCBOOKL)](https://codecov.io/github/ProMeText/Aquilign)
 [![Last Commit](https://img.shields.io/github/last-commit/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/commits/main)
 [![Issues](https://img.shields.io/github/issues/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/issues)
-[![Paper: CHR 2024](https://img.shields.io/badge/📄_Paper-CHR%202024-blue)](https://ceur-ws.org/Vol-3834/#paper104)
+[![Paper: CHR 2024](https://img.shields.io/badge/📄_Paper-CHR%202024-blue)](https://ceur-ws.org/Vol-3834/paper104.pdf)
 [![Forks](https://img.shields.io/github/forks/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/network/members)
 [![Stars](https://img.shields.io/github/stars/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/stargazers)
 

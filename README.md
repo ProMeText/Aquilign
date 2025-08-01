@@ -141,8 +141,7 @@ To view all available options:
 python3 main.py --help
 ```
 
-```
-
+---
 ## 🔗 Related Projects
 
 **Aquilign** is part of a broader ecosystem of tools and corpora developed for the computational study of medieval multilingual textual traditions. The following repositories provide aligned datasets, segmentation resources, and use cases for the Aquilign pipeline:

@@ -24,7 +24,7 @@ numpyencoder==0.3.0
 faiss-cpu==1.11.0
 
 # Progress bar
-tqdm==4.66.2
+tqdm==4.66.3
 
 # Packaging
 setuptools>=70.0.0

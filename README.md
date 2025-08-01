@@ -7,6 +7,8 @@
 [![Forks](https://img.shields.io/github/forks/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/network/members)
 [![Stars](https://img.shields.io/github/stars/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/stargazers)
 
+💡 *How can we computationally align medieval texts written in different languages and copied over centuries — without losing their philological depth?*
+
 **AQUILIGN** is a multilingual alignment and collation engine designed for **historical and philological corpora**.  
 It performs **clause-level alignment** of parallel texts using a combination of **regular-expression and BERT-based segmentation**, and supports multilingual workflows across medieval Romance, Latin, and Middle English texts.
 

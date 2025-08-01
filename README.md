@@ -29,7 +29,8 @@ AQUILIGN builds on a fork of [Bertalign](https://github.com/bfsujason/bertalign)
 
 ## ⚙️ Installation
 
-Supports **Python 3.9 or 3.10** only (due to dependency constraints).
+> ⚠️ **Caveat**: AQUILIGN is currently tested on **Python 3.9 and 3.10** due to certain library constraints.  
+> Compatibility with other versions is not guaranteed.
 
 ```bash
 git clone https://github.com/ProMeText/Aquilign.git

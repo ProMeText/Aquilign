@@ -13,7 +13,7 @@
 It performs **clause-level alignment** of parallel texts using a combination of **regular-expression and BERT-based segmentation**, and supports multilingual workflows across medieval Romance, Latin, and Middle English texts.
 
 🧪 Developed by [Matthias Gille Levenson](https://github.com/matgille), [Lucence Ing](https://cv.hal.science/lucence-ing), and [Jean-Baptiste Camps](https://github.com/Jean-Baptiste-Camps).  
-Originally presented at the *Computational Humanities Research Conference (CHR 2023)* — see [citation](#citation) for full reference.
+Originally presented at the *Computational Humanities Research Conference (CHR 2023)* — see [citation](https://github.com/ProMeText/Aquilign/blob/main/README.md#-citation) for full reference.
 
 
 ---

@@ -490,7 +490,7 @@ def main(input_dir, main_wit, hierarchy, id_attribute, tokenization_models, devi
     TEIAligner.align_corpus(division=division)
     
     for wit_ID, tree in TEIAligner.parsed_witnesses.items():
-        with open(f"data/XML_test/out/{wit_ID}.aligned.xml", "w") as output_sp:
+        with open(f"{TEIAligner.out_dir}/{wit_ID}.aligned.xml", "w") as output_sp:
             output_sp.write(etree.tostring(tree, pretty_print=True, encoding='utf8').decode('utf8'))
     
     

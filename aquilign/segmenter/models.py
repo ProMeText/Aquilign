@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+import aquilign.segmenter.utils as utils
 import re
 from positional_encodings.torch_encodings import PositionalEncoding1D, Summer
 
@@ -24,6 +25,11 @@ class LSTM_Encoder(nn.Module):
 
 		super().__init__()
 		self.tok_embedding = nn.Embedding(input_dim, emb_dim)
+		self.include_lang_metadata = include_lang_metadata
+		if self.include_lang_metadata:
+			# Voir si c'est la meilleure méthode. Les embeddings sont de la même dimension que ceux du texte, pas forcément ouf.
+			self.scale = torch.sqrt(torch.FloatTensor([0.5]))
+			self.lang_embedding = nn.Embedding(num_lang, emb_dim) * self.scale
 		self.bidi = bidirectional_lstm
 		print(self.tok_embedding)
 		# self.dropout = nn.Dropout(dropout)
@@ -34,6 +40,8 @@ class LSTM_Encoder(nn.Module):
 							dropout=dropout,
 							bidirectional=bidirectional_lstm)
 		self.positional_embeddings = positional_embeddings
+
+
 		if positional_embeddings:
 			self.pos1Dsum = Summer(PositionalEncoding1D(emb_dim))
 		self.device = device
@@ -44,13 +52,20 @@ class LSTM_Encoder(nn.Module):
 			self.linear_layer = nn.Linear(lstm_hidden_size * 2, tagset_size)
 		else:
 			self.linear_layer = nn.Linear(lstm_hidden_size, tagset_size)
+
+		# On normalise le long de la dimension 2 (sur chaque ligne)
 		self.softmax = nn.Softmax(dim=2)
 
 	def forward(self, src):
+		if self.include_lang_metadata:
+			txt, langs = src
+			lang_embedding = self.lang_embedding(langs)
+			embedded = self.tok_embedding(src)
+			embedded = torch.sum(embedded + lang_embedding)
+		else:
+			embedded = self.tok_embedding(src)
 
-		embedded = self.tok_embedding(src)
 		if self.positional_embeddings:
-			print(len(embedded.shape))
 			embedded = self.pos1Dsum(embedded)   #
 
 		batch_size = self.batch_size
@@ -70,7 +85,7 @@ class LSTM_Encoder(nn.Module):
 		# embedded = self.dropout(embedded)
 # embedded = self.dropout(tok_embedded + pos_embedded)
 
-class Encoder(nn.Module):
+class CnnEncoder(nn.Module):
     def __init__(self,
                  input_dim,
                  emb_dim,
@@ -191,39 +206,4 @@ class LinearDecoder(nn.Module):
     def forward(self, enc_outs):
         return self.decoder(enc_outs)
 
-
-def build_vocab(input_text, delimiters):
-	"""
-	This function builds the vocabulary upon a given training corpus
-	"""
-	my_dict = {}
-	splitted_text = list(set([token.lower() for token in re.split(delimiters, input_text) if token not in [None, '']]))
-	idx_to_token = {idx:token for idx, token in enumerate(splitted_text)}
-	token_to_idx = {token:idx for idx, token in idx_to_token.items()}
-	return token_to_idx, idx_to_token
-
-def encode_text(input_text:str, token_to_idx:dict, delimiters):
-	return [token_to_idx[item.lower()] for item in re.split(delimiters, input_text) if item not in [None, '']]
-
-def decode_text():
-	pass
-
-
-if __name__ == '__main__':
-	my_text = "This is a first sample, and this is a second one."
-	delimiters = re.compile(r"\s+|([\.?!;,¿])")
-	token_to_idx, idx_to_token = build_vocab(my_text, delimiters)
-	encoded_text = encode_text(input_text=my_text, token_to_idx=token_to_idx, delimiters=delimiters)
-	lstm = LSTM_Encoder(input_dim=13,
-						emb_dim=300,
-						bidirectional_lstm=True,
-						dropout=0.01,
-						positional_embeddings=False,
-						device="cpu",
-						lstm_hidden_size=32,
-						batch_size=1
-						)
-	as_vector = torch.tensor([encoded_text])
-	print(as_vector)
-	lstm(as_vector)
 

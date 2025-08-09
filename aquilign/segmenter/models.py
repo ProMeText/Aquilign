@@ -22,12 +22,13 @@ class LSTM_Encoder(nn.Module):
 				 batch_size:int=32,
 				 tagset_size:int=3,
 				 include_lang_metadata:bool=True):
-
 		super().__init__()
+
 		self.tok_embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata
 		if self.include_lang_metadata:
 			# Voir si c'est la meilleure méthode. Les embeddings sont de la même dimension que ceux du texte, pas forcément ouf.
+			# Autre possibilité, one-hot encoding et couche linéaire
 			self.scale = torch.sqrt(torch.FloatTensor([0.5]))
 			self.lang_embedding = nn.Embedding(num_lang, emb_dim) * self.scale
 		self.bidi = bidirectional_lstm
@@ -40,6 +41,11 @@ class LSTM_Encoder(nn.Module):
 							dropout=dropout,
 							bidirectional=bidirectional_lstm)
 		self.positional_embeddings = positional_embeddings
+
+
+		# On peut aussi ajouter une couche d'attention.
+		if attention:
+			self.attention_layer = nn.Attention()
 
 
 		if positional_embeddings:

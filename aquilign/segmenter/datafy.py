@@ -4,6 +4,7 @@ import torch
 import aquilign.segmenter.utils as utils
 import json
 import re
+import numpy as np
 
 class SentenceBoundaryDataset(torch.utils.data.Dataset):
     def __init__(self, texts_and_labels, tokenizer):
@@ -77,13 +78,15 @@ class Datafier:
                                   "<SC>": 1, # Segment content > no split
                                   "<SE>": 2  # Segment end > split after
                                   }
-        self.delimiters = re.compile(r"\s+|([\.?!;,¿])")
+        self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
         if fine_tune:
             self.input_vocabulary = input_vocab
             self.update_vocab(input_vocab)
         else:
             self.input_vocabulary, self.lang_vocabulary = None, None
-            self.create_vocab([self.train_data, self.test_data])
+            full_corpus = self.train_data + self.test_data
+            assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
+            self.create_vocab(full_corpus)
 
     def update_vocab(self, input_vocab):
         """
@@ -110,24 +113,22 @@ class Datafier:
                             "<UNK>": 1}
         lang_vocabulary = {}
         n = 2
-        full_corpus = []
-        (full_corpus.extend(sublist) for sublist in data)
-        examples = [item["example"] for item in full_corpus]
-        langs = [item["lang"] for item in full_corpus]
+        examples = [item["example"] for item in data]
+        langs = {item["lang"] for item in data}
         # On fusionne l'ensemble du corpus
-        data_string = "".join(examples).replace(" ", "")
+        data_string = " ".join(examples).replace(self.delimiter, " ")
 
         reverse_input_vocabulary = {idx: token for token, idx in input_vocabulary.items()}
         splitted_text = list(
-            set([token.lower() for token in re.split(self.delimiters, data_string) if token not in [None, '']]))
-        reverse_input_vocabulary = {**reverse_base_dict, **{idx: token for idx, token in enumerate(splitted_text)}}
-        input_vocabulary = {**base_dict, **{token: idx for idx, token in idx_to_token.items()}}
-
+            set([token.lower() for token in re.split(self.delimiters_regex, data_string) if token not in [None, '']]))
+        reverse_input_vocabulary = {**reverse_input_vocabulary, **{idx + n: token for idx, token in enumerate(splitted_text)}}
+        input_vocabulary = {**input_vocabulary, **{token: idx for idx, token in reverse_input_vocabulary.items()}}
         # Let's create lang vocab
-        for idx, lang in set(langs):
-            lang_vocabulary[lang] = idx
-        self.lang_vocabulary = lang_vocabulary
+        self.lang_vocabulary = {lang:idx for idx, lang in enumerate(langs)}
         self.input_vocabulary = input_vocabulary
+        self.reverse_input_vocabulary = reverse_input_vocabulary
+        # assert "Né" in self.input_vocabulary, "Error with vocab construction"
+
 
     def create_train_corpus(self):
         train_examples, train_targets = self.produce_corpus(self.train_data)
@@ -140,8 +141,8 @@ class Datafier:
         This function creates the test corpus, and uses the vocabulary of the train set to do so.
         Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
         """
-        treated_inputs = self.augment_data(self.test_data, double_corpus=False)
-        test_examples, test_targets = self.produce_corpus(treated_inputs)
+        # treated_inputs = self.augment_data(self.test_data, double_corpus=False)
+        test_examples, test_targets = self.produce_corpus(self.test_data)
         test_padded_examples, test_padded_targets = self.pad_and_numerize(test_examples, test_targets)
         self.test_padded_examples = utils.tensorize(test_padded_examples)
         self.test_padded_targets = utils.tensorize(test_padded_targets)
@@ -161,9 +162,7 @@ class Datafier:
         with open(path, "r") as file:
             corpus_as_dict = json.load(file)
         # self.get_frequency("".join(normalized))
-        examples = []
-        for example in corpus_as_dict['examples']:
-            examples.append((example['example'], example['lang']))
+        examples = [example for example in corpus_as_dict['examples']]
         return examples
 
     def get_txt_as_str(self, path) -> str:
@@ -183,25 +182,32 @@ class Datafier:
 
     def produce_corpus(self, data:list) -> tuple:
         """
-        This function takes the targets and creates the examples
+        This function takes the targets and creates the examples.
+        TODO: réfléchir à utiliser plutôt un tokéniseur de type BERT
         """
+        assert data != [], "Error with the data when producing the corpus"
         examples = []
         targets = []
-        for element in data:
-            # On supprime les phrases trop courtes
-            if len(element) < 5:
-                continue
+        for example in data:
+            text, _ =  example.values()
             example = []
             target = []
-            for idx, token in enumerate(element):
+            text = text.replace(self.delimiter, " " + self.delimiter)
+            as_tokens = re.split(self.delimiters_regex, text)
+            for idx, token in enumerate(as_tokens):
+                if not token:
+                    continue
                 if self.delimiter in token:
                     target.append("<SE>")
-                    example.append(token.replace(self.delimiter, ""))
+                    example.append(token.replace(self.delimiter, "").lower())
                 else:
                     target.append("<SC>")
-                    example.append(token)
+                    example.append(token.lower())
             examples.append(example)
             targets.append(target)
+            assert len(example) == len(target), "Length inconsistency"
+            print(example)
+            print(target)
         return examples, targets
 
     def pad_and_numerize(self, examples, targets):
@@ -209,21 +215,24 @@ class Datafier:
         max_length_targets = max([len(target) for target in targets])
         if max_length_targets > 500:
             print("There is a problem with some line way too long. Please check the datasets.")
+            print(np.mean([len(target) for target in targets]))
+            print(max_length_targets)
             exit(0)
         pad_value = "<PAD>"
         padded_examples = []
         padded_targets = []
         for example in examples:
+            print(example)
             example_length = len(example)
             example = example + [pad_value for _ in range(self.max_length_examples - example_length)]
             example = ["<PAD>"] + example
-            example = [self.input_vocabulary[char] for char in example]
+            example = [self.input_vocabulary[token] for token in example]
             padded_examples.append(example)
 
         for target in targets:
             target_length = len(target)
             target = target + [pad_value for _ in range(max_length_targets - target_length)]
             target = ["<PAD>"] + target
-            target = [self.target_vocabulary[char] for char in target]
+            target = [self.target_vocabulary[token] for token in target]
             padded_targets.append(target)
         return padded_examples, padded_targets

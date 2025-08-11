@@ -2,7 +2,7 @@ import re
 import torch
 import os
 import time
-
+import numpy as np
 
 def write_accuracy(message, path):
     with open(f"{path}accuracies.txt", "a") as output_file:

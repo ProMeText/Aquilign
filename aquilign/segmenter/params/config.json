@@ -1,0 +1,28 @@
+{
+  "general": {
+    "train": "/projects/users/mgillele/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json",
+    "test": "/projects/users/mgillele/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json",
+    "import": "/projects/users/mgillele/Aquilign",
+    "device": "cuda:0",
+    "workers": 8,
+    "out_dir": "/projects/users/mgillele/trash/test_segmenter"
+  },
+  "architectures": {
+    "lstm": {
+      "epochs": 100,
+      "input_dim": "self.input_dim",
+      "emb_dim": 300,
+      "bidirectional_lstm": true,
+      "dropout": 0.01,
+      "positional_embeddings": false,
+      "lstm_hidden_size": 32,
+      "batch_size": 32,
+      "num_langs": "len(self.lang_vocab)",
+      "num_lstm_layers": 1,
+      "include_lang_metadata": "True",
+      "out_classes": "self.output_dim",
+      "attention": "True",
+      "lang_emb_dim": 32
+    }
+  }
+}

@@ -14,6 +14,7 @@ import glob
 
 class Trainer:
 	def  __init__(self,
+				  config_file,
 				  architecture,
 				  epochs,
 				  lr,
@@ -81,6 +82,7 @@ class Trainer:
 		self.batch_size = batch_size
 		self.output_dim = len(self.target_classes)
 
+
 		if False:
 			self.pretrained_model = pretrained_params.get('model', None)
 			self.pretrained_vocab = pretrained_params.get('vocab', None)
@@ -123,9 +125,6 @@ class Trainer:
 			elif architecture == "rnn":
 				pass
 			elif architecture == "lstm":
-				EMB_DIM = 256
-				HID_DIM = 32  # each conv. layer has 2 * hid_dim filters
-				ENC_DROPOUT = 0.25
 				self.model = models.LSTM_Encoder(input_dim=self.input_dim,
 												 emb_dim=300,
 												 bidirectional_lstm=True,

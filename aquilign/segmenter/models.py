@@ -35,9 +35,14 @@ class LSTM_Encoder(nn.Module):
 			# Autre possibilité, one-hot encoding et couche linéaire
 			# self.scale = torch.sqrt(torch.FloatTensor([0.5]))
 			self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim) # * self.scale
+			lstm_input_size = emb_dim + lang_emb_dim
+		else:
+			lstm_input_size = emb_dim
+
+
 		self.bidi = bidirectional_lstm
 		# self.dropout = nn.Dropout(dropout)
-		self.lstm = nn.LSTM(input_size=emb_dim + lang_emb_dim,
+		self.lstm = nn.LSTM(input_size=lstm_input_size,
 							hidden_size=lstm_hidden_size,
 							num_layers=num_lstm_layers,
 							batch_first=True,
@@ -67,16 +72,14 @@ class LSTM_Encoder(nn.Module):
 		self.softmax = nn.Softmax(dim=2)
 
 	def forward(self, src, lang):
-		if self.include_lang_metadata:
-			batch_size, seq_length = src.size()
-			lang_embedding = self.lang_embedding(lang)
 
+		batch_size, seq_length = src.size()
+		# On plonge le texte
+		embedded = self.tok_embedding(src)
+		if self.include_lang_metadata:
+			lang_embedding = self.lang_embedding(lang)
 			# On augmente de dimension pour pouvoir concaténer chaque token et la langue
 			projected_lang = lang_embedding.unsqueeze(1).expand(-1, seq_length, -1)  # (batch_size, seq_length, embedding_dim)
-
-			# On plonge le texte
-			embedded = self.tok_embedding(src)
-
 			# On concatène chaque token avec le vecteur de langue.
 			embedded = torch.cat((embedded, projected_lang), 2)
 		else:

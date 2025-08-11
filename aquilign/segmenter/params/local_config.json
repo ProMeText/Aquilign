@@ -1,0 +1,26 @@
+{
+  "global": {
+    "train": "../multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json",
+    "test": "../multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json",
+    "import": "",
+    "device": "cpu",
+    "workers": 4,
+    "out_dir": "/home/mgl/Documents/test_working/"
+  },
+  "architectures": {
+    "lstm": {
+      "epochs": 50,
+      "emb_dim": 300,
+      "bidirectional_lstm": true,
+      "dropout": 0.01,
+      "positional_embeddings": false,
+      "lstm_hidden_size": 64,
+      "lr": 0.0005,
+      "batch_size": 64,
+      "num_lstm_layers": 1,
+      "include_lang_metadata": true,
+      "add_attention_layer": false,
+      "lang_emb_dim": 32
+    }
+  }
+}

@@ -29,6 +29,7 @@ class LSTM_Encoder(nn.Module):
 
 		self.tok_embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata
+		self.attention = attention
 		self.num_langs = num_langs
 		if self.include_lang_metadata:
 			# Voir si c'est la meilleure méthode. Les embeddings sont de la même dimension que ceux du texte, pas forcément ouf.
@@ -58,7 +59,7 @@ class LSTM_Encoder(nn.Module):
 
 
 		# On peut aussi ajouter une couche d'attention.
-		if attention:
+		if self.attention:
 				self.attention_layer = nn.MultiheadAttention(lstm_hidden_size * 2,
 															 num_heads=8,
 															 batch_first=True,
@@ -72,7 +73,6 @@ class LSTM_Encoder(nn.Module):
 		self.softmax = nn.Softmax(dim=2)
 
 	def forward(self, src, lang):
-
 		batch_size, seq_length = src.size()
 		# On plonge le texte
 		embedded = self.tok_embedding(src)

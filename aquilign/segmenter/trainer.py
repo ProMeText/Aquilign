@@ -22,11 +22,11 @@ class Trainer:
 				  batch_size,
 				  train_path,
 				  test_path,
-				  fine_tune,
-				  output_dir,
-				  workers,
-				  kernel_size=None,
-				 **pretrained_params):
+				  fine_tune:bool,
+				  output_dir:str,
+				  workers:int,
+				  include_lang_metadata:bool,
+				  add_attention_layer:bool):
 		# First we prepare the corpus
 		now = datetime.datetime.now()
 		self.device = device
@@ -135,9 +135,9 @@ class Trainer:
 												 batch_size=batch_size,
 												 num_langs=len(self.lang_vocab),
 												 num_lstm_layers=1,
-												 include_lang_metadata=True,
+												 include_lang_metadata=include_lang_metadata,
 												 out_classes=self.output_dim,
-												 attention=True,
+												 attention=add_attention_layer,
 												 lang_emb_dim=32
 						)
 		self.architecture = architecture
@@ -146,6 +146,7 @@ class Trainer:
 		self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
 		self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
 		print(self.model.__repr__())
+		exit(0)
 		self.accuracies = []
 
 	def save_model(self, epoch):

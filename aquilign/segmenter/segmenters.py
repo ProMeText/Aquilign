@@ -21,6 +21,8 @@ if __name__ == '__main__':
 	epochs = config_file["architectures"][architecture]["epochs"]
 	batch_size = config_file["architectures"][architecture]["batch_size"]
 	lr = config_file["architectures"][architecture]["lr"]
+	include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
+	add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
 	device = config_file["global"]["device"]
 	workers = config_file["global"]["workers"]
 	train_path = config_file["global"]["train"]
@@ -36,7 +38,9 @@ if __name__ == '__main__':
 							  train_path=train_path,
 							  test_path=test_path,
 							  output_dir=output_dir,
-							  workers=workers
+							  workers=workers,
+							  include_lang_metadata=include_lang_metadata,
+							  add_attention_layer=add_attention_layer
 							  )
 
 	trainer.train()

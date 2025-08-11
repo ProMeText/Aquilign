@@ -3,6 +3,12 @@ import torch
 import os
 import time
 
+
+def write_accuracy(message, path):
+    with open(f"{path}accuracies.txt", "a") as output_file:
+        output_file.write(message)
+
+
 class Timer:
     def __init__(self):
         self.start = time.time()

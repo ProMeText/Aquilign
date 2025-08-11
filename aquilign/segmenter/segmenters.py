@@ -12,7 +12,7 @@ if __name__ == '__main__':
 	output_dir = "/home/mgl/Documents/lstm/"
 	trainer = trainer.Trainer(architecture="lstm",
 							  epochs=1,
-							  batch_size=4,
+							  batch_size=32,
 							  lr=0.0005,
 							  fine_tune=False,
 							  device=device,

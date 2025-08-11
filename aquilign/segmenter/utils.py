@@ -1,7 +1,31 @@
 import re
 import torch
+import os
+import time
+
+class Timer:
+    def __init__(self):
+        self.start = time.time()
+        self.started_time = dict()
+        self.stopped_time = dict()
+
+    def start_timer(self, timer_name):
+        self.started_time[timer_name] = time.time()
+
+    def stop_timer(self, timer_name):
+        self.stopped_time[timer_name] = time.time()
+        print(self.stopped_time[timer_name] - self.started_time[timer_name])
+
+    def lapse(self):
+        lapse = time.time()
+        print(lapse - self.start)
 
 
+def remove_file(path):
+    try:
+        os.remove(path)
+    except OSError:
+        pass
 
 def convertToWordsSentencesAndLabels(corpus:list[dict|str], delimiter="£") -> (list, list):
     """

@@ -32,6 +32,8 @@ class CustomTextDataset(Dataset):
             self.datafy.test_padded_examples = torch.LongTensor(self.datafy.test_padded_examples).to(device)
             self.datafy.train_padded_targets = torch.LongTensor(self.datafy.train_padded_targets).to(device)
             self.datafy.test_padded_targets = torch.LongTensor(self.datafy.test_padded_targets).to(device)
+            self.datafy.train_langs = torch.LongTensor(self.datafy.train_langs).to(device)
+            self.datafy.test_langs = torch.LongTensor(self.datafy.test_langs).to(device)
 
     def __len__(self):
         if self.mode == "train":
@@ -43,10 +45,12 @@ class CustomTextDataset(Dataset):
         if self.mode == "train":
             examples = self.datafy.train_padded_examples[idx]
             labels = self.datafy.train_padded_targets[idx]
+            langs = self.datafy.train_langs[idx]
         else:
             examples = self.datafy.test_padded_examples[idx]
             labels = self.datafy.test_padded_targets[idx]
-        return examples, labels
+            langs = self.datafy.test_langs[idx]
+        return examples, langs, labels
 
 
 class Datafier:
@@ -62,7 +66,7 @@ class Datafier:
         self.unknown_threshold = 14  # Under this frequency the tokens will be tagged as <UNK>
         self.length_threshold = max_length
         self.input_vocabulary = {}
-        self.target_vocabulary = {}
+        self.target_classes = {}
         self.train_padded_examples = []
         self.train_padded_targets = []
         self.test_padded_examples = []
@@ -74,7 +78,7 @@ class Datafier:
         self.test_data = self.import_json_corpus(test_path)
         random.shuffle(self.test_data)
         self.previous_model_vocab = input_vocab
-        self.target_vocabulary = {"<PAD>": 0,
+        self.target_classes = {"<PAD>": 0,
                                   "<SC>": 1, # Segment content > no split
                                   "<SE>": 2  # Segment end > split after
                                   }
@@ -131,9 +135,10 @@ class Datafier:
 
 
     def create_train_corpus(self):
-        train_examples, train_targets = self.produce_corpus(self.train_data)
-        train_padded_examples, train_padded_targets = self.pad_and_numerize(train_examples, train_targets)
+        train_examples, train_langs, train_targets = self.produce_corpus(self.train_data)
+        train_padded_examples, train_langs, train_padded_targets = self.pad_and_numerize(train_examples, train_langs, train_targets)
         self.train_padded_examples = utils.tensorize(train_padded_examples)
+        self.train_langs = utils.tensorize(train_langs)
         self.train_padded_targets = utils.tensorize(train_padded_targets)
 
     def create_test_corpus(self):
@@ -142,9 +147,10 @@ class Datafier:
         Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
         """
         # treated_inputs = self.augment_data(self.test_data, double_corpus=False)
-        test_examples, test_targets = self.produce_corpus(self.test_data)
-        test_padded_examples, test_padded_targets = self.pad_and_numerize(test_examples, test_targets)
+        test_examples, test_langs, test_targets = self.produce_corpus(self.test_data)
+        test_padded_examples, test_langs, test_padded_targets = self.pad_and_numerize(test_examples, test_langs, test_targets)
         self.test_padded_examples = utils.tensorize(test_padded_examples)
+        self.test_langs = utils.tensorize(test_langs)
         self.test_padded_targets = utils.tensorize(test_padded_targets)
 
     def get_frequency(self, data_as_string):
@@ -188,8 +194,10 @@ class Datafier:
         assert data != [], "Error with the data when producing the corpus"
         examples = []
         targets = []
+        langs = []
         for example in data:
-            text, _ =  example.values()
+            text = example['example']
+            lang = example['lang']
             example = []
             target = []
             text = text.replace(self.delimiter, " " + self.delimiter)
@@ -203,14 +211,14 @@ class Datafier:
                 else:
                     target.append("<SC>")
                     example.append(token.lower())
+
+            assert len(example) == len(target), "Length inconsistency"
             examples.append(example)
             targets.append(target)
-            assert len(example) == len(target), "Length inconsistency"
-            print(example)
-            print(target)
-        return examples, targets
+            langs.append(lang)
+        return examples, langs, targets
 
-    def pad_and_numerize(self, examples, targets):
+    def pad_and_numerize(self, examples, langs, targets):
         self.max_length_examples = max([len(example) for example in examples])
         max_length_targets = max([len(target) for target in targets])
         if max_length_targets > 500:
@@ -222,17 +230,18 @@ class Datafier:
         padded_examples = []
         padded_targets = []
         for example in examples:
-            print(example)
             example_length = len(example)
             example = example + [pad_value for _ in range(self.max_length_examples - example_length)]
             example = ["<PAD>"] + example
             example = [self.input_vocabulary[token] for token in example]
             padded_examples.append(example)
 
+        langs = [self.lang_vocabulary[lang] for lang in langs]
+
         for target in targets:
             target_length = len(target)
             target = target + [pad_value for _ in range(max_length_targets - target_length)]
             target = ["<PAD>"] + target
-            target = [self.target_vocabulary[token] for token in target]
+            target = [self.target_classes[token] for token in target]
             padded_targets.append(target)
-        return padded_examples, padded_targets
+        return padded_examples, langs, padded_targets

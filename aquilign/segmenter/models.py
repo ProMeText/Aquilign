@@ -18,23 +18,26 @@ class LSTM_Encoder(nn.Module):
 				 positional_embeddings:bool,
 				 device:str,
 				 lstm_hidden_size:int,
-				 num_lstm_layers:int=1,
-				 batch_size:int=32,
-				 tagset_size:int=3,
-				 include_lang_metadata:bool=True):
+				 num_lstm_layers:int,
+				 batch_size:int,
+				 out_classes:int,
+				 include_lang_metadata:bool,
+				 num_langs:int,
+				 attention:bool,
+				 lang_emb_dim:int):
 		super().__init__()
 
 		self.tok_embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata
+		self.num_langs = num_langs
 		if self.include_lang_metadata:
 			# Voir si c'est la meilleure méthode. Les embeddings sont de la même dimension que ceux du texte, pas forcément ouf.
 			# Autre possibilité, one-hot encoding et couche linéaire
-			self.scale = torch.sqrt(torch.FloatTensor([0.5]))
-			self.lang_embedding = nn.Embedding(num_lang, emb_dim) * self.scale
+			# self.scale = torch.sqrt(torch.FloatTensor([0.5]))
+			self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim) # * self.scale
 		self.bidi = bidirectional_lstm
-		print(self.tok_embedding)
 		# self.dropout = nn.Dropout(dropout)
-		self.lstm = nn.LSTM(input_size=emb_dim,
+		self.lstm = nn.LSTM(input_size=emb_dim + lang_emb_dim,
 							hidden_size=lstm_hidden_size,
 							num_layers=num_lstm_layers,
 							batch_first=True,
@@ -43,9 +46,6 @@ class LSTM_Encoder(nn.Module):
 		self.positional_embeddings = positional_embeddings
 
 
-		# On peut aussi ajouter une couche d'attention.
-		if attention:
-			self.attention_layer = nn.Attention()
 
 
 		if positional_embeddings:
@@ -54,36 +54,54 @@ class LSTM_Encoder(nn.Module):
 		self.input_dim = input_dim
 		self.hidden_dim = lstm_hidden_size
 		self.batch_size = batch_size
-		if self.bidi:
-			self.linear_layer = nn.Linear(lstm_hidden_size * 2, tagset_size)
-		else:
-			self.linear_layer = nn.Linear(lstm_hidden_size, tagset_size)
+
+
+		# On peut aussi ajouter une couche d'attention.
+		if attention:
+
+			if self.bidi:
+				self.attention_layer = nn.MultiheadAttention(lstm_hidden_size * 2,
+															 num_heads=8,
+															 batch_first=True,
+															 dropout=0.01)
+				self.linear_layer = nn.Linear(lstm_hidden_size * 2, out_classes)
+			else:
+				self.attention_layer = nn.MultiheadAttention(lstm_hidden_size,
+															 num_heads=8,
+															 batch_first=True,
+															 dropout=0.01)
+				self.linear_layer = nn.Linear(lstm_hidden_size, out_classes)
 
 		# On normalise le long de la dimension 2 (sur chaque ligne)
 		self.softmax = nn.Softmax(dim=2)
 
-	def forward(self, src):
+	def forward(self, src, lang):
 		if self.include_lang_metadata:
-			txt, langs = src
-			lang_embedding = self.lang_embedding(langs)
+			batch_size, seq_length = src.size()
+			lang_embedding = self.lang_embedding(lang)
+
+			# On augmente de dimension pour pouvoir concaténer chaque token et la langue
+			projected_lang = lang_embedding.unsqueeze(1).expand(-1, seq_length, -1)  # (batch_size, seq_length, embedding_dim)
+
+			# On plonge le texte
 			embedded = self.tok_embedding(src)
-			embedded = torch.sum(embedded + lang_embedding)
+
+			# On concatène chaque token avec le vecteur de langue.
+			embedded = torch.cat((embedded, projected_lang), 2)
 		else:
 			embedded = self.tok_embedding(src)
 
 		if self.positional_embeddings:
 			embedded = self.pos1Dsum(embedded)   #
-
 		batch_size = self.batch_size
 		if self.bidi:
 			(h, c) = (torch.zeros(2, batch_size, self.hidden_dim), torch.zeros(2, batch_size, self.hidden_dim))
 		else:
 			(h, c) = (torch.zeros(1, batch_size, self.hidden_dim), torch.zeros(1, batch_size, self.hidden_dim))
 		lstm_out, (h, c) = self.lstm(embedded, (h, c))
-
+		# attended, masks = self.attention_layer(lstm_out)
 		outs = self.linear_layer(lstm_out)
 		norms = self.softmax(outs)
-
 		return norms
 		# tok_embedded = pos_embedded = [batch size, src len, emb dim]
 

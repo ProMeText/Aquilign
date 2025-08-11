@@ -5,7 +5,8 @@ import aquilign.segmenter.eval as eval
 import aquilign.segmenter.datafy as datafy
 import torch
 import datetime
-
+from torch.utils.data import DataLoader
+import tqdm
 
 
 class Trainer:
@@ -44,12 +45,14 @@ class Trainer:
 										   batch_size=batch_size,
 										   shuffle=False,
 										   num_workers=8,
-										   pin_memory=False)
+										   pin_memory=False,
+										   drop_last=True)
 		self.loaded_train_data = DataLoader(train_dataloader,
 											batch_size=batch_size,
 											shuffle=True,
 											num_workers=self.workers,
-											pin_memory=False)
+											pin_memory=False,
+										   drop_last=True)
 
 		self.output_dir = output_dir
 
@@ -59,25 +62,23 @@ class Trainer:
 
 		self.input_vocab = train_dataloader.datafy.input_vocabulary
 		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
-		self.target_vocab = train_dataloader.datafy.target_vocabulary
-		self.reverse_target_vocab = {v: k for k, v in self.target_vocab.items()}
+		self.lang_vocab = train_dataloader.datafy.lang_vocabulary
+		self.target_classes = train_dataloader.datafy.target_classes
+		self.reverse_target_vocab = {v: k for k, v in self.target_classes.items()}
 
 		self.corpus_size = train_dataloader.__len__()
 		self.steps = self.corpus_size // batch_size
 
 		self.test_steps = test_dataloader.__len__() // batch_size
-		self.tgt_PAD_IDX = self.target_vocab["<PAD>"]
+		self.tgt_PAD_IDX = self.target_classes["<PAD>"]
 		self.epochs = epochs
 		self.batch_size = batch_size
-		self.output_dim = len(self.target_vocab)
+		self.output_dim = len(self.target_classes)
 
 		if False:
 			self.pretrained_model = pretrained_params.get('model', None)
 			self.pretrained_vocab = pretrained_params.get('vocab', None)
 			self.input_vocab = train_dataloader.datafy.input_vocabulary
-			print(self.input_vocab)
-			print(len(self.input_vocab))
-			print(len(self.pretrained_vocab))
 			self.input_dim = len(self.input_vocab)
 			torch.save(self.input_vocab, f"{output_dir}/vocab.voc")
 			if self.device == 'cpu':
@@ -102,7 +103,6 @@ class Trainer:
 			self.model.encoder.tok_embedding = nn.Embedding.from_pretrained(updated_vectors)
 
 		else:
-			architecture = "cnn"
 			self.input_dim = len(self.input_vocab)
 			if architecture == "cnn":
 				EMB_DIM = 256
@@ -110,9 +110,9 @@ class Trainer:
 				ENC_LAYERS = 10  # number of conv. blocks in encoder
 				ENC_KERNEL_SIZE = kernel_size  # must be odd!
 				ENC_DROPOUT = 0.25
-				self.enc = modele.CnnEncoder(self.input_dim, EMB_DIM, HID_DIM, ENC_LAYERS, ENC_KERNEL_SIZE, ENC_DROPOUT,
+				self.enc = models.CnnEncoder(self.input_dim, EMB_DIM, HID_DIM, ENC_LAYERS, ENC_KERNEL_SIZE, ENC_DROPOUT,
 										  self.device)
-				self.dec = modele.LinearDecoder(EMB_DIM, self.output_dim)
+				self.dec = models.LinearDecoder(EMB_DIM, self.output_dim)
 				self.model = seq2seq.Seq2Seq(self.enc, self.dec)
 			elif architecture == "rnn":
 				pass
@@ -120,14 +120,20 @@ class Trainer:
 				EMB_DIM = 256
 				HID_DIM = 32  # each conv. layer has 2 * hid_dim filters
 				ENC_DROPOUT = 0.25
-				self.model = models.LSTM_Encoder(input_dim=13,
-						emb_dim=300,
-						bidirectional_lstm=True,
-						dropout=0.01,
-						positional_embeddings=True,
-						device="cpu",
-						lstm_hidden_size=32,
-						batch_size=1
+				self.model = models.LSTM_Encoder(input_dim=self.input_dim,
+												 emb_dim=300,
+												 bidirectional_lstm=True,
+												 dropout=0.01,
+												 positional_embeddings=False,
+												 device="cpu",
+												 lstm_hidden_size=32,
+												 batch_size=batch_size,
+												 num_langs=len(self.lang_vocab),
+												 num_lstm_layers=1,
+												 include_lang_metadata=True,
+												 out_classes=self.output_dim,
+												 attention=True,
+												 lang_emb_dim=32
 						)
 		self.architecture = architecture
 		self.model.to(self.device)
@@ -157,13 +163,13 @@ class Trainer:
 		print("Starting training")
 		torch.save(self.input_vocab, f"{self.output_dir}/vocab.voc")
 		print("Evaluating randomly intiated model")
-		self.evaluate()
+		# self.evaluate()
 		torch.save(self.model, f"{self.output_dir}/model_orig.pt")
 		self.model.train()
 		for epoch in range(self.epochs):
 			epoch_number = epoch + 1
 			print(f"Epoch {str(epoch_number)}")
-			for examples, targets in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
+			for examples, langs, targets in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
 				# Shape [batch_size, max_length]
 				# tensor_examples = examples.to(self.device)
 				# Shape [batch_size, max_length]
@@ -171,13 +177,14 @@ class Trainer:
 				if not self.all_dataset_on_device:
 					examples = examples.to(self.device)
 					targets = targets.to(self.device)
+					langs = langs.to(self.device)
 
 				# https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 				# for param in self.model.parameters():
 					# param.grad = None
 				self.optimizer.zero_grad()
 				# Shape [batch_size, max_length, output_dim]
-				output = self.model(examples)
+				output = self.model(examples, langs)
 				# output_dim = output.shape[-1]
 
 				# Shape [batch_size*max_length, output_dim]
@@ -211,14 +218,15 @@ class Trainer:
 		epoch_loss = []
 		Timer = utils.Timer()
 		accuracies = []
-		for examples, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
+		for examples, langs, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
 			Timer.start_timer("preds")
 			if not self.all_dataset_on_device:
 				tensor_examples = examples.to(self.device)
+				tensor_langs = langs.to(self.device)
 				tensor_target = targets.to(self.device)
 			with torch.no_grad():
-				preds = self.model(tensor_examples)
+				preds = self.model(tensor_examples, tensor_langs)
 				# Loss calculation
 				output_dim = preds.shape[-1]
 				output = preds.contiguous().view(-1, output_dim)

@@ -146,7 +146,6 @@ class Trainer:
 		self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
 		self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
 		print(self.model.__repr__())
-		exit(0)
 		self.accuracies = []
 
 	def save_model(self, epoch):

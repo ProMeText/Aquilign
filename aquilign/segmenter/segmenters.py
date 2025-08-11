@@ -1,5 +1,8 @@
 import re
 import torch
+import sys
+if len(sys) == 6:
+	sys.path.append(sys.argv[5])
 import aquilign.segmenter.trainer as trainer
 
 

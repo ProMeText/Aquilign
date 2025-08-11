@@ -95,9 +95,9 @@ class LSTM_Encoder(nn.Module):
 			embedded = self.pos1Dsum(embedded)   #
 		batch_size = self.batch_size
 		if self.bidi:
-			(h, c) = (torch.zeros(2, batch_size, self.hidden_dim), torch.zeros(2, batch_size, self.hidden_dim))
+			(h, c) = (torch.zeros(2, batch_size, self.hidden_dim).to(self.device), torch.zeros(2, batch_size, self.hidden_dim).to(self.device))
 		else:
-			(h, c) = (torch.zeros(1, batch_size, self.hidden_dim), torch.zeros(1, batch_size, self.hidden_dim))
+			(h, c) = (torch.zeros(1, batch_size, self.hidden_dim).to(self.device), torch.zeros(1, batch_size, self.hidden_dim).to(self.device))
 		lstm_out, (h, c) = self.lstm(embedded, (h, c))
 		# attended, masks = self.attention_layer(lstm_out)
 		outs = self.linear_layer(lstm_out)

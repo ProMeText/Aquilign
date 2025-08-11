@@ -221,11 +221,11 @@ class Trainer:
 		debug = False
 		epoch_accuracy = []
 		epoch_loss = []
-		Timer = utils.Timer()
+		# Timer = utils.Timer()
 		accuracies = []
 		for examples, langs, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
-			Timer.start_timer("preds")
+			# Timer.start_timer("preds")
 			if not self.all_dataset_on_device:
 				tensor_examples = examples.to(self.device)
 				tensor_langs = langs.to(self.device)
@@ -239,16 +239,16 @@ class Trainer:
 				loss = self.criterion(output, tgt)
 			if debug:
 				print("Prediction time:")
-				Timer.stop_timer("preds")
+				# Timer.stop_timer("preds")
 
 			highger_prob = torch.topk(preds, 1).indices
 			# shape [batch_size*max_length, 1]: list of all characters in batch
 			correct_predictions = 0
 			examples_number = 0
-			Timer.start_timer("acc")
+			# Timer.start_timer("acc")
 
 			# TODO: Pourquoi limiter à 10 ici ? un problème de performance probable. Le timer ?
-			for i, target in enumerate(targets[:10]):
+			for i, target in enumerate(targets):
 				# Timer.start_timer("classes")
 				predicted_class = [element[0] for element in highger_prob.tolist()[i]]
 				zipped = list(zip(predicted_class, target))

@@ -7,7 +7,7 @@ with open(sys.argv[1], "r") as input_json:
 
 # Gestion des imports
 if config_file["global"]["import"] != "":
-	sys.path.append(config_file["import"])
+	sys.path.append(config_file["global"]["import"])
 import aquilign.segmenter.trainer as trainer
 
 

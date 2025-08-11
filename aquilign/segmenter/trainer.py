@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 import tqdm
 from statistics import mean
 import numpy as np
-
+import os
 
 class Trainer:
 	def  __init__(self,
@@ -57,6 +57,9 @@ class Trainer:
 										   drop_last=True)
 
 		self.output_dir = output_dir
+		# On crée l'output dir:
+		os.makedirs(f"{self.output_dir}/models/.tmp")
+		os.makedirs(f"{self.output_dir}/best")
 
 		print(f"Number of train examples: {len(train_dataloader.datafy.train_padded_examples)}")
 		print(f"Number of test examples: {len(test_dataloader.datafy.test_padded_examples)}")
@@ -146,15 +149,15 @@ class Trainer:
 		self.accuracies = []
 
 	def save_model(self, epoch):
-		torch.save(self.model, f"models/.tmp/model_segmenter_{self.architecture}_{epoch}.pt")
+		torch.save(self.model, f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{epoch}.pt")
 
 	def get_best_model(self):
 		print(self.accuracies)
 		best_epoch_accuracy = self.accuracies.index(max(self.accuracies))
 		print(f"Best model: {best_epoch_accuracy}.")
-		models = glob.glob(f"models/.tmp/model_segmenter_{self.architecture}_*.pt")
+		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
 		for model in models:
-			if model == f"models/.tmp/model_segmenter_{self.architecture}_{best_epoch_accuracy}.pt":
+			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch_accuracy}.pt":
 				shutil.copy(model, f"{self.output_dir}/best.pt")
 			else:
 				os.remove(model)

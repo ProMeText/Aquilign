@@ -8,6 +8,7 @@ import datetime
 from torch.utils.data import DataLoader
 import tqdm
 from statistics import mean
+import numpy as np
 
 
 class Trainer:

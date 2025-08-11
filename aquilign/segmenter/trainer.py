@@ -7,6 +7,7 @@ import torch
 import datetime
 from torch.utils.data import DataLoader
 import tqdm
+from statistics import mean
 
 
 class Trainer:

@@ -125,7 +125,7 @@ class Trainer:
 												 bidirectional_lstm=True,
 												 dropout=0.01,
 												 positional_embeddings=False,
-												 device="cpu",
+												 device=self.device,
 												 lstm_hidden_size=32,
 												 batch_size=batch_size,
 												 num_langs=len(self.lang_vocab),

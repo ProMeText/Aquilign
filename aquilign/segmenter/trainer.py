@@ -10,6 +10,7 @@ import tqdm
 from statistics import mean
 import numpy as np
 import os
+import glob
 
 class Trainer:
 	def  __init__(self,
@@ -164,7 +165,7 @@ class Trainer:
 		print(f"Saving best model to {self.output_dir}/best.pt")
 
 	def train(self, clip=0.1):
-		utils.remove_file(f"{self.output_dir}accuracies.txt")
+		utils.remove_file(f"{self.output_dir}/accuracies.txt")
 		print("Starting training")
 		torch.save(self.input_vocab, f"{self.output_dir}/vocab.voc")
 		print("Evaluating randomly intiated model")

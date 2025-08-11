@@ -17,7 +17,7 @@ if __name__ == '__main__':
 	# test_path = "/home/mgl/Bureau/Travail/projets/alignement/alignement_multilingue/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json"
 	# train_path = "/home/mgl/Bureau/Travail/projets/alignement/alignement_multilingue/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json"
 	# output_dir = "/home/mgl/Documents/lstm/"
-	architecture = sys.argv[1]
+	architecture = sys.argv[2]
 	epochs = config_file[architecture]["epochs"]
 	batch_size = config_file[architecture]["batch_size"]
 	lr = config_file["architectures"][architecture]["lr"]

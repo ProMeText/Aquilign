@@ -16,6 +16,7 @@
       "dropout": 0.01,
       "positional_embeddings": false,
       "lstm_hidden_size": 32,
+      "lr": 0.0005,
       "batch_size": 32,
       "num_langs": "len(self.lang_vocab)",
       "num_lstm_layers": 1,

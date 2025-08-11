@@ -59,8 +59,8 @@ class Trainer:
 
 		self.output_dir = output_dir
 		# On crée l'output dir:
-		os.makedirs(f"{self.output_dir}/models/.tmp")
-		os.makedirs(f"{self.output_dir}/best")
+		os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
+		os.makedirs(f"{self.output_dir}/best", exist_ok=True)
 
 		print(f"Number of train examples: {len(train_dataloader.datafy.train_padded_examples)}")
 		print(f"Number of test examples: {len(test_dataloader.datafy.test_padded_examples)}")

@@ -44,10 +44,6 @@ class LSTM_Encoder(nn.Module):
 							dropout=dropout,
 							bidirectional=bidirectional_lstm)
 		self.positional_embeddings = positional_embeddings
-
-
-
-
 		if positional_embeddings:
 			self.pos1Dsum = Summer(PositionalEncoding1D(emb_dim))
 		self.device = device
@@ -58,19 +54,14 @@ class LSTM_Encoder(nn.Module):
 
 		# On peut aussi ajouter une couche d'attention.
 		if attention:
-
-			if self.bidi:
 				self.attention_layer = nn.MultiheadAttention(lstm_hidden_size * 2,
 															 num_heads=8,
 															 batch_first=True,
 															 dropout=0.01)
-				self.linear_layer = nn.Linear(lstm_hidden_size * 2, out_classes)
-			else:
-				self.attention_layer = nn.MultiheadAttention(lstm_hidden_size,
-															 num_heads=8,
-															 batch_first=True,
-															 dropout=0.01)
-				self.linear_layer = nn.Linear(lstm_hidden_size, out_classes)
+		if self.bidi:
+			self.linear_layer = nn.Linear(lstm_hidden_size * 2, out_classes)
+		else:
+			self.linear_layer = nn.Linear(lstm_hidden_size, out_classes)
 
 		# On normalise le long de la dimension 2 (sur chaque ligne)
 		self.softmax = nn.Softmax(dim=2)

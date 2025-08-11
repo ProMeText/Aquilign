@@ -9,20 +9,17 @@
   },
   "architectures": {
     "lstm": {
-      "epochs": 100,
-      "input_dim": "self.input_dim",
+      "epochs": 50,
       "emb_dim": 300,
       "bidirectional_lstm": true,
       "dropout": 0.01,
       "positional_embeddings": false,
-      "lstm_hidden_size": 32,
+      "lstm_hidden_size": 64,
       "lr": 0.0005,
-      "batch_size": 32,
-      "num_langs": "len(self.lang_vocab)",
+      "batch_size": 64,
       "num_lstm_layers": 1,
-      "include_lang_metadata": "True",
-      "out_classes": "self.output_dim",
-      "attention": "True",
+      "include_lang_metadata": true,
+      "attention": false,
       "lang_emb_dim": 32
     }
   }

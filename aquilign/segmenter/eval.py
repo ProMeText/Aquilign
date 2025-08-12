@@ -33,8 +33,8 @@ def compute_metrics(predictions, labels, padding_idx):
     # On supprime le padding des données
     labels_as_list = labels.tolist()
     predictions_as_list = predictions.tolist()
-    predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx] == 1], dtype='int32')
-    labels = np.array([item for item in labels_as_list if item == 1], dtype='int32')
+    predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx] != padding_idx], dtype='int32')
+    labels = np.array([item for item in labels_as_list if item  != padding_idx], dtype='int32')
 
     # assert 2 not in predictions.tolist(), "Labels reduction didn't work for preds"
     # assert 2 not in labels.tolist(), "Labels reduction didn't work for labels"

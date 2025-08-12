@@ -12,23 +12,38 @@ import numpy as np
 import os
 import glob
 import shutil
-
+import sys
 class Trainer:
 	def  __init__(self,
-				  config_file,
-				  architecture,
-				  epochs,
-				  lr,
-				  device,
-				  batch_size,
-				  train_path,
-				  test_path,
-				  fine_tune:bool,
-				  output_dir:str,
-				  workers:int,
-				  include_lang_metadata:bool,
-				  add_attention_layer:bool,
-				  lstm_dropout:float):
+				  config_file):
+
+		architecture = sys.argv[2]
+
+		fine_tune = False
+		epochs = config_file["global"]["epochs"]
+		batch_size = config_file["global"]["batch_size"]
+		lr = config_file["global"]["lr"]
+		device = config_file["global"]["device"]
+		workers = config_file["global"]["workers"]
+		train_path = config_file["global"]["train"]
+		test_path = config_file["global"]["test"]
+		output_dir = config_file["global"]["out_dir"]
+		if architecture == "lstm":
+			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
+			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+			lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
+			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
+			lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
+			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
+		elif architecture == "transformer":
+			hidden_dim = config_file["architectures"][architecture]["emb_dim"]
+			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
+			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
+			num_heads = config_file["architectures"][architecture]["num_heads"]
+			num_transformers_layers = config_file["architectures"][architecture]["num_transformers_layers"]
+
+
+
 		# First we prepare the corpus
 		now = datetime.datetime.now()
 		self.device = device
@@ -85,7 +100,7 @@ class Trainer:
 		self.output_dim = len(self.target_classes)
 
 
-		if False:
+		if fine_tune:
 			self.pretrained_model = pretrained_params.get('model', None)
 			self.pretrained_vocab = pretrained_params.get('vocab', None)
 			self.input_vocab = train_dataloader.datafy.input_vocabulary
@@ -126,6 +141,15 @@ class Trainer:
 				self.model = seq2seq.Seq2Seq(self.enc, self.dec)
 			elif architecture == "rnn":
 				pass
+			elif architecture == "transformer":
+				self.model = models.TransformerModel(input_dim=self.input_dim,
+													 hidden_dim=hidden_dim,
+													 num_heads=num_heads,
+													 num_layers=num_transformers_layers,
+													 output_dim=self.output_dim,
+													 num_langs=len(self.lang_vocab),
+													 lang_emb_dim=lang_emb_dim,
+													 include_lang_metadata=True)
 			elif architecture == "lstm":
 				self.model = models.LSTM_Encoder(input_dim=self.input_dim,
 												 emb_dim=300,
@@ -133,14 +157,14 @@ class Trainer:
 												 lstm_dropout=lstm_dropout,
 												 positional_embeddings=False,
 												 device=self.device,
-												 lstm_hidden_size=32,
+												 lstm_hidden_size=lstm_hidden_size,
 												 batch_size=batch_size,
 												 num_langs=len(self.lang_vocab),
-												 num_lstm_layers=1,
+												 num_lstm_layers=num_lstm_layers,
 												 include_lang_metadata=include_lang_metadata,
 												 out_classes=self.output_dim,
 												 attention=add_attention_layer,
-												 lang_emb_dim=32
+												 lang_emb_dim=lang_emb_dim
 						)
 		self.architecture = architecture
 		self.model.to(self.device)

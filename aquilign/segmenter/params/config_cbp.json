@@ -3,24 +3,31 @@
     "train": "/projects/users/mgillele/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json",
     "test": "/projects/users/mgillele/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json",
     "import": "/projects/users/mgillele/Aquilign",
+    "out_dir": "/projects/users/mgillele/trash/test_segmenter",
     "device": "cuda:0",
     "workers": 8,
-    "epochs": 50,
-    "out_dir": "/projects/users/mgillele/trash/test_segmenter"
+    "epochs": 10,
+    "lr": 0.0005,
+    "batch_size": 64
   },
   "architectures": {
     "lstm": {
       "emb_dim": 300,
       "bidirectional_lstm": true,
-      "dropout": 0.01,
+      "lstm_dropout": null,
       "positional_embeddings": false,
       "lstm_hidden_size": 64,
-      "lr": 0.0005,
-      "batch_size": 64,
       "num_lstm_layers": 1,
       "include_lang_metadata": true,
       "add_attention_layer": false,
       "lang_emb_dim": 32
+    },
+    "transformer": {
+      "emb_dim": 304,
+      "include_lang_metadata": true,
+      "lang_emb_dim": 32,
+      "num_heads": 8,
+      "num_transformers_layers": 2
     }
   }
 }

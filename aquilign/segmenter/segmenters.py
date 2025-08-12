@@ -17,32 +17,6 @@ if __name__ == '__main__':
 	# test_path = "/home/mgl/Bureau/Travail/projets/alignement/alignement_multilingue/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json"
 	# train_path = "/home/mgl/Bureau/Travail/projets/alignement/alignement_multilingue/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json"
 	# output_dir = "/home/mgl/Documents/lstm/"
-	architecture = sys.argv[2]
-	epochs = config_file["architectures"][architecture]["epochs"]
-	batch_size = config_file["architectures"][architecture]["batch_size"]
-	lr = config_file["architectures"][architecture]["lr"]
-	include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
-	add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
-	lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
-	device = config_file["global"]["device"]
-	workers = config_file["global"]["workers"]
-	train_path = config_file["global"]["train"]
-	test_path = config_file["global"]["test"]
-	output_dir = config_file["global"]["out_dir"]
-	trainer = trainer.Trainer(config_file=config_file,
-							  architecture=architecture,
-							  epochs=epochs,
-							  batch_size=batch_size,
-							  lr=lr,
-							  fine_tune=False,
-							  device=device,
-							  train_path=train_path,
-							  test_path=test_path,
-							  output_dir=output_dir,
-							  workers=workers,
-							  include_lang_metadata=include_lang_metadata,
-							  add_attention_layer=add_attention_layer,
-							  lstm_dropout=lstm_dropout
-							  )
+	trainer = trainer.Trainer(config_file=config_file)
 
 	trainer.train()

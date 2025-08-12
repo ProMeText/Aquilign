@@ -5,22 +5,29 @@
     "import": "",
     "device": "cpu",
     "workers": 4,
-    "out_dir": "/home/mgl/Documents/test_working/"
+    "out_dir": "/home/mgl/Documents/test_working/",
+    "epochs": 3,
+    "lr": 0.0005,
+    "batch_size": 64
   },
   "architectures": {
     "lstm": {
-      "epochs": 3,
       "emb_dim": 300,
       "bidirectional_lstm": true,
       "lstm_dropout": null,
       "positional_embeddings": false,
       "lstm_hidden_size": 64,
-      "lr": 0.0005,
-      "batch_size": 64,
       "num_lstm_layers": 1,
       "include_lang_metadata": true,
       "add_attention_layer": false,
       "lang_emb_dim": 32
+    },
+    "transformer": {
+      "emb_dim": 304,
+      "include_lang_metadata": true,
+      "lang_emb_dim": 32,
+      "num_heads": 8,
+      "num_transformers_layers": 2
     }
   }
 }

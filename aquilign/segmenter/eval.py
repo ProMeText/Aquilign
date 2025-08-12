@@ -74,5 +74,4 @@ def compute_metrics(predictions, labels, examples, idx_to_word, idx_to_class, pa
 
     print("Eval finished")
     print({"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l})
-    exit(0)
     return {"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l}

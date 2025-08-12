@@ -2,7 +2,14 @@ import evaluate
 import numpy as np
 
 
-def compute_metrics(eval_pred):
+def compute_metrics(predictions, labels):
+    """
+    This function evaluates the model against the targets.
+    :TODO: ignore padding classes?
+    :param predictions:
+    :param labels:
+    :return:
+    """
     print("Starting eval")
     # load the metrics we want to evaluate
     metric1 = evaluate.load("accuracy")
@@ -10,17 +17,18 @@ def compute_metrics(eval_pred):
     metric3 = evaluate.load("precision")
     metric4 = evaluate.load("f1")
 
-    predictions, labels = eval_pred
-    # get the label predictions
+    # the predictions are of shape [num_example, max_length, out_classes]
+    # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
+    # This way the out shape is [num_example, max_length]
     predictions = np.argmax(predictions, axis=2)
 
-    # get the right format
+    # We flatten the 2 vectors to get 1d vectors of shape [num_examples*max_length]
     predictions = np.array(predictions, dtype='int32').flatten()
     labels = np.array(labels, dtype='int32').flatten()
 
     # automatically, value of -100 are produce ; we haven't understood why but we change them to 0. If not, it will give poor results
     ###
-    labels = [0 if x == -100 else x for x in labels]
+    # labels = [0 if x == -100 else x for x in labels]
     ###
     # print(predictions)
     # print(labels)
@@ -37,4 +45,5 @@ def compute_metrics(eval_pred):
     [f1_l.extend(v) for k, v in f1.items()]
 
     print("Eval finished")
+    print({"accurracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l})
     return {"accurracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l}

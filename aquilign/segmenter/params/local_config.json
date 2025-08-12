@@ -9,7 +9,7 @@
   },
   "architectures": {
     "lstm": {
-      "epochs": 50,
+      "epochs": 3,
       "emb_dim": 300,
       "bidirectional_lstm": true,
       "dropout": 0.01,

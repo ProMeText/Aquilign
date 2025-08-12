@@ -11,6 +11,7 @@ from statistics import mean
 import numpy as np
 import os
 import glob
+import shutil
 
 class Trainer:
 	def  __init__(self,
@@ -212,7 +213,7 @@ class Trainer:
 			self.save_model(epoch_number)
 		self.get_best_model()
 
-	def evaluate(self):
+	def evaluate(self, loss_calculation=False):
 		"""
 		Réécrire la fonction pour comparer directement target et prédiction pour
 		produire l'accuracy.
@@ -222,7 +223,8 @@ class Trainer:
 		epoch_accuracy = []
 		epoch_loss = []
 		# Timer = utils.Timer()
-		accuracies = []
+		all_preds = []
+		all_targets = []
 		for examples, langs, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
 			# Timer.start_timer("preds")
@@ -232,61 +234,18 @@ class Trainer:
 				tensor_target = targets.to(self.device)
 			with torch.no_grad():
 				preds = self.model(tensor_examples, tensor_langs)
-				# Loss calculation
-				output_dim = preds.shape[-1]
-				output = preds.contiguous().view(-1, output_dim)
-				tgt = tensor_target.contiguous().view(-1)
-				loss = self.criterion(output, tgt)
-			if debug:
-				print("Prediction time:")
-				# Timer.stop_timer("preds")
+				all_preds.append(preds)
+				all_targets.append(targets)
 
-			highger_prob = torch.topk(preds, 1).indices
-			# shape [batch_size*max_length, 1]: list of all characters in batch
-			correct_predictions = 0
-			examples_number = 0
-			# Timer.start_timer("acc")
+				if loss_calculation:
+					output_dim = preds.shape[-1]
+					output = preds.contiguous().view(-1, output_dim)
+					tgt = tensor_target.contiguous().view(-1)
+					loss = self.criterion(output, tgt)
 
-			# TODO: Pourquoi limiter à 10 ici ? un problème de performance probable. Le timer ?
-			for i, target in enumerate(targets):
-				# Timer.start_timer("classes")
-				predicted_class = [element[0] for element in highger_prob.tolist()[i]]
-				zipped = list(zip(predicted_class, target))
-				# print("Predicted classes time:")
-				# Timer.stop_timer("classes")
-
-				# We have to exclude the evaluation when target is <PAD> because the network has ignored when training;
-				# We ignore them too.
-				# Timer.start_timer("accuracy_comp")
-				for prediction, target_class in zipped:
-					examples_number += 1
-					if target_class == self.tgt_PAD_IDX:
-						examples_number -= 1
-						continue
-					# On ignore la classe word content
-					elif target_class == 3:
-						examples_number -= 1
-						continue
-					if prediction == self.tgt_PAD_IDX:
-						pass
-					elif prediction == target_class:
-						correct_predictions += 1
-				# print("Accuracy only computation time:")
-				# Timer.stop_timer("accuracy_comp")
-				# exit(0)
-			if debug:
-				print("Full accuracy computation time:")
-				# Timer.stop_timer("acc")
-
-			accuracy = correct_predictions / examples_number
-			epoch_accuracy.append(accuracy)
-			epoch_loss.append(loss.item())
-			accuracies.append(accuracy)
-
-		global_accuracy = mean(epoch_accuracy)
-		global_loss = mean(epoch_loss)
-		self.accuracies.append(global_accuracy)
-		# utils.write_accuracies(self.accuracies, self.output_dir)
-		utils.write_accuracy(f"{np.mean(accuracies)}\n", self.output_dir)
-		print(f"Loss: {global_loss}\n"
-			  f"Accuracy on test set: {global_accuracy}")
+		# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
+		cat_preds = torch.cat(all_preds, dim=0)
+		cat_targets = torch.cat(all_targets, dim=0)
+		print(cat_preds.shape)
+		print(cat_targets.shape)
+		eval.compute_metrics(cat_preds, cat_targets)

@@ -246,4 +246,5 @@ class Trainer:
 		# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
 		cat_preds = torch.cat(all_preds, dim=0)
 		cat_targets = torch.cat(all_targets, dim=0)
-		eval.compute_metrics(cat_preds, cat_targets, self.tgt_PAD_IDX)
+		results = eval.compute_metrics(cat_preds, cat_targets, self.tgt_PAD_IDX)
+		self.accuracies.append(results["accuracy"])

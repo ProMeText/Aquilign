@@ -247,4 +247,4 @@ class Trainer:
 		cat_preds = torch.cat(all_preds, dim=0)
 		cat_targets = torch.cat(all_targets, dim=0)
 		results = eval.compute_metrics(cat_preds, cat_targets, self.tgt_PAD_IDX)
-		self.accuracies.append(results["accuracy"])
+		self.accuracies.append(results["accuracy"]["accuracy"])

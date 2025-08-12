@@ -56,5 +56,5 @@ def compute_metrics(predictions, labels, padding_idx):
     [f1_l.extend(v) for k, v in f1.items()]
 
     print("Eval finished")
-    print({"accurracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l})
-    return {"accurracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l}
+    print({"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l})
+    return {"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l}

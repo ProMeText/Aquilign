@@ -4,7 +4,7 @@ import evaluate
 import numpy as np
 import torch
 
-def compute_metrics(predictions, labels, padding_idx, architecture):
+def compute_metrics(predictions, labels, padding_idx):
     """
     This function evaluates the model against the targets.
     :TODO: ignore padding classes?

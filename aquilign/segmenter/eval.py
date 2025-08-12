@@ -1,8 +1,10 @@
+import json
+
 import evaluate
 import numpy as np
 import torch
 
-def compute_metrics(predictions, labels):
+def compute_metrics(predictions, labels, padding_idx):
     """
     This function evaluates the model against the targets.
     :TODO: ignore padding classes?
@@ -24,16 +26,23 @@ def compute_metrics(predictions, labels):
     # This way the out shape is [num_example, max_length]
     predictions = np.argmax(predictions, axis=2)
 
-    # We flatten the 2 vectors to get 1d vectors of shape [num_examples*max_length]
+
+    # We flatten the 2 vectors to get a 1d vector of shape [num_examples*max_length]
     predictions = np.array(predictions, dtype='int32').flatten()
     labels = np.array(labels, dtype='int32').flatten()
 
+    # On supprime le padding des données
+    labels_as_list = labels.tolist()
+    predictions_as_list = predictions.tolist()
+    predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx] != padding_idx], dtype='int32')
+    labels = np.array([item for item in labels_as_list if item != padding_idx], dtype='int32')
+
+    # assert 2 not in predictions.tolist(), "Labels reduction didn't work for preds"
+    # assert 2 not in labels.tolist(), "Labels reduction didn't work for labels"
     # automatically, value of -100 are produce ; we haven't understood why but we change them to 0. If not, it will give poor results
     ###
     # labels = [0 if x == -100 else x for x in labels]
     ###
-    # print(predictions)
-    # print(labels)
 
     acc = metric1.compute(predictions=predictions, references=labels)
     recall = metric2.compute(predictions=predictions, references=labels, average=None)

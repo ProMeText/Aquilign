@@ -78,9 +78,9 @@ class Datafier:
         self.test_data = self.import_json_corpus(test_path)
         random.shuffle(self.test_data)
         self.previous_model_vocab = input_vocab
-        self.target_classes = {"<PAD>": 0,
-                                  "<SC>": 1, # Segment content > no split
-                                  "<SE>": 2  # Segment end > split after
+        self.target_classes = {"<SC>": 0, # Segment content > no split
+                               "<SB>": 1,# Segment boundary > split before
+                               "<PAD>": 2
                                   }
         self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
         if fine_tune:
@@ -206,7 +206,7 @@ class Datafier:
                 if not token:
                     continue
                 if self.delimiter in token:
-                    target.append("<SE>")
+                    target.append("<SB>")
                     example.append(token.replace(self.delimiter, "").lower())
                 else:
                     target.append("<SC>")

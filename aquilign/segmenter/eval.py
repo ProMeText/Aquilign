@@ -1,6 +1,6 @@
 import evaluate
 import numpy as np
-
+import torch
 
 def compute_metrics(predictions, labels):
     """
@@ -11,6 +11,8 @@ def compute_metrics(predictions, labels):
     :return:
     """
     print("Starting eval")
+    predictions = predictions.cpu()
+    labels = labels.cpu()
     # load the metrics we want to evaluate
     metric1 = evaluate.load("accuracy")
     metric2 = evaluate.load("recall")

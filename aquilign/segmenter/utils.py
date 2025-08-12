@@ -1,3 +1,4 @@
+import json
 import re
 import torch
 import os
@@ -129,7 +130,9 @@ def tensorize(array):
     return tensorized_array
 
 
-
+def serialize_dict(dictionnary, path):
+    with open(path, "w") as f:
+        json.dump(dictionnary, f)
 
 def encode_text(input_text:str, token_to_idx:dict, delimiters):
 	return [token_to_idx[item.lower()] for item in re.split(delimiters, input_text) if item not in [None, '']]

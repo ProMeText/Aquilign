@@ -90,7 +90,6 @@ class LSTM_Encoder(nn.Module):
 				 attention: bool,
 				 lang_emb_dim: int):
 		super().__init__()
-
 		self.tok_embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata
 		self.attention = attention

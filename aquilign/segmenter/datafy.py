@@ -20,8 +20,8 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, fine_tune, input_vocab, max_length, device, all_dataset_on_device, delimiter):
-        self.datafy = Datafier(train_path, test_path, fine_tune, input_vocab, max_length, delimiter)
+    def __init__(self, mode, train_path, test_path, fine_tune, input_vocab, max_length, device, all_dataset_on_device, delimiter, output_dir):
+        self.datafy = Datafier(train_path, test_path, fine_tune, input_vocab, max_length, delimiter, output_dir)
         self.mode = mode
         if mode == "train":
             self.datafy.create_train_corpus()
@@ -60,13 +60,15 @@ class Datafier:
                  fine_tune,
                  input_vocab,
                  max_length,
-                 delimiter):
+                 delimiter,
+                 output_dir):
         self.max_length_examples = 0
         self.frequency_dict = {}
+        self.output_dir = output_dir
         self.unknown_threshold = 14  # Under this frequency the tokens will be tagged as <UNK>
         self.length_threshold = max_length
         self.input_vocabulary = {}
-        self.target_classes = {}
+        self.reverse_target_classes = {}
         self.train_padded_examples = []
         self.train_padded_targets = []
         self.test_padded_examples = []
@@ -78,19 +80,22 @@ class Datafier:
         self.test_data = self.import_json_corpus(test_path)
         random.shuffle(self.test_data)
         self.previous_model_vocab = input_vocab
-        self.target_classes = {"<SC>": 0, # Segment content > no split
-                               "<SB>": 1,# Segment boundary > split before
+        self.target_classes = {"<SC>": 0,  # Segment content > no split
+                               "<SB>": 1,  # Segment boundary > split before
                                "<PAD>": 2
-                                  }
+                               }
+        self.reverse_target_classes = {idx:token for token, idx in self.target_classes.items()}
+        utils.serialize_dict(self.target_classes, f"{self.output_dir}/target_classes.json")
+        utils.serialize_dict(self.reverse_target_classes, f"{self.output_dir}/reverse_target_classes.json")
         self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
         if fine_tune:
             self.input_vocabulary = input_vocab
             self.update_vocab(input_vocab)
         else:
-            self.input_vocabulary, self.lang_vocabulary = None, None
             full_corpus = self.train_data + self.test_data
             assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
             self.create_vocab(full_corpus)
+
 
     def update_vocab(self, input_vocab):
         """
@@ -115,23 +120,27 @@ class Datafier:
     def create_vocab(self, data:list[list]):
         input_vocabulary = {"<PAD>": 0,
                             "<UNK>": 1}
-        lang_vocabulary = {}
-        n = 2
         examples = [item["example"] for item in data]
         langs = {item["lang"] for item in data}
         # On fusionne l'ensemble du corpus
         data_string = " ".join(examples).replace(self.delimiter, " ")
+        # data_string = data_string[:100]
+        splitted_text = re.split(self.delimiters_regex, data_string)
 
-        reverse_input_vocabulary = {idx: token for token, idx in input_vocabulary.items()}
-        splitted_text = list(
-            set([token.lower() for token in re.split(self.delimiters_regex, data_string) if token not in [None, '']]))
-        reverse_input_vocabulary = {**reverse_input_vocabulary, **{idx + n: token for idx, token in enumerate(splitted_text)}}
-        input_vocabulary = {**input_vocabulary, **{token: idx for idx, token in reverse_input_vocabulary.items()}}
-        # Let's create lang vocab
+        n = 2
+        for item in splitted_text:
+            if item not in ["", None] and item.lower() not in input_vocabulary:
+                input_vocabulary[item.lower()] = n
+                n += 1
+        reverse_input_vocabulary = {idx + n: token for idx, token in enumerate(splitted_text)}
+
         self.lang_vocabulary = {lang:idx for idx, lang in enumerate(langs)}
         self.input_vocabulary = input_vocabulary
         self.reverse_input_vocabulary = reverse_input_vocabulary
-        # assert "Né" in self.input_vocabulary, "Error with vocab construction"
+
+        utils.serialize_dict(self.reverse_input_vocabulary, f"{self.output_dir}/reverse_input_vocabulary.json")
+        utils.serialize_dict(self.input_vocabulary, f"{self.output_dir}/input_vocabulary.json")
+        utils.serialize_dict(self.lang_vocabulary, f"{self.output_dir}/lang_vocabulary.json")
 
 
     def create_train_corpus(self):

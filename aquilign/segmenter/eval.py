@@ -1,10 +1,11 @@
 import json
+import random
 
 import evaluate
 import numpy as np
 import torch
 
-def compute_metrics(predictions, labels, padding_idx):
+def compute_metrics(predictions, labels, examples, idx_to_word, idx_to_class, padding_idx, batch_size):
     """
     This function evaluates the model against the targets.
     :TODO: ignore padding classes?
@@ -12,6 +13,26 @@ def compute_metrics(predictions, labels, padding_idx):
     :param labels:
     :return:
     """
+
+    # the predictions are of shape [num_example, max_length, out_classes]
+    # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
+    # This way the out shape is [num_example, max_length]
+    predictions = np.argmax(predictions, axis=2)
+
+    # On teste un exemple pour voir si tout est OK
+    random_number = random.randint(0, batch_size)
+    print(f"Testing example {random_number}:")
+    example = examples[random_number].tolist()
+    example = example[1:]
+    position_first_padding = next(idx for idx, ident in enumerate(example) if ident == 0)
+    example_no_padding = example[:position_first_padding]
+    corresp_prediction = predictions[random_number].tolist()[1:position_first_padding + 1]
+    corresp_prediction_as_classes = [idx_to_class[item] for item in corresp_prediction]
+    corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
+    assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str)
+    print(list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes)))
+
+
     print("Starting eval")
     predictions = predictions.cpu()
     labels = labels.cpu()
@@ -21,10 +42,6 @@ def compute_metrics(predictions, labels, padding_idx):
     metric3 = evaluate.load("precision")
     metric4 = evaluate.load("f1")
 
-    # the predictions are of shape [num_example, max_length, out_classes]
-    # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
-    # This way the out shape is [num_example, max_length]
-    predictions = np.argmax(predictions, axis=2)
 
     # We flatten the 2 vectors to get a 1d vector of shape [num_examples*max_length]
     predictions = np.array(predictions, dtype='int32').flatten()
@@ -57,4 +74,5 @@ def compute_metrics(predictions, labels, padding_idx):
 
     print("Eval finished")
     print({"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l})
+    exit(0)
     return {"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l}

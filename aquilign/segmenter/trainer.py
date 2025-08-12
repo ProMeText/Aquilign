@@ -59,8 +59,8 @@ class Trainer:
 			input_vocab = None
 		self.all_dataset_on_device = False
 		print("Loading data")
-		train_dataloader = datafy.CustomTextDataset("train", train_path, test_path, fine_tune, input_vocab, max_length, self.device, self.all_dataset_on_device, "£")
-		test_dataloader = datafy.CustomTextDataset("test", train_path, test_path, fine_tune, input_vocab, max_length, self.device, self.all_dataset_on_device, "£")
+		train_dataloader = datafy.CustomTextDataset("train", train_path, test_path, fine_tune, input_vocab, max_length, self.device, self.all_dataset_on_device, "£", output_dir)
+		test_dataloader = datafy.CustomTextDataset("test", train_path, test_path, fine_tune, input_vocab, max_length, self.device, self.all_dataset_on_device, "£", output_dir)
 
 		self.loaded_test_data = DataLoader(test_dataloader,
 										   batch_size=batch_size,
@@ -88,7 +88,7 @@ class Trainer:
 		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
 		self.lang_vocab = train_dataloader.datafy.lang_vocabulary
 		self.target_classes = train_dataloader.datafy.target_classes
-		self.reverse_target_vocab = {v: k for k, v in self.target_classes.items()}
+		self.reverse_target_classes = train_dataloader.datafy.reverse_target_classes
 
 		self.corpus_size = train_dataloader.__len__()
 		self.steps = self.corpus_size // batch_size
@@ -250,6 +250,7 @@ class Trainer:
 		# Timer = utils.Timer()
 		all_preds = []
 		all_targets = []
+		all_examples = []
 		for examples, langs, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
 			# Timer.start_timer("preds")
@@ -261,6 +262,7 @@ class Trainer:
 				preds = self.model(tensor_examples, tensor_langs)
 				all_preds.append(preds)
 				all_targets.append(targets)
+				all_examples.append(examples)
 
 				if loss_calculation:
 					output_dim = preds.shape[-1]
@@ -271,5 +273,12 @@ class Trainer:
 		# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
 		cat_preds = torch.cat(all_preds, dim=0)
 		cat_targets = torch.cat(all_targets, dim=0)
-		results = eval.compute_metrics(cat_preds, cat_targets, self.tgt_PAD_IDX)
+		cat_examples = torch.cat(all_examples, dim=0)
+		results = eval.compute_metrics(predictions=cat_preds,
+									   labels=cat_targets,
+									   examples=cat_examples,
+									   idx_to_word=self.reverse_input_vocab,
+									   idx_to_class=self.reverse_target_classes,
+									   padding_idx=self.tgt_PAD_IDX,
+									   batch_size=self.batch_size)
 		self.accuracies.append(results["accuracy"]["accuracy"])

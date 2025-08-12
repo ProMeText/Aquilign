@@ -61,11 +61,15 @@ class TransformerModel(nn.Module):
 		# Passer à travers le Transformer
 		transformer_out = self.transformer_encoder(src)
 
+
+		transformer_out = transformer_out.permute(1, 0, 2)
 		# Prendre la sortie du dernier pas de temps
-		last_out = transformer_out[-1, :, :]  # (batch_size, hidden_dim)
+		# last_out = transformer_out[-1, :, :]  # (batch_size, hidden_dim)
 
 		# Passer à travers la couche de sortie
-		output = self.fc_out(last_out)  # (batch_size, output_dim)
+		output = self.fc_out(transformer_out)  # (batch_size, output_dim)
+		print(output.shape)
+		exit(0)
 		return output
 
 

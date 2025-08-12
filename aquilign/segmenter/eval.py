@@ -24,10 +24,7 @@ def compute_metrics(predictions, labels, padding_idx):
     # the predictions are of shape [num_example, max_length, out_classes]
     # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
     # This way the out shape is [num_example, max_length]
-    print(predictions)
-    print(predictions.shape)
     predictions = np.argmax(predictions, axis=1)
-    exit(0)
 
     # We flatten the 2 vectors to get a 1d vector of shape [num_examples*max_length]
     predictions = np.array(predictions, dtype='int32').flatten()

@@ -14,7 +14,7 @@ class LSTM_Encoder(nn.Module):
 				 input_dim:int,
 				 emb_dim:int,
 				 bidirectional_lstm:bool,
-				 dropout:float,
+				 lstm_dropout:float,
 				 positional_embeddings:bool,
 				 device:str,
 				 lstm_hidden_size:int,
@@ -43,11 +43,13 @@ class LSTM_Encoder(nn.Module):
 
 		self.bidi = bidirectional_lstm
 		# self.dropout = nn.Dropout(dropout)
+		if not lstm_dropout:
+			lstm_dropout = 0
 		self.lstm = nn.LSTM(input_size=lstm_input_size,
 							hidden_size=lstm_hidden_size,
 							num_layers=num_lstm_layers,
 							batch_first=True,
-							dropout=dropout,
+							dropout=lstm_dropout,
 							bidirectional=bidirectional_lstm)
 		self.positional_embeddings = positional_embeddings
 		if positional_embeddings:

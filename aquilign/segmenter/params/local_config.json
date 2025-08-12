@@ -12,7 +12,7 @@
       "epochs": 3,
       "emb_dim": 300,
       "bidirectional_lstm": true,
-      "dropout": 0.01,
+      "lstm_dropout": null,
       "positional_embeddings": false,
       "lstm_hidden_size": 64,
       "lr": 0.0005,

@@ -27,7 +27,8 @@ class Trainer:
 				  output_dir:str,
 				  workers:int,
 				  include_lang_metadata:bool,
-				  add_attention_layer:bool):
+				  add_attention_layer:bool,
+				  lstm_dropout:float):
 		# First we prepare the corpus
 		now = datetime.datetime.now()
 		self.device = device
@@ -129,7 +130,7 @@ class Trainer:
 				self.model = models.LSTM_Encoder(input_dim=self.input_dim,
 												 emb_dim=300,
 												 bidirectional_lstm=True,
-												 dropout=0.01,
+												 lstm_dropout=lstm_dropout,
 												 positional_embeddings=False,
 												 device=self.device,
 												 lstm_hidden_size=32,

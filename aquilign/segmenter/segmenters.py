@@ -23,6 +23,7 @@ if __name__ == '__main__':
 	lr = config_file["architectures"][architecture]["lr"]
 	include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
 	add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+	lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
 	device = config_file["global"]["device"]
 	workers = config_file["global"]["workers"]
 	train_path = config_file["global"]["train"]
@@ -40,7 +41,8 @@ if __name__ == '__main__':
 							  output_dir=output_dir,
 							  workers=workers,
 							  include_lang_metadata=include_lang_metadata,
-							  add_attention_layer=add_attention_layer
+							  add_attention_layer=add_attention_layer,
+							  lstm_dropout=lstm_dropout
 							  )
 
 	trainer.train()

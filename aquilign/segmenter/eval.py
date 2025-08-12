@@ -17,6 +17,8 @@ def compute_metrics(predictions, labels, examples, idx_to_word, idx_to_class, pa
     # the predictions are of shape [num_example, max_length, out_classes]
     # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
     # This way the out shape is [num_example, max_length]
+    predictions = predictions.cpu()
+    labels = labels.cpu()
     predictions = np.argmax(predictions, axis=2)
 
     # On teste un exemple pour voir si tout est OK
@@ -34,8 +36,6 @@ def compute_metrics(predictions, labels, examples, idx_to_word, idx_to_class, pa
 
 
     print("Starting eval")
-    predictions = predictions.cpu()
-    labels = labels.cpu()
     # load the metrics we want to evaluate
     metric1 = evaluate.load("accuracy")
     metric2 = evaluate.load("recall")

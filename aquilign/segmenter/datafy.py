@@ -78,7 +78,6 @@ class Datafier:
         self.delimiter = delimiter
         self.train_data = self.import_json_corpus(train_path)
         self.test_data = self.import_json_corpus(test_path)
-        random.shuffle(self.test_data)
         self.previous_model_vocab = input_vocab
         self.target_classes = {"<SC>": 0,  # Segment content > no split
                                "<SB>": 1,  # Segment boundary > split before

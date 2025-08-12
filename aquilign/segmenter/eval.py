@@ -22,17 +22,19 @@ def compute_metrics(predictions, labels, examples, idx_to_word, idx_to_class, pa
     predictions = np.argmax(predictions, axis=2)
 
     # On teste un exemple pour voir si tout est OK
-    random_number = random.randint(0, batch_size)
-    print(f"Testing example {random_number}:")
-    example = examples[random_number].tolist()
-    example = example[1:]
-    position_first_padding = next(idx for idx, ident in enumerate(example) if ident == 0)
-    example_no_padding = example[:position_first_padding]
-    corresp_prediction = predictions[random_number].tolist()[1:position_first_padding + 1]
-    corresp_prediction_as_classes = [idx_to_class[item] for item in corresp_prediction]
-    corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
-    assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str)
-    print(list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes)))
+    random_number = random.randint(0, batch_size - 10)
+    example_range = examples[random_number: random_number + 10]
+    print(f"Testing example {random_number} to {random_number + 10}:")
+    for example in example_range:
+        example = example.tolist()
+        example = example[1:]
+        position_first_padding = next(idx for idx, ident in enumerate(example) if ident == 0)
+        example_no_padding = example[:position_first_padding]
+        corresp_prediction = predictions[random_number].tolist()[1:position_first_padding + 1]
+        corresp_prediction_as_classes = [idx_to_class[item] for item in corresp_prediction]
+        corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
+        assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str)
+        print(list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes)))
 
 
     print("Starting eval")

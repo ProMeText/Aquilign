@@ -4,7 +4,7 @@ import evaluate
 import numpy as np
 import torch
 
-def compute_metrics(predictions, labels, padding_idx):
+def compute_metrics(predictions, labels, padding_idx, architecture):
     """
     This function evaluates the model against the targets.
     :TODO: ignore padding classes?
@@ -33,8 +33,8 @@ def compute_metrics(predictions, labels, padding_idx):
     # On supprime le padding des données
     labels_as_list = labels.tolist()
     predictions_as_list = predictions.tolist()
-    predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx] != padding_idx], dtype='int32')
-    labels = np.array([item for item in labels_as_list if item != padding_idx], dtype='int32')
+    predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx] == 1], dtype='int32')
+    labels = np.array([item for item in labels_as_list if item == 1], dtype='int32')
 
     # assert 2 not in predictions.tolist(), "Labels reduction didn't work for preds"
     # assert 2 not in labels.tolist(), "Labels reduction didn't work for labels"
@@ -42,8 +42,9 @@ def compute_metrics(predictions, labels, padding_idx):
     ###
     # labels = [0 if x == -100 else x for x in labels]
     ###
-
-    acc = metric1.compute(predictions=predictions, references=labels)
+    #predictions_for_accuracy = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx]  == 1], dtype='int32')
+    #labels_for_accuracy = np.array([item for item in labels_as_list if item == 1], dtype='int32')
+    acc = metric1.compute(predictions=predictions_for_accuracy, references=labels_for_accuracy)
     recall = metric2.compute(predictions=predictions, references=labels, average=None)
     recall_l = []
     [recall_l.extend(v) for k, v in recall.items()]

@@ -219,6 +219,7 @@ class Trainer:
 		self.model.train()
 		for epoch in range(self.epochs):
 			epoch_number = epoch + 1
+			last_epoch = epoch == range(self.epochs)[-1]
 			print(f"Epoch {str(epoch_number)}")
 			for examples, langs, targets in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
 				# Shape [batch_size, max_length]
@@ -254,7 +255,6 @@ class Trainer:
 
 			# self.model.eval()
 			self.scheduler.step()
-			last_epoch = epoch == range(self.epochs)
 			self.evaluate(last_epoch)
 			self.save_model(epoch_number)
 		self.get_best_model()
@@ -339,7 +339,7 @@ class Trainer:
 		print(f"Loss: {global_loss}\n"
 			  f"Accuracy on test set: {global_accuracy}")
 
-	def evaluate(self, loss_calculation=False, last_epoch=False):
+	def evaluate(self, loss_calculation:bool=False, last_epoch:bool=False):
 		"""
 		Réécrire la fonction pour comparer directement target et prédiction pour
 		produire l'accuracy.

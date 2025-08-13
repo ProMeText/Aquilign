@@ -44,7 +44,7 @@ def compute_metrics(predictions,
             corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
             assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str)
             for ex, token, prediction in list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes)):
-                print(f"{ex}\t{token}\t{prediction}\n")
+                print(f"{ex}\t{token}\t{prediction}")
             print("---")
 
 

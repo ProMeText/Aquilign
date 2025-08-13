@@ -113,6 +113,7 @@ class LSTM_Encoder(nn.Module):
 							batch_first=True,
 							dropout=lstm_dropout,
 							bidirectional=bidirectional_lstm)
+		self.relu = nn.ReLU()
 		self.positional_embeddings = positional_embeddings
 		if positional_embeddings:
 			self.pos1Dsum = Summer(PositionalEncoding1D(emb_dim))
@@ -132,8 +133,6 @@ class LSTM_Encoder(nn.Module):
 		else:
 			self.linear_layer = nn.Linear(lstm_hidden_size, out_classes)
 
-		# On normalise le long de la dimension 2 (sur chaque ligne)
-		self.softmax = nn.Softmax(dim=2)
 
 	def forward(self, src, lang):
 		batch_size, seq_length = src.size()
@@ -160,13 +159,10 @@ class LSTM_Encoder(nn.Module):
 					  torch.zeros(1, batch_size, self.hidden_dim).to(self.device))
 		lstm_out, (h, c) = self.lstm(embedded, (h, c))
 		# attended, masks = self.attention_layer(lstm_out)
-		outs = self.linear_layer(lstm_out)
-		# norms = self.softmax(outs)
-		return outs
-	# tok_embedded = pos_embedded = [batch size, src len, emb dim]
+		relu_out = self.relu(lstm_out)
+		outs = self.linear_layer(relu_out)
 
-	# combine embeddings by elementwise summing
-	# embedded = self.dropout(embedded)
+		return outs
 
 
 # embedded = self.dropout(tok_embedded + pos_embedded)

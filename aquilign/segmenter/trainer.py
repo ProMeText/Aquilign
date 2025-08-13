@@ -238,13 +238,10 @@ class Trainer:
 				# Shape [batch_size, max_length, output_dim]
 				output = self.model(examples, langs)
 				# output_dim = output.shape[-1]
-
 				# Shape [batch_size*max_length, output_dim]
 				output = output.view(-1, self.output_dim)
-
 				# Shape [batch_size*max_length]
 				tgt = targets.view(-1)
-
 
 				# output = [batch size * tgt len - 1, output dim]
 				# tgt = [batch size * tgt len - 1]

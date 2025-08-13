@@ -21,7 +21,6 @@ def compute_metrics(predictions,
     :param labels:
     :return:
     """
-    print(idx_to_class)
     # the predictions are of shape [num_example, max_length, out_classes]
     # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
     # This way the out shape is [num_example, max_length]
@@ -36,14 +35,14 @@ def compute_metrics(predictions,
         example_range = range(random_number, random_number + examples_number)
         print(f"Testing example {random_number} to {random_number + examples_number}:")
         for idx in example_range:
-            example = examples[random_number + idx].tolist()[1:]
-            label = labels[random_number + idx].tolist()[1:]
+            example = examples[idx].tolist()[1:]
+            label = labels[idx].tolist()[1:]
             position_first_left_padding = next(index for index, ident in enumerate(example) if ident == 0)
             example_no_padding = example[:position_first_left_padding]
             label_no_padding = label[:position_first_left_padding]
 
-            probs_no_padding = predictions_as_probs[random_number + idx].tolist()[1:position_first_left_padding + 1]
-            corresp_prediction = predictions[random_number + idx].tolist()[1:position_first_left_padding + 1]
+            probs_no_padding = predictions_as_probs[idx].tolist()[1:position_first_left_padding + 1]
+            corresp_prediction = predictions[idx].tolist()[1:position_first_left_padding + 1]
             corresp_prediction_as_classes = [item for item in corresp_prediction]
             corresp_label_as_classes = [item for item in label_no_padding]
             corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
@@ -61,7 +60,14 @@ def compute_metrics(predictions,
                         correct.append("")
 
             assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str) == len(correct)
-            for ex, token, prediction, target, correct, prob in list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes, corresp_label_as_classes, correct, probs_no_padding)):
+            for ex, token, prediction, target, correct, prob in list(
+                    zip(example_no_padding,
+                        corresp_tokens_as_str,
+                        corresp_prediction_as_classes,
+                        corresp_label_as_classes,
+                        correct,
+                        probs_no_padding)
+            ):
                 print(f"{ex}\t{token}\t{prediction}\t{target}\t{correct}\t{prob}")
             print("---")
 

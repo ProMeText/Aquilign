@@ -48,8 +48,8 @@ def compute_metrics(predictions,
             label_no_padding = label[:position_first_padding]
             probs_no_padding = probs[:position_first_padding]
             corresp_prediction = predictions[random_number].tolist()[1:position_first_padding + 1]
-            corresp_prediction_as_classes = [idx_to_class[item] for item in corresp_prediction]
-            corresp_label_as_classes = [idx_to_class[item] for item in label_no_padding]
+            corresp_prediction_as_classes = [item for item in corresp_prediction]
+            corresp_label_as_classes = [item for item in label_no_padding]
             corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
             correct = []
             for pred, label in zip(corresp_prediction_as_classes, corresp_label_as_classes):

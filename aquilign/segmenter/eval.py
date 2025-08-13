@@ -30,20 +30,24 @@ def compute_metrics(predictions,
 
 
     # On teste un exemple pour voir si tout est OK
-    random_number = random.randint(0, batch_size - 10)
-    example_range = examples[random_number: random_number + 10]
     if last_epoch:
+        random_number = random.randint(0, batch_size - 20)
+        example_range = range(random_number, random_number + 20)
         print(f"Testing example {random_number} to {random_number + 10}:")
-        for example in example_range:
-            example = example.tolist()
+        for idx in example_range:
+            example = examples[idx].tolist()
+            labels = labels[idx].tolist()
             example = example[1:]
+            labels = labels[1:]
             position_first_padding = next(idx for idx, ident in enumerate(example) if ident == 0)
             example_no_padding = example[:position_first_padding]
+            label_no_padding = labels[:position_first_padding]
             corresp_prediction = predictions[random_number].tolist()[1:position_first_padding + 1]
             corresp_prediction_as_classes = [idx_to_class[item] for item in corresp_prediction]
+            corresp_label_as_classes = [idx_to_class[item] for item in label_no_padding]
             corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
             assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str)
-            for ex, token, prediction in list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes)):
+            for ex, token, prediction in list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes, corresp_label_as_classes)):
                 print(f"{ex}\t{token}\t{prediction}")
             print("---")
 

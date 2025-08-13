@@ -161,8 +161,8 @@ class LSTM_Encoder(nn.Module):
 		lstm_out, (h, c) = self.lstm(embedded, (h, c))
 		# attended, masks = self.attention_layer(lstm_out)
 		outs = self.linear_layer(lstm_out)
-		norms = self.softmax(outs)
-		return norms
+		# norms = self.softmax(outs)
+		return outs
 	# tok_embedded = pos_embedded = [batch size, src len, emb dim]
 
 	# combine embeddings by elementwise summing

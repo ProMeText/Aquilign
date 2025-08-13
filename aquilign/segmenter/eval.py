@@ -20,6 +20,8 @@ def compute_metrics(predictions, labels, examples, idx_to_word, idx_to_class, pa
     predictions = predictions.cpu()
     labels = labels.cpu()
     predictions = np.argmax(predictions, axis=2)
+    print(predictions)
+
 
     # On teste un exemple pour voir si tout est OK
     random_number = random.randint(0, batch_size - 10)
@@ -34,7 +36,9 @@ def compute_metrics(predictions, labels, examples, idx_to_word, idx_to_class, pa
         corresp_prediction_as_classes = [idx_to_class[item] for item in corresp_prediction]
         corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
         assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str)
-        print(list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes)))
+        for ex, token, prediction in list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes)):
+            print(f"{ex}\t{token}\t{prediction}\n")
+        print("---")
 
 
     print("Starting eval")
@@ -61,8 +65,8 @@ def compute_metrics(predictions, labels, examples, idx_to_word, idx_to_class, pa
     ###
     # labels = [0 if x == -100 else x for x in labels]
     ###
-    predictions_for_accuracy = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx]  == 1], dtype='int32')
-    labels_for_accuracy = np.array([item for item in labels_as_list if item == 1], dtype='int32')
+    predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx]  != 2], dtype='int32')
+    labels = np.array([item for item in labels_as_list if item != 2], dtype='int32')
     acc = metric1.compute(predictions=predictions, references=labels)
     recall = metric2.compute(predictions=predictions, references=labels, average=None)
     recall_l = []

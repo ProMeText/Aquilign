@@ -20,8 +20,16 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, fine_tune, input_vocab, max_length, device, all_dataset_on_device, delimiter, output_dir):
-        self.datafy = Datafier(train_path, test_path, fine_tune, input_vocab, max_length, delimiter, output_dir)
+    def __init__(self, mode, train_path, test_path, fine_tune, max_length, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None):
+        self.datafy = Datafier(train_path,
+                               test_path,
+                               fine_tune,
+                               max_length,
+                               delimiter,
+                               output_dir,
+                               create_vocab,
+                               input_vocab,
+                               lang_vocab)
         self.mode = mode
         if mode == "train":
             self.datafy.create_train_corpus()
@@ -58,10 +66,12 @@ class Datafier:
                  train_path,
                  test_path,
                  fine_tune,
-                 input_vocab,
                  max_length,
                  delimiter,
-                 output_dir):
+                 output_dir,
+                 create_vocab,
+                 input_vocab,
+                 lang_vocab):
         self.max_length_examples = 0
         self.frequency_dict = {}
         self.output_dir = output_dir
@@ -93,7 +103,11 @@ class Datafier:
         else:
             full_corpus = self.train_data + self.test_data
             assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
-            self.create_vocab(full_corpus)
+            if create_vocab:
+                self.create_vocab(full_corpus)
+            else:
+                self.input_vocabulary = input_vocab
+                self.lang_vocabulary = lang_vocab
 
 
     def update_vocab(self, input_vocab):

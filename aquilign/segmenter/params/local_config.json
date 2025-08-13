@@ -7,7 +7,7 @@
     "workers": 4,
     "out_dir": "/home/mgl/Documents/test_working/",
     "epochs": 3,
-    "lr": 0.0005,
+    "lr": 0.0001,
     "batch_size": 32
   },
   "architectures": {

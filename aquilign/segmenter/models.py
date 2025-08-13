@@ -37,6 +37,7 @@ class TransformerModel(nn.Module):
 			self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim)  # * self.scale
 			hidden_dim = hidden_dim + lang_emb_dim
 
+
 		# Encoder du Transformer
 		encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_dim, nhead=num_heads)
 		self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
@@ -121,12 +122,24 @@ class LSTM_Encoder(nn.Module):
 		self.hidden_dim = lstm_hidden_size
 		self.batch_size = batch_size
 
-		# On peut aussi ajouter une couche d'attention.
+
+
+
 		if self.attention:
-			self.attention_layer = nn.MultiheadAttention(lstm_hidden_size * 2,
-														 num_heads=8,
-														 batch_first=True,
-														 dropout=0.01)
+			if self.bidi:
+				self.attention = nn.Sequential(
+					nn.Linear(self.hidden_dim * 2, self.hidden_dim),
+					nn.Tanh(),
+					nn.Linear(self.hidden_dim, 1, bias=False)
+				)
+			else:
+				self.attention = nn.Sequential(
+					nn.Linear(self.hidden_dim, self.hidden_dim),
+					nn.Tanh(),
+					nn.Linear(self.hidden_dim, 1, bias=False)
+				)
+
+		# On peut aussi ajouter une couche d'attention.
 		if self.bidi:
 			self.linear_layer = nn.Linear(lstm_hidden_size * 2, out_classes)
 		else:
@@ -157,8 +170,13 @@ class LSTM_Encoder(nn.Module):
 			(h, c) = (torch.zeros(1, batch_size, self.hidden_dim).to(self.device),
 					  torch.zeros(1, batch_size, self.hidden_dim).to(self.device))
 		lstm_out, (h, c) = self.lstm(embedded, (h, c))
-		outs = self.linear_layer(lstm_out)
 
+		if self.attention:
+			attention_weights = F.softmax(self.attention(lstm_out), dim=1)
+			context_vector = attention_weights * lstm_out
+			outs = self.linear_layer(context_vector)
+		else:
+			outs = self.linear_layer(lstm_out)
 		return outs
 
 

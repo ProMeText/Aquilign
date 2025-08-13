@@ -19,7 +19,7 @@
       "lstm_hidden_size": 64,
       "num_lstm_layers": 1,
       "include_lang_metadata": true,
-      "add_attention_layer": false,
+      "add_attention_layer": true,
       "lang_emb_dim": 32
     },
     "transformer": {

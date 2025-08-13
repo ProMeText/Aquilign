@@ -6,7 +6,7 @@
     "out_dir": "/projects/users/mgillele/trash/test_segmenter",
     "device": "cuda:0",
     "workers": 8,
-    "epochs": 10,
+    "epochs": 50,
     "lr": 0.0001,
     "batch_size": 64
   },

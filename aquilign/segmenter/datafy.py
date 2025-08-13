@@ -233,7 +233,6 @@ class Datafier:
                 else:
                     target.append("<SC>")
                     example.append(token.lower())
-
             assert len(example) == len(target), "Length inconsistency"
             examples.append(example)
             targets.append(target)

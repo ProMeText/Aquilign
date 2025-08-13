@@ -214,7 +214,7 @@ class Trainer:
 		print("Starting training")
 		torch.save(self.input_vocab, f"{self.output_dir}/vocab.voc")
 		print("Evaluating randomly initiated model")
-		self.evaluate()
+		# self.evaluate()
 		torch.save(self.model, f"{self.output_dir}/model_orig.pt")
 		self.model.train()
 		for epoch in range(self.epochs):

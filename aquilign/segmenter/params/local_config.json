@@ -6,7 +6,7 @@
     "device": "cpu",
     "workers": 4,
     "out_dir": "/home/mgl/Documents/test_working/",
-    "epochs": 50,
+    "epochs": 1,
     "lr": 0.0001,
     "batch_size": 32
   },

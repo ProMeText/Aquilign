@@ -31,24 +31,38 @@ def compute_metrics(predictions,
 
     # On teste un exemple pour voir si tout est OK
     if last_epoch:
-        random_number = random.randint(0, batch_size - 20)
-        example_range = range(random_number, random_number + 20)
-        print(f"Testing example {random_number} to {random_number + 10}:")
+        examples_number = 20
+        random_number = random.randint(0, batch_size - examples_number)
+        example_range = range(random_number, random_number + examples_number)
+        print(f"Testing example {random_number} to {random_number + examples_number}:")
         for idx in example_range:
             example = examples[idx].tolist()
-            labels = labels[idx].tolist()
+            label = labels[idx].tolist()
             example = example[1:]
-            labels = labels[1:]
+            label = label[1:]
             position_first_padding = next(idx for idx, ident in enumerate(example) if ident == 0)
             example_no_padding = example[:position_first_padding]
-            label_no_padding = labels[:position_first_padding]
+            label_no_padding = label[:position_first_padding]
             corresp_prediction = predictions[random_number].tolist()[1:position_first_padding + 1]
             corresp_prediction_as_classes = [idx_to_class[item] for item in corresp_prediction]
             corresp_label_as_classes = [idx_to_class[item] for item in label_no_padding]
             corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
-            assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str)
-            for ex, token, prediction in list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes, corresp_label_as_classes)):
-                print(f"{ex}\t{token}\t{prediction}")
+            correct = []
+            for pred, label in zip(corresp_prediction_as_classes, corresp_label_as_classes):
+                if label == "<SB>":
+                    if pred == label:
+                        correct.append(True)
+                    else:
+                        correct.append(False)
+                else:
+                    if pred == "<SB>":
+                        correct.append(False)
+                    else:
+                        correct.append("")
+
+            assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str) == len(correct)
+            for ex, token, prediction, target, correct in list(zip(example_no_padding, corresp_tokens_as_str, corresp_prediction_as_classes, corresp_label_as_classes, correct)):
+                print(f"{ex}\t{token}\t{prediction}\t{target}\t{correct}")
             print("---")
 
 

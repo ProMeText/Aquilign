@@ -28,12 +28,13 @@ def compute_metrics(predictions,
     labels = labels.cpu()
     predictions_as_probs = copy.deepcopy(predictions)
     predictions = np.argmax(predictions, axis=2)
-    # On teste un exemple pour voir si tout est OK
+    # On teste un exemple pour voir si tout est OK.
+    # TODO: il faut le faire sur le meilleur modèle, pas le dernier
     if last_epoch:
         examples_number = 20
         random_number = random.randint(0, len(examples) - examples_number)
         example_range = range(random_number, random_number + examples_number)
-        print(f"Testing example {random_number} to {random_number + examples_number}:")
+        print(f"Showing example {random_number} to {random_number + examples_number}:")
         for idx in example_range:
             example = examples[idx].tolist()[1:]
             label = labels[idx].tolist()[1:]

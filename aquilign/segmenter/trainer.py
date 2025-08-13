@@ -190,7 +190,11 @@ class Trainer:
 		self.model.to(self.device)
 		self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 		self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
-		self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
+
+		# Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
+		# qu'aux deux autres pour le calcul de la loss
+		weights = torch.tensor([1.0, 2.0, 0.1])
+		self.criterion = torch.nn.CrossEntropyLoss(weight=weights,ignore_index=self.tgt_PAD_IDX)
 		print(self.model.__repr__())
 		self.accuracies = []
 

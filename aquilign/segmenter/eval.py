@@ -53,13 +53,13 @@ def compute_metrics(predictions,
             corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
             correct = []
             for pred, label in zip(corresp_prediction_as_classes, corresp_label_as_classes):
-                if label == "<SB>":
+                if label == 1:
                     if pred == label:
                         correct.append(True)
                     else:
                         correct.append(False)
                 else:
-                    if pred == "<SB>":
+                    if pred == 1:
                         correct.append(False)
                     else:
                         correct.append("")

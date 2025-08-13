@@ -255,7 +255,7 @@ class Trainer:
 
 			# self.model.eval()
 			self.scheduler.step()
-			self.evaluate(last_epoch)
+			self.evaluate(last_epoch=last_epoch)
 			self.save_model(epoch_number)
 		self.get_best_model()
 

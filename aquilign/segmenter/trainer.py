@@ -193,8 +193,8 @@ class Trainer:
 
 		# Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
 		# qu'aux deux autres pour le calcul de la loss
-		weights = torch.tensor([1.0, 2.0, 0.1]).to(self.device)
-		self.criterion = torch.nn.CrossEntropyLoss(weight=weights,ignore_index=self.tgt_PAD_IDX)
+		weights = train_dataloader.datafy.target_weights.to(self.device)
+		self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
 		print(self.model.__repr__())
 		self.accuracies = []
 

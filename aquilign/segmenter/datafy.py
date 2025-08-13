@@ -78,6 +78,7 @@ class Datafier:
         self.unknown_threshold = 14  # Under this frequency the tokens will be tagged as <UNK>
         self.length_threshold = max_length
         self.input_vocabulary = {}
+        self.target_weights = None
         self.reverse_target_classes = {}
         self.train_padded_examples = []
         self.train_padded_targets = []
@@ -155,6 +156,27 @@ class Datafier:
         utils.serialize_dict(self.input_vocabulary, f"{self.output_dir}/input_vocabulary.json")
         utils.serialize_dict(self.lang_vocabulary, f"{self.output_dir}/lang_vocabulary.json")
 
+    def deduce_weights(self):
+        """
+        Fonction simple de pondération des classes:
+        weight_for_class_i = total_samples / (num_samples_in_class_i * num_classes)
+        https://medium.com/@zergtant/use-weighted-loss-function-to-solve-imbalanced-data-classification-problems-749237f38b75
+        On ignore le padding.
+        """
+        # On supprime le batch
+        as_single_vector = torch.flatten(self.train_padded_targets)
+
+        # On supprime le padding
+        examples_as_list = [item for item in as_single_vector.tolist() if item != 2]
+        segment_content = examples_as_list.count(self.target_classes["<SC>"])
+        segment_boundary = examples_as_list.count(self.target_classes["<SB>"])
+        total_samples = len(examples_as_list)
+
+        # Petite vérification
+        assert segment_boundary + segment_content == total_samples, "Les calculs ne sont pas bons, Kévin"
+        segment_content_weight = total_samples / (segment_content * 2)
+        segment_boundary_weight = total_samples / (segment_boundary * 2)
+        self.target_weights = torch.tensor([segment_content_weight, segment_boundary_weight, 0])
 
     def create_train_corpus(self):
         train_examples, train_langs, train_targets = self.produce_corpus(self.train_data)
@@ -162,6 +184,7 @@ class Datafier:
         self.train_padded_examples = utils.tensorize(train_padded_examples)
         self.train_langs = utils.tensorize(train_langs)
         self.train_padded_targets = utils.tensorize(train_padded_targets)
+        self.deduce_weights()
 
     def create_test_corpus(self):
         """

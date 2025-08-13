@@ -254,7 +254,8 @@ class Trainer:
 
 			# self.model.eval()
 			self.scheduler.step()
-			self.evaluate()
+			last_epoch = epoch == range(self.epochs)
+			self.evaluate(last_epoch)
 			self.save_model(epoch_number)
 		self.get_best_model()
 
@@ -338,7 +339,7 @@ class Trainer:
 		print(f"Loss: {global_loss}\n"
 			  f"Accuracy on test set: {global_accuracy}")
 
-	def evaluate(self, loss_calculation=False):
+	def evaluate(self, loss_calculation=False, last_epoch=False):
 		"""
 		Réécrire la fonction pour comparer directement target et prédiction pour
 		produire l'accuracy.
@@ -380,5 +381,6 @@ class Trainer:
 									   idx_to_word=self.reverse_input_vocab,
 									   idx_to_class=self.reverse_target_classes,
 									   padding_idx=self.tgt_PAD_IDX,
-									   batch_size=self.batch_size)
+									   batch_size=self.batch_size,
+									   last_epoch=last_epoch)
 		self.accuracies.append(results["accuracy"]["accuracy"])

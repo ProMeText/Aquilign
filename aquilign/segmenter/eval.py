@@ -48,7 +48,6 @@ def compute_metrics(predictions,
             print("---")
 
 
-    print("Starting eval")
     # load the metrics we want to evaluate
     metric1 = evaluate.load("accuracy")
     metric2 = evaluate.load("recall")
@@ -85,6 +84,5 @@ def compute_metrics(predictions,
     f1_l = []
     [f1_l.extend(v) for k, v in f1.items()]
 
-    print("Eval finished")
     print({"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l})
     return {"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l}

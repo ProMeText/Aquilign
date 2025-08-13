@@ -127,17 +127,9 @@ class LSTM_Encoder(nn.Module):
 
 		if self.attention:
 			if self.bidi:
-				self.attention = nn.Sequential(
-					nn.Linear(self.hidden_dim * 2, self.hidden_dim),
-					nn.Tanh(),
-					nn.Linear(self.hidden_dim, 1, bias=False)
-				)
+				self.multihead_attn = nn.MultiheadAttention(self.hidden_dim * 2, 8)
 			else:
-				self.attention = nn.Sequential(
-					nn.Linear(self.hidden_dim, self.hidden_dim),
-					nn.Tanh(),
-					nn.Linear(self.hidden_dim, 1, bias=False)
-				)
+				self.multihead_attn = nn.MultiheadAttention(self.hidden_dim, 8)
 
 		# On peut aussi ajouter une couche d'attention.
 		if self.bidi:
@@ -172,9 +164,8 @@ class LSTM_Encoder(nn.Module):
 		lstm_out, (h, c) = self.lstm(embedded, (h, c))
 
 		if self.attention:
-			attention_weights = F.softmax(self.attention(lstm_out), dim=1)
-			context_vector = attention_weights * lstm_out
-			outs = self.linear_layer(context_vector)
+			attn_output, _ = self.multihead_attn(lstm_out, lstm_out, lstm_out)
+			outs = self.linear_layer(attn_output + lstm_out)
 		else:
 			outs = self.linear_layer(lstm_out)
 		return outs

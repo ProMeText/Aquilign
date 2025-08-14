@@ -1,7 +1,10 @@
 import random
+
+import tokenizers
 from torch.utils.data import Dataset
 import torch
 import aquilign.segmenter.utils as utils
+from transformers import AutoTokenizer
 import json
 import re
 import numpy as np
@@ -20,7 +23,7 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None):
+    def __init__(self, mode, train_path, test_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, model_name=None):
         self.datafy = Datafier(train_path,
                                test_path,
                                fine_tune,
@@ -28,7 +31,9 @@ class CustomTextDataset(Dataset):
                                output_dir,
                                create_vocab,
                                input_vocab,
-                               lang_vocab)
+                               lang_vocab,
+                               use_pretrained_embeddings,
+                               model_name)
         self.mode = mode
         if mode == "train":
             self.datafy.create_train_corpus()
@@ -69,11 +74,13 @@ class Datafier:
                  output_dir,
                  create_vocab,
                  input_vocab,
-                 lang_vocab):
+                 lang_vocab,
+                 use_pretrained_embeddings,
+                 model_name=None):
         self.max_length_examples = 0
         self.frequency_dict = {}
         self.output_dir = output_dir
-        self.unknown_threshold = 14  # Under this frequency the tokens will be tagged as <UNK>
+        self.unknown_threshold = 14  # Under this frequency the tokens will be tagged as [UNK]
         self.input_vocabulary = {}
         self.target_weights = None
         self.reverse_target_classes = {}
@@ -87,9 +94,10 @@ class Datafier:
         self.train_data = self.import_json_corpus(train_path)
         self.test_data = self.import_json_corpus(test_path)
         self.previous_model_vocab = input_vocab
-        self.target_classes = {"<SC>": 0,  # Segment content > no split
-                               "<SB>": 1,  # Segment boundary > split before
-                               "<PAD>": 2
+        self.use_pretrained_embeddings = use_pretrained_embeddings
+        self.target_classes = {"[SC]": 0,  # Segment content > no split
+                               "[SB]": 1,  # Segment boundary > split before
+                               "[PAD]": 2
                                }
         self.reverse_target_classes = {idx:token for token, idx in self.target_classes.items()}
         utils.serialize_dict(self.target_classes, f"{self.output_dir}/target_classes.json")
@@ -103,6 +111,10 @@ class Datafier:
             assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
             if create_vocab:
                 self.create_vocab(full_corpus)
+                self.create_lang_vocab(full_corpus)
+            elif self.use_pretrained_embeddings:
+                self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+                self.create_lang_vocab(full_corpus)
             else:
                 self.input_vocabulary = input_vocab
                 self.lang_vocabulary = lang_vocab
@@ -126,13 +138,16 @@ class Datafier:
             for index, new_char in enumerate(list(unseen_chars)):
                 self.input_vocabulary[new_char] = (length_previous_vocab + index)
 
+    def create_lang_vocab(self, data):
+        langs = {item["lang"] for item in data}
+        self.lang_vocabulary = {lang:idx for idx, lang in enumerate(langs)}
+        utils.serialize_dict(self.lang_vocabulary, f"{self.output_dir}/lang_vocabulary.json")
 
 
     def create_vocab(self, data:list[list]):
-        input_vocabulary = {"<PAD>": 0,
-                            "<UNK>": 1}
+        input_vocabulary = {"[PAD]": 0,
+                            "[UNK]": 1}
         examples = [item["example"] for item in data]
-        langs = {item["lang"] for item in data}
         # On fusionne l'ensemble du corpus
         data_string = " ".join(examples).replace(self.delimiter, " ")
         # data_string = data_string[:100]
@@ -145,13 +160,11 @@ class Datafier:
                 n += 1
         reverse_input_vocabulary = {idx + n: token for idx, token in enumerate(splitted_text)}
 
-        self.lang_vocabulary = {lang:idx for idx, lang in enumerate(langs)}
         self.input_vocabulary = input_vocabulary
         self.reverse_input_vocabulary = reverse_input_vocabulary
 
         utils.serialize_dict(self.reverse_input_vocabulary, f"{self.output_dir}/reverse_input_vocabulary.json")
         utils.serialize_dict(self.input_vocabulary, f"{self.output_dir}/input_vocabulary.json")
-        utils.serialize_dict(self.lang_vocabulary, f"{self.output_dir}/lang_vocabulary.json")
 
     def deduce_weights(self):
         """
@@ -165,8 +178,8 @@ class Datafier:
 
         # On supprime le padding
         examples_as_list = [item for item in as_single_vector.tolist() if item != 2]
-        segment_content = examples_as_list.count(self.target_classes["<SC>"])
-        segment_boundary = examples_as_list.count(self.target_classes["<SB>"])
+        segment_content = examples_as_list.count(self.target_classes["[SC]"])
+        segment_boundary = examples_as_list.count(self.target_classes["[SB]"])
         total_samples = len(examples_as_list)
 
         # Petite vérification
@@ -176,8 +189,7 @@ class Datafier:
         self.target_weights = torch.tensor([segment_content_weight, segment_boundary_weight, 0])
 
     def create_train_corpus(self):
-        train_examples, train_langs, train_targets = self.produce_corpus(self.train_data)
-        train_padded_examples, train_langs, train_padded_targets = self.pad_and_numerize(train_examples, train_langs, train_targets)
+        train_padded_examples, train_langs, train_padded_targets = self.produce_corpus(self.train_data)
         self.train_padded_examples = utils.tensorize(train_padded_examples)
         self.train_langs = utils.tensorize(train_langs)
         self.train_padded_targets = utils.tensorize(train_padded_targets)
@@ -189,8 +201,7 @@ class Datafier:
         Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
         """
         # treated_inputs = self.augment_data(self.test_data, double_corpus=False)
-        test_examples, test_langs, test_targets = self.produce_corpus(self.test_data)
-        test_padded_examples, test_langs, test_padded_targets = self.pad_and_numerize(test_examples, test_langs, test_targets)
+        test_padded_examples, test_langs, test_padded_targets = self.produce_corpus(self.test_data)
         self.test_padded_examples = utils.tensorize(test_padded_examples)
         self.test_langs = utils.tensorize(test_langs)
         self.test_padded_targets = utils.tensorize(test_padded_targets)
@@ -231,35 +242,44 @@ class Datafier:
     def produce_corpus(self, data:list) -> tuple:
         """
         This function takes the targets and creates the examples.
-        TODO: réfléchir à utiliser plutôt un tokéniseur de type BERT
         """
         assert data != [], "Error with the data when producing the corpus"
         examples = []
         targets = []
         langs = []
-        for example in data:
+        ids = []
+        for example in data[:100]:
             text = example['example']
             lang = example['lang']
-            example = []
-            target = []
-            text = text.replace(self.delimiter, " " + self.delimiter)
-            as_tokens = re.split(self.delimiters_regex, text)
-            for idx, token in enumerate(as_tokens):
-                if not token:
+            # Si on veut utiliser des embeddings pré-entraînés, il faut tokéniser avec le tokéniseur maison
+            if self.use_pretrained_embeddings:
+                try:
+                    example, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380)
+                    ids.append(idents)
+                except TypeError as e:
+                    print("Passing.")
                     continue
-                if self.delimiter in token:
-                    target.append("<SB>")
-                    example.append(token.replace(self.delimiter, "").lower())
-                else:
-                    target.append("<SC>")
-                    example.append(token.lower())
-            assert len(example) == len(target), "Length inconsistency"
+            else:
+                target = []
+                example = []
+                text = text.replace(self.delimiter, " " + self.delimiter)
+                as_tokens = re.split(self.delimiters_regex, text)
+                for idx, token in enumerate(as_tokens):
+                    if not token:
+                        continue
+                    if self.delimiter in token:
+                        target.append("[SB]")
+                        example.append(token.replace(self.delimiter, "").lower())
+                    else:
+                        target.append("[SC]")
+                        example.append(token.lower())
+                assert len(example) == len(target), "Length inconsistency"
+
             examples.append(example)
             targets.append(target)
-            langs.append(lang)
-        return examples, langs, targets
+            langs.append(self.lang_vocabulary[lang])
 
-    def pad_and_numerize(self, examples, langs, targets):
+
         self.max_length_examples = max([len(example) for example in examples])
         max_length_targets = max([len(target) for target in targets])
         if max_length_targets > 500:
@@ -267,22 +287,31 @@ class Datafier:
             print(np.mean([len(target) for target in targets]))
             print(max_length_targets)
             exit(0)
-        pad_value = "<PAD>"
-        padded_examples = []
-        padded_targets = []
-        for example in examples:
-            example_length = len(example)
-            example = example + [pad_value for _ in range(self.max_length_examples - example_length)]
-            example = ["<PAD>"] + example
-            example = [self.input_vocabulary[token] for token in example]
-            padded_examples.append(example)
 
-        langs = [self.lang_vocabulary[lang] for lang in langs]
+        if self.use_pretrained_embeddings is False:
+            pad_value = "[PAD]"
+            padded_examples = []
+            padded_targets = []
+            for example in examples:
+                example_length = len(example)
+                example = example + [pad_value for _ in range(self.max_length_examples - example_length)]
+                example = ["[PAD]"] + example
+                example = [self.input_vocabulary[token] for token in example]
+                padded_examples.append(example)
 
-        for target in targets:
-            target_length = len(target)
-            target = target + [pad_value for _ in range(max_length_targets - target_length)]
-            target = ["<PAD>"] + target
-            target = [self.target_classes[token] for token in target]
-            padded_targets.append(target)
-        return padded_examples, langs, padded_targets
+
+            for target in targets:
+                target_length = len(target)
+                target = target + [pad_value for _ in range(max_length_targets - target_length)]
+                target = ["[PAD]"] + target
+                target = [self.target_classes[token] for token in target]
+                padded_targets.append(target)
+            return padded_examples, langs, padded_targets
+
+        else:
+            # On doit convertir la liste d'arrays vers un arrays, on concatène sur la dimension 0 (lignes)
+            ids = np.concat(ids, axis=0)
+            # targets = np.concatenate(targets, axis=0)
+            targets = torch.stack(targets, dim=0)
+            return ids, langs, targets
+

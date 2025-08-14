@@ -9,8 +9,6 @@ import transformers
 def save_bert_embeddings():
 	myBertModel = transformers.BertModel.from_pretrained('google-bert/bert-base-multilingual-cased')
 	word_embeddings = myBertModel.get_input_embeddings().weight.data.half()
-	# BertEmbeddings = myBertModel.embeddings.word_embeddings.weight.detach().numpy().ravel()
-	# np.save("aquilign/segmenter/embeddings.npy", BertEmbeddings)
 	torch.save(word_embeddings, "aquilign/segmenter/embeddings.npy")
 
 class RNN_Encoder(nn.Module):

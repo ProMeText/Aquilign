@@ -9,11 +9,12 @@ import torch
 def compute_metrics(predictions,
                     labels,
                     examples,
-                    idx_to_word,
+                    id_to_word,
                     idx_to_class,
                     padding_idx,
                     batch_size,
-                    last_epoch):
+                    last_epoch,
+                    tokenizer=None):
     """
     This function evaluates the model against the targets.
     :TODO: ignore padding classes?
@@ -31,12 +32,16 @@ def compute_metrics(predictions,
     # On teste un exemple pour voir si tout est OK.
     # TODO: il faut le faire sur le meilleur modèle, pas le dernier
     if last_epoch:
+        if tokenizer:
+            id_to_word = {ident: value for value, ident in tokenizer.get_vocab().items()}
         examples_number = 20
         random_number = random.randint(0, len(examples) - examples_number)
         example_range = range(random_number, random_number + examples_number)
         print(f"Showing example {random_number} to {random_number + examples_number}:")
         for idx in example_range:
             example = examples[idx].tolist()[1:]
+            example_as_string = " ".join([id_to_word[ident] for ident in example]).replace(" ##", "")
+            print(example_as_string)
             label = labels[idx].tolist()[1:]
             position_first_left_padding = next(index for index, ident in enumerate(example) if ident == 0)
             example_no_padding = example[:position_first_left_padding]
@@ -46,7 +51,7 @@ def compute_metrics(predictions,
             corresp_prediction = predictions[idx].tolist()[1:position_first_left_padding + 1]
             corresp_prediction_as_classes = [item for item in corresp_prediction]
             corresp_label_as_classes = [item for item in label_no_padding]
-            corresp_tokens_as_str = [idx_to_word[item] for item in example_no_padding]
+            corresp_tokens_as_str = [id_to_word[item] for item in example_no_padding]
             correct = []
             for pred, label in zip(corresp_prediction_as_classes, corresp_label_as_classes):
                 if label == 1:
@@ -96,6 +101,8 @@ def compute_metrics(predictions,
     ###
     # labels = [0 if x == -100 else x for x in labels]
     ###
+    print(len(predictions_as_list))
+    print(len(labels_as_list))
     predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx]  != 2], dtype='int32')
     labels = np.array([item for item in labels_as_list if item != 2], dtype='int32')
     acc = metric1.compute(predictions=predictions, references=labels)

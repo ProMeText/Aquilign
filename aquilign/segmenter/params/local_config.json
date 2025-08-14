@@ -4,9 +4,11 @@
     "test": "../multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json",
     "import": "",
     "device": "cpu",
-    "workers": 4,
+    "base_model_name": "google-bert/bert-base-multilingual-cased",
+    "use_pretrained_embeddings": true,
+    "workers": 1,
     "out_dir": "/home/mgl/Documents/test_working/",
-    "epochs": 1,
+    "epochs": 4,
     "lr": 0.0001,
     "batch_size": 32
   },

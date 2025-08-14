@@ -1,4 +1,7 @@
 import re
+
+from transformers import AutoTokenizer
+
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
 import aquilign.segmenter.eval as eval
@@ -28,6 +31,8 @@ class Trainer:
 		train_path = config_file["global"]["train"]
 		test_path = config_file["global"]["test"]
 		output_dir = config_file["global"]["out_dir"]
+		base_model_name = config_file["global"]["base_model_name"]
+		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
 		if architecture == "lstm":
 			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
@@ -58,6 +63,12 @@ class Trainer:
 			input_vocab = None
 		self.all_dataset_on_device = False
 		print("Loading data")
+		if use_pretrained_embeddings:
+			create_vocab = False
+			self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+		else:
+			create_vocab = True
+			self.tokenizer = None
 		train_dataloader = datafy.CustomTextDataset("train",
 													train_path=train_path,
 													test_path=test_path,
@@ -66,7 +77,9 @@ class Trainer:
 													all_dataset_on_device=self.all_dataset_on_device,
 													delimiter="£",
 													output_dir=output_dir,
-													create_vocab=True)
+													create_vocab=create_vocab,
+													use_pretrained_embeddings=use_pretrained_embeddings,
+													model_name=base_model_name)
 		test_dataloader = datafy.CustomTextDataset(mode="test",
 												   train_path=train_path,
 												   test_path=test_path,
@@ -77,7 +90,9 @@ class Trainer:
 												   output_dir=output_dir,
 												   create_vocab=False,
 												   input_vocab=train_dataloader.datafy.input_vocabulary,
-												   lang_vocab=train_dataloader.datafy.lang_vocabulary)
+												   lang_vocab=train_dataloader.datafy.lang_vocabulary,
+													use_pretrained_embeddings=use_pretrained_embeddings,
+													model_name=base_model_name)
 
 		self.loaded_test_data = DataLoader(test_dataloader,
 										   batch_size=batch_size,
@@ -111,7 +126,7 @@ class Trainer:
 		self.steps = self.corpus_size // batch_size
 
 		self.test_steps = test_dataloader.__len__() // batch_size
-		self.tgt_PAD_IDX = self.target_classes["<PAD>"]
+		self.tgt_PAD_IDX = self.target_classes["[PAD]"]
 		self.epochs = epochs
 		self.batch_size = batch_size
 		self.output_dim = len(self.target_classes)
@@ -214,6 +229,8 @@ class Trainer:
 		print(f"Saving best model to {self.output_dir}/best.pt")
 
 	def train(self, clip=0.1):
+		for param in self.model.tok_embedding.parameters():
+			param.requires_grad = False
 		utils.remove_file(f"{self.output_dir}/accuracies.txt")
 		print("Starting training")
 		torch.save(self.input_vocab, f"{self.output_dir}/vocab.voc")
@@ -301,9 +318,10 @@ class Trainer:
 		results = eval.compute_metrics(predictions=cat_preds,
 									   labels=cat_targets,
 									   examples=cat_examples,
-									   idx_to_word=self.reverse_input_vocab,
+									   id_to_word=self.reverse_input_vocab,
 									   idx_to_class=self.reverse_target_classes,
 									   padding_idx=self.tgt_PAD_IDX,
 									   batch_size=self.batch_size,
-									   last_epoch=last_epoch)
+									   last_epoch=last_epoch,
+									   tokenizer=self.tokenizer)
 		self.accuracies.append(results["accuracy"]["accuracy"])

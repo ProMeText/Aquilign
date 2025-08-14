@@ -8,9 +8,7 @@ import transformers
 
 def save_bert_embeddings():
 	myBertModel = transformers.BertModel.from_pretrained('google-bert/bert-base-multilingual-cased')
-	print(sys.getsizeof(myBertModel))
 	BertEmbeddings = myBertModel.embeddings.word_embeddings.weight.detach().numpy().ravel()
-	print(type(BertEmbeddings))
 	np.save("aquilign/segmenter/embeddings.npy", BertEmbeddings)
 
 class RNN_Encoder(nn.Module):
@@ -102,7 +100,7 @@ class LSTM_Encoder(nn.Module):
 			self.input_dim = 119547
 			emb_dim = 768
 			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
-			weights = np.load("aquilign/segmenter/embeddings.pckl")
+			weights = np.load("aquilign/segmenter/embeddings.npy")
 			self.tok_embedding.weights = weights["embeddings/data.pkl"]
 		else:
 			self.tok_embedding = nn.Embedding(input_dim, emb_dim)

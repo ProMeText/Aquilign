@@ -1,3 +1,4 @@
+*.npy
 xml/
 *env/
 __pycache__/

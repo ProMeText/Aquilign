@@ -220,6 +220,7 @@ class Trainer:
 		print("Evaluating randomly initiated model")
 		self.evaluate()
 		torch.save(self.model, f"{self.output_dir}/model_orig.pt")
+		exit(0)
 		self.model.train()
 		for epoch in range(self.epochs):
 			epoch_number = epoch + 1

@@ -168,8 +168,7 @@ class Trainer:
 													 lang_emb_dim=lang_emb_dim,
 													 include_lang_metadata=True)
 			elif architecture == "lstm":
-				# weights = np.load("aquilign/segmenter/embeddings.npy")["embeddings/data.pkl"]
-				weights = np.load("aquilign/segmenter/embeddings.npy")
+				weights = torch.load("aquilign/segmenter/embeddings.npy")
 				self.model = models.LSTM_Encoder(input_dim=self.input_dim,
 												 emb_dim=300,
 												 bidirectional_lstm=True,

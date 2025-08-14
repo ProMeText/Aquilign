@@ -11,7 +11,7 @@ def save_bert_embeddings():
 	print(sys.getsizeof(myBertModel))
 	BertEmbeddings = myBertModel.embeddings.word_embeddings.weight.detach().numpy().ravel()
 	print(type(BertEmbeddings))
-	np.save("aquilign/segmenter/embeddings.pckl", BertEmbeddings)
+	np.save("aquilign/segmenter/embeddings.npy", BertEmbeddings)
 
 class RNN_Encoder(nn.Module):
 	pass

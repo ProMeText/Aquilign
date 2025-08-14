@@ -1,12 +1,7 @@
 import sys
-
 import numpy as np
-import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
-import aquilign.segmenter.utils as utils
-import re
 from positional_encodings.torch_encodings import PositionalEncoding1D, Summer
 import transformers
 

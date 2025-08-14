@@ -13,7 +13,7 @@ def compute_metrics(predictions,
                     idx_to_class,
                     padding_idx,
                     batch_size,
-                    last_epoch,
+                    last_epoch=False,
                     tokenizer=None):
     """
     This function evaluates the model against the targets.

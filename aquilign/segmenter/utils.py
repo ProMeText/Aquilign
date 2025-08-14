@@ -34,36 +34,6 @@ def remove_file(path):
     except OSError:
         pass
 
-def convertToWordsSentencesAndLabels(corpus:list[dict|str], delimiter="£") -> (list, list):
-    """
-    This function take a corpus as a list of examples and returns the masks for each token as words
-    """
-
-    sentencesList = []
-    sentencesAsLabels = []
-    sentences_as_list_of_tokens = []
-    langsList = []
-    for example in corpus:
-        # On peut avoir une liste de dictionnaires ou de chaînes de caractères
-        if isinstance(example, dict):
-            text = example["example"]
-            langsList.append(example["lang"])
-        else:
-            text = example
-        sentenceAsList = tokenize_words(text, delimiter)
-        sentences_as_list_of_tokens.append(sentenceAsList)
-        masks = []
-        for token in sentenceAsList:
-            if delimiter in token:
-                masks.append(1)
-            else:
-                masks.append(0)
-        sentencesAsLabels.append(masks)
-        sentence = text.replace(delimiter, "")
-        sentencesList.append(sentence)
-    return sentencesList, sentencesAsLabels, sentences_as_list_of_tokens, langsList
-
-
 
 # function to get the index of the tokens after BERT tokenization
 def get_index_correspondence(sent, tokenizer):
@@ -161,9 +131,9 @@ def convertSentenceToSubWordsAndLabels(sentence, tokenizer, delimiter="£",  max
 
     toks = tokenizer(sentence, padding="max_length", max_length=max_length, truncation=True,
                      return_tensors="pt")
-
     # get the index correspondences between text and tok text
-    corresp = get_index_correspondence(TokenizedSentence, tokenizer)
+    tokens = tokenize_words(sentence, delimiter)
+    corresp = get_index_correspondence(tokens, tokenizer)
     # aligning the label
     new_labels = align_labels(corresp, masks, sentence)
     # get the length of the tensor
@@ -183,8 +153,6 @@ def convertSentenceToSubWordsAndLabels(sentence, tokenizer, delimiter="£",  max
                                        f"new labels: {len(new_labels)}"
     # tensorize the new labels
     label = torch.tensor(new_labels)
-
-
     return example, toks['input_ids'], label
 
 

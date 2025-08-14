@@ -1,3 +1,4 @@
+import random
 import re
 import torch
 import sys
@@ -17,6 +18,7 @@ if __name__ == '__main__':
 	# test_path = "/home/mgl/Bureau/Travail/projets/alignement/alignement_multilingue/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json"
 	# train_path = "/home/mgl/Bureau/Travail/projets/alignement/alignement_multilingue/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json"
 	# output_dir = "/home/mgl/Documents/lstm/"
+	random.seed(1234)
 	trainer = trainer.Trainer(config_file=config_file)
 
 	trainer.train()

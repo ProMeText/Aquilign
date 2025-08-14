@@ -1,4 +1,5 @@
 import re
+import optuna
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
 import aquilign.segmenter.eval as eval
@@ -13,6 +14,8 @@ import os
 import glob
 import shutil
 import sys
+
+
 class Trainer:
 	def  __init__(self,
 				  config_file):
@@ -51,6 +54,7 @@ class Trainer:
 			device_name = torch.cuda.get_device_name(self.device)
 			print(f"Device name: {device_name}")
 		self.workers = workers
+		max_length = 300
 		self.timestamp = now.strftime("%d-%m-%Y_%H:%M:%S")
 		if fine_tune:
 			input_vocab = torch.load(pretrained_params.get("vocab"))
@@ -62,6 +66,7 @@ class Trainer:
 													train_path=train_path,
 													test_path=test_path,
 													fine_tune=fine_tune,
+													max_length=max_length,
 													device=self.device,
 													all_dataset_on_device=self.all_dataset_on_device,
 													delimiter="£",
@@ -71,6 +76,7 @@ class Trainer:
 												   train_path=train_path,
 												   test_path=test_path,
 												   fine_tune=fine_tune,
+												   max_length=max_length,
 												   device=self.device,
 												   all_dataset_on_device=self.all_dataset_on_device,
 												   delimiter="£",
@@ -210,52 +216,6 @@ class Trainer:
 				os.remove(model)
 		print(f"Saving best model to {self.output_dir}/best.pt")
 
-	def train(self, clip=0.1):
-		utils.remove_file(f"{self.output_dir}/accuracies.txt")
-		print("Starting training")
-		torch.save(self.input_vocab, f"{self.output_dir}/vocab.voc")
-		print("Evaluating randomly initiated model")
-		self.evaluate()
-		torch.save(self.model, f"{self.output_dir}/model_orig.pt")
-		self.model.train()
-		for epoch in range(self.epochs):
-			epoch_number = epoch + 1
-			last_epoch = epoch == range(self.epochs)[-1]
-			print(f"Epoch {str(epoch_number)}")
-			for examples, langs, targets in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
-				# Shape [batch_size, max_length]
-				# tensor_examples = examples.to(self.device)
-				# Shape [batch_size, max_length]
-				# tensor_targets = targets.to(self.device)
-				if not self.all_dataset_on_device:
-					examples = examples.to(self.device)
-					targets = targets.to(self.device)
-					langs = langs.to(self.device)
-
-				# https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
-				# for param in self.model.parameters():
-					# param.grad = None
-				self.optimizer.zero_grad()
-				# Shape [batch_size, max_length, output_dim]
-				output = self.model(examples, langs)
-				# output_dim = output.shape[-1]
-				# Shape [batch_size*max_length, output_dim]
-				output = output.view(-1, self.output_dim)
-				# Shape [batch_size*max_length]
-				tgt = targets.view(-1)
-
-				# output = [batch size * tgt len - 1, output dim]
-				# tgt = [batch size * tgt len - 1]
-				loss = self.criterion(output, tgt)
-				loss.backward()
-				torch.nn.utils.clip_grad_norm_(self.model.parameters(), clip)
-				self.optimizer.step()
-
-			# self.model.eval()
-			self.scheduler.step()
-			self.evaluate(last_epoch=last_epoch)
-			self.save_model(epoch_number)
-		self.get_best_model()
 
 
 
@@ -304,3 +264,156 @@ class Trainer:
 									   batch_size=self.batch_size,
 									   last_epoch=last_epoch)
 		self.accuracies.append(results["accuracy"]["accuracy"])
+
+
+
+
+def objective(self, trial, config_file):
+	hidden_size = trial.suggest_int("hidden_size", 32, 256)
+	batch_size = trial.suggest_int("batch_size", 32, 256)
+	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
+	input_dim = trial.suggest_int("input_dim", 32, 256)
+	include_lang_metadata = trial.suggest_bool("include_lang_metadata", False, True)
+	attention_layer = trial.suggest_bool("attention_layer", False, True)
+	lang_emb_dim = trial.suggest_int("lang_emb_dim", 32, 200)
+
+	epochs = config_file["global"]["epochs"]
+	train_path = config_file["global"]["train"]
+	test_path = config_file["global"]["test"]
+	dev_path = config_file["global"]["dev"]
+	output_dir = config_file["global"]["out_dir"]
+	device = "cuda:0"
+	if device != "cpu":
+		device_name = torch.cuda.get_device_name(device)
+		print(f"Device name: {device_name}")
+	workers = 8
+	input_vocab = None
+	all_dataset_on_device = False
+	print("Loading data")
+	train_dataloader = datafy.CustomTextDataset("train",
+												train_path=train_path,
+												test_path=dev_path,
+												fine_tune=False,
+												device=device,
+												all_dataset_on_device=all_dataset_on_device,
+												delimiter="£",
+												output_dir=output_dir,
+												create_vocab=True)
+	test_dataloader = datafy.CustomTextDataset(mode="dev",
+											   train_path=train_path,
+											   test_path=dev_path,
+											   fine_tune=False,
+											   device=device,
+											   all_dataset_on_device=all_dataset_on_device,
+											   delimiter="£",
+											   output_dir=output_dir,
+											   create_vocab=False,
+											   input_vocab=train_dataloader.datafy.input_vocabulary,
+											   lang_vocab=train_dataloader.datafy.lang_vocabulary)
+
+	loaded_test_data = DataLoader(test_dataloader,
+									   batch_size=batch_size,
+									   shuffle=False,
+									   num_workers=8,
+									   pin_memory=False,
+									   drop_last=True)
+	loaded_train_data = DataLoader(train_dataloader,
+										batch_size=batch_size,
+										shuffle=True,
+										num_workers=workers,
+										pin_memory=False,
+										drop_last=True)
+
+	output_dir = output_dir
+	# On crée l'output dir:
+	os.makedirs(f"{output_dir}/models/.tmp", exist_ok=True)
+	os.makedirs(f"{output_dir}/best", exist_ok=True)
+
+	print(f"Number of train examples: {len(train_dataloader.datafy.train_padded_examples)}")
+	print(f"Number of test examples: {len(test_dataloader.datafy.test_padded_examples)}")
+	print(f"Total length of examples (with padding): {train_dataloader.datafy.max_length_examples}")
+
+	input_vocab = train_dataloader.datafy.input_vocabulary
+	reverse_input_vocab = {v: k for k, v in input_vocab.items()}
+	lang_vocab = train_dataloader.datafy.lang_vocabulary
+	target_classes = train_dataloader.datafy.target_classes
+	reverse_target_classes = train_dataloader.datafy.reverse_target_classes
+
+	corpus_size = train_dataloader.__len__()
+	steps = corpus_size // batch_size
+
+	test_steps = test_dataloader.__len__() // batch_size
+	tgt_PAD_IDX = target_classes["<PAD>"]
+	epochs = epochs
+	batch_size = batch_size
+	output_dim = len(target_classes)
+
+	model = models.LSTM_Encoder(input_dim=input_dim,
+									 emb_dim=300,
+									 bidirectional_lstm=True,
+									 positional_embeddings=False,
+									 device=device,
+									 lstm_hidden_size=hidden_size,
+									 batch_size=batch_size,
+									 num_langs=len(lang_vocab),
+									 num_lstm_layers=1,
+									 include_lang_metadata=include_lang_metadata,
+									 out_classes=output_dim,
+									 attention=attention_layer,
+									 lang_emb_dim=lang_emb_dim
+									 )
+	architecture = "lstm"
+	model.to(device)
+	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+	scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+
+	# Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
+	# qu'aux deux autres pour le calcul de la loss
+	weights = train_dataloader.datafy.target_weights.to(device)
+	criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=tgt_PAD_IDX)
+	print(model.__repr__())
+	accuracies = []
+	utils.remove_file(f"{output_dir}/accuracies.txt")
+	print("Starting training")
+	torch.save(input_vocab, f"{output_dir}/vocab.voc")
+
+
+	# Training phase
+	model.train()
+	for epoch in range(epochs):
+		epoch_number = epoch + 1
+		last_epoch = epoch == range(epochs)[-1]
+		print(f"Epoch {str(epoch_number)}")
+		for examples, langs, targets in tqdm.tqdm(loaded_train_data, unit_scale=batch_size):
+			# Shape [batch_size, max_length]
+			# tensor_examples = examples.to(device)
+			# Shape [batch_size, max_length]
+			# tensor_targets = targets.to(device)
+			if not all_dataset_on_device:
+				examples = examples.to(device)
+				targets = targets.to(device)
+				langs = langs.to(device)
+
+			# https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
+			# for param in model.parameters():
+			# param.grad = None
+			optimizer.zero_grad()
+			# Shape [batch_size, max_length, output_dim]
+			output = model(examples, langs)
+			# output_dim = output.shape[-1]
+			# Shape [batch_size*max_length, output_dim]
+			output = output.view(-1, output_dim)
+			# Shape [batch_size*max_length]
+			tgt = targets.view(-1)
+
+			# output = [batch size * tgt len - 1, output dim]
+			# tgt = [batch size * tgt len - 1]
+			loss = criterion(output, tgt)
+			loss.backward()
+			torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+			optimizer.step()
+
+		# model.eval()
+		scheduler.step()
+		evaluate(last_epoch=last_epoch)
+		save_model(epoch_number)

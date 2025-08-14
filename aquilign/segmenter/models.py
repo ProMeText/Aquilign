@@ -1,3 +1,6 @@
+import sys
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -5,7 +8,15 @@ import torch.nn.functional as F
 import aquilign.segmenter.utils as utils
 import re
 from positional_encodings.torch_encodings import PositionalEncoding1D, Summer
+import transformers
 
+
+def save_bert_embeddings():
+	myBertModel = transformers.BertModel.from_pretrained('google-bert/bert-base-multilingual-cased')
+	print(sys.getsizeof(myBertModel))
+	BertEmbeddings = myBertModel.embeddings.word_embeddings.weight.detach().numpy().ravel()
+	print(type(BertEmbeddings))
+	np.save("aquilign/segmenter/embeddings.pckl", BertEmbeddings)
 
 class RNN_Encoder(nn.Module):
 	pass
@@ -89,9 +100,17 @@ class LSTM_Encoder(nn.Module):
 				 include_lang_metadata: bool,
 				 num_langs: int,
 				 attention: bool,
-				 lang_emb_dim: int):
+				 lang_emb_dim: int,
+				 load_pretrained_embeddings:bool=True):
 		super().__init__()
-		self.tok_embedding = nn.Embedding(input_dim, emb_dim)
+		if load_pretrained_embeddings:
+			self.input_dim = 119547
+			emb_dim = 768
+			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
+			weights = np.load("aquilign/segmenter/embeddings.pckl")
+			self.tok_embedding.weights = weights["embeddings/data.pkl"]
+		else:
+			self.tok_embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata
 		self.attention = attention
 		self.num_langs = num_langs
@@ -292,3 +311,7 @@ class LinearDecoder(nn.Module):
 
 	def forward(self, enc_outs):
 		return self.decoder(enc_outs)
+
+
+if __name__ == '__main__':
+    save_bert_embeddings()

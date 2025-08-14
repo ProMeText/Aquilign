@@ -20,11 +20,10 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, fine_tune, max_length, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None):
+    def __init__(self, mode, train_path, test_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None):
         self.datafy = Datafier(train_path,
                                test_path,
                                fine_tune,
-                               max_length,
                                delimiter,
                                output_dir,
                                create_vocab,
@@ -66,7 +65,6 @@ class Datafier:
                  train_path,
                  test_path,
                  fine_tune,
-                 max_length,
                  delimiter,
                  output_dir,
                  create_vocab,
@@ -76,7 +74,6 @@ class Datafier:
         self.frequency_dict = {}
         self.output_dir = output_dir
         self.unknown_threshold = 14  # Under this frequency the tokens will be tagged as <UNK>
-        self.length_threshold = max_length
         self.input_vocabulary = {}
         self.target_weights = None
         self.reverse_target_classes = {}

@@ -8,8 +8,10 @@ import transformers
 
 def save_bert_embeddings():
 	myBertModel = transformers.BertModel.from_pretrained('google-bert/bert-base-multilingual-cased')
-	BertEmbeddings = myBertModel.embeddings.word_embeddings.weight.detach().numpy().ravel()
-	np.save("aquilign/segmenter/embeddings.npy", BertEmbeddings)
+	word_embeddings = myBertModel.get_input_embeddings().weight.data.half()
+	# BertEmbeddings = myBertModel.embeddings.word_embeddings.weight.detach().numpy().ravel()
+	# np.save("aquilign/segmenter/embeddings.npy", BertEmbeddings)
+	torch.save(word_embeddings, "aquilign/segmenter/embeddings.npy")
 
 class RNN_Encoder(nn.Module):
 	pass
@@ -100,8 +102,8 @@ class LSTM_Encoder(nn.Module):
 		if load_pretrained_embeddings:
 			self.input_dim = 119547
 			emb_dim = 768
-			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
-			self.tok_embedding.weights = pretrained_weights
+			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim, _freeze=True)
+			self.tok_embedding.weight.data = torch.tensor(pretrained_weights)
 		else:
 			self.tok_embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata
@@ -136,7 +138,6 @@ class LSTM_Encoder(nn.Module):
 
 
 
-
 		if self.attention:
 			if self.bidi:
 				self.multihead_attn = nn.MultiheadAttention(self.hidden_dim * 2, 8)
@@ -166,13 +167,12 @@ class LSTM_Encoder(nn.Module):
 
 		if self.positional_embeddings:
 			embedded = self.pos1Dsum(embedded)  #
-		batch_size = self.batch_size
 		if self.bidi:
-			(h, c) = (torch.zeros(2, batch_size, self.hidden_dim).to(self.device),
-					  torch.zeros(2, batch_size, self.hidden_dim).to(self.device))
+			(h, c) = (torch.zeros(2, self.batch_size, self.hidden_dim).to(self.device),
+					  torch.zeros(2, self.batch_size, self.hidden_dim).to(self.device))
 		else:
-			(h, c) = (torch.zeros(1, batch_size, self.hidden_dim).to(self.device),
-					  torch.zeros(1, batch_size, self.hidden_dim).to(self.device))
+			(h, c) = (torch.zeros(1, self.batch_size, self.hidden_dim).to(self.device),
+					  torch.zeros(1, self.batch_size, self.hidden_dim).to(self.device))
 		lstm_out, (h, c) = self.lstm(embedded, (h, c))
 
 		if self.attention:

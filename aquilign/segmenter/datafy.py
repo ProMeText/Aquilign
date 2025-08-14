@@ -310,7 +310,7 @@ class Datafier:
 
         else:
             # On doit convertir la liste d'arrays vers un arrays, on concatène sur la dimension 0 (lignes)
-            ids = np.concat(ids, axis=0)
+            ids = np.concatenate(ids, axis=0)
             # targets = np.concatenate(targets, axis=0)
             targets = torch.stack(targets, dim=0)
             return ids, langs, targets

@@ -94,14 +94,14 @@ class LSTM_Encoder(nn.Module):
 				 num_langs: int,
 				 attention: bool,
 				 lang_emb_dim: int,
-				 load_pretrained_embeddings:bool=True):
+				 load_pretrained_embeddings:bool,
+				 pretrained_weights:np.ndarray):
 		super().__init__()
 		if load_pretrained_embeddings:
 			self.input_dim = 119547
 			emb_dim = 768
 			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
-			weights = np.load("aquilign/segmenter/embeddings.npy")
-			self.tok_embedding.weights = weights["embeddings/data.pkl"]
+			self.tok_embedding.weights = pretrained_weights
 		else:
 			self.tok_embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata

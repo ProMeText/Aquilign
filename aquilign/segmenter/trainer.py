@@ -168,6 +168,7 @@ class Trainer:
 													 lang_emb_dim=lang_emb_dim,
 													 include_lang_metadata=True)
 			elif architecture == "lstm":
+				weights = np.load("aquilign/segmenter/embeddings.npy")["embeddings/data.pkl"]
 				self.model = models.LSTM_Encoder(input_dim=self.input_dim,
 												 emb_dim=300,
 												 bidirectional_lstm=True,
@@ -181,7 +182,9 @@ class Trainer:
 												 include_lang_metadata=include_lang_metadata,
 												 out_classes=self.output_dim,
 												 attention=add_attention_layer,
-												 lang_emb_dim=lang_emb_dim
+												 lang_emb_dim=lang_emb_dim,
+												 load_pretrained_embeddings=True,
+												 pretrained_weights=weights
 						)
 		self.architecture = architecture
 		self.model.to(self.device)

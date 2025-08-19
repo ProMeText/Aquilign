@@ -33,6 +33,8 @@ def objective(trial):
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
+	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
+	freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
 	if use_pretrained_embeddings:
 		emb_dim = 100
 		add_attention_layer = False
@@ -130,7 +132,7 @@ def objective(trial):
 	weights = torch.load("aquilign/segmenter/embeddings.npy")
 	model = models.LSTM_Encoder(input_dim=input_dim,
 									 emb_dim=emb_dim,
-									 bidirectional=bidirectional,
+									 bidirectional=True,
 									 lstm_dropout=0,
 									 positional_embeddings=False,
 									 device=device,
@@ -163,6 +165,17 @@ def objective(trial):
 
 
 	# Training phase
+
+	if use_pretrained_embeddings:
+		if freeze_embeddings:
+			for param in model.tok_embedding.parameters():
+				param.requires_grad = False
+
+	# Idem pour les plongements de langue. En faire un paramètre.
+	if include_lang_metadata:
+		if freeze_lang_embeddings:
+			for param in model.lang_embedding.parameters():
+				param.requires_grad = False
 	results = []
 	model.train()
 	for epoch in range(epochs):

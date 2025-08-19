@@ -23,7 +23,7 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, dev_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, model_name=None):
+    def __init__(self, mode, train_path, test_path, dev_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, model_name=None, debug=False):
         self.datafy = Datafier(train_path,
                                test_path,
                                dev_path,
@@ -34,6 +34,7 @@ class CustomTextDataset(Dataset):
                                input_vocab,
                                lang_vocab,
                                use_pretrained_embeddings,
+                               debug,
                                model_name)
         self.mode = mode
         if mode == "train":
@@ -87,7 +88,9 @@ class Datafier:
                  input_vocab,
                  lang_vocab,
                  use_pretrained_embeddings,
-                 model_name=None):
+                 debug,
+                 model_name=None
+                 ):
         self.max_length_examples = 0
         self.frequency_dict = {}
         self.output_dir = output_dir
@@ -110,6 +113,7 @@ class Datafier:
         self.dev_data = self.import_json_corpus(dev_path)
         self.previous_model_vocab = input_vocab
         self.use_pretrained_embeddings = use_pretrained_embeddings
+        self.debug = debug
         self.target_classes = {"[SC]": 0,  # Segment content > no split
                                "[SB]": 1,  # Segment boundary > split before
                                "[PAD]": 2

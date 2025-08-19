@@ -21,6 +21,10 @@ class Trainer:
 				  config_file):
 
 		architecture = sys.argv[2]
+		if len(sys.argv) == 4:
+			debug = sys.argv[3]
+		elif
+			debug = False
 
 		fine_tune = False
 		epochs = config_file["global"]["epochs"]
@@ -94,7 +98,8 @@ class Trainer:
 													output_dir=output_dir,
 													create_vocab=create_vocab,
 													use_pretrained_embeddings=use_pretrained_embeddings,
-													model_name=base_model_name)
+													model_name=base_model_name,
+													debug=debug)
 		test_dataloader = datafy.CustomTextDataset(mode="test",
 												   train_path=train_path,
 												   test_path=test_path,
@@ -108,7 +113,8 @@ class Trainer:
 												   input_vocab=train_dataloader.datafy.input_vocabulary,
 												   lang_vocab=train_dataloader.datafy.lang_vocabulary,
 													use_pretrained_embeddings=use_pretrained_embeddings,
-													model_name=base_model_name)
+													model_name=base_model_name,
+													debug=debug)
 
 		dev_dataloader = datafy.CustomTextDataset(mode="dev",
 												   train_path=train_path,
@@ -123,7 +129,8 @@ class Trainer:
 												   input_vocab=train_dataloader.datafy.input_vocabulary,
 												   lang_vocab=train_dataloader.datafy.lang_vocabulary,
 													use_pretrained_embeddings=use_pretrained_embeddings,
-													model_name=base_model_name)
+													model_name=base_model_name,
+													debug=debug)
 
 		self.loaded_test_data = DataLoader(test_dataloader,
 										   batch_size=batch_size,

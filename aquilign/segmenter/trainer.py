@@ -38,8 +38,6 @@ class Trainer:
 		output_dir = config_file["global"]["out_dir"]
 		base_model_name = config_file["global"]["base_model_name"]
 		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
-		if use_pretrained_embeddings:
-			torch.set_default_dtype(torch.float16)
 		if architecture == "lstm":
 			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
 			emb_dim = config_file["architectures"][architecture]["emb_dim"]
@@ -425,6 +423,7 @@ class Trainer:
 		all_preds = []
 		all_targets = []
 		all_examples = []
+		self.model.eval()
 		for examples, langs, targets in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):
 			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
 			# Timer.start_timer("preds")

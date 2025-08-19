@@ -39,6 +39,9 @@ class Trainer:
 		base_model_name = config_file["global"]["base_model_name"]
 		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
 		data_augmentation = config_file["global"]["data_augmentation"]
+		self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
+		self.freeze_lang_embeddings = config_file["global"]["freeze_lang_embeddings"]
+		self.balance_class_weights = config_file["global"]["balance_class_weights"]
 		if architecture == "lstm":
 			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
 			emb_dim = config_file["architectures"][architecture]["emb_dim"]
@@ -261,9 +264,11 @@ class Trainer:
 
 		# Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
 		# qu'aux deux autres pour le calcul de la loss. On désactive pour l'instant
-		weights = self.train_dataloader.datafy.target_weights.to(self.device)
-		self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
-		# self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
+		if self.balance_class_weights:
+			weights = self.train_dataloader.datafy.target_weights.to(self.device)
+			self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
+		else:
+			self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
 		print(self.model.__repr__())
 		self.accuracies = []
 		self.results = []
@@ -299,13 +304,15 @@ class Trainer:
 		# Ici on va faire en sorte que les plongements de mots ne soient pas entraînables, si c'est des plongements pré-entraînés
 		# Une possibilité serait de dégeler les paramètres en fin d'entraînement, quelques epochs avant la fin (3-4?)
 		if self.use_pretrained_embeddings:
-			for param in self.model.tok_embedding.parameters():
-				param.requires_grad = False
+			if self.freeze_embeddings:
+				for param in self.model.tok_embedding.parameters():
+					param.requires_grad = False
 
 		# Idem pour les plongements de langue. En faire un paramètre.
 		if self.include_lang_metadata:
-			for param in self.model.lang_embedding.parameters():
-				param.requires_grad = False
+			if self.freeze_lang_embeddings:
+				for param in self.model.lang_embedding.parameters():
+					param.requires_grad = False
 		utils.remove_file(f"{self.output_dir}/accuracies.txt")
 		print("Starting training")
 		os.makedirs(f"{self.output_dir}/models/best", exist_ok=True)

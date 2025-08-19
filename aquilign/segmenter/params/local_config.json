@@ -8,14 +8,14 @@
     "use_pretrained_embeddings": true,
     "workers": 1,
     "out_dir": "/home/mgl/Documents/test_working/",
-    "epochs": 1,
-    "lr": 0.0001,
+    "epochs": 3,
+    "lr": 0.0002,
     "batch_size": 32
   },
   "architectures": {
     "lstm": {
       "emb_dim": 100,
-      "bidirectional_lstm": true,
+      "bidirectional": true,
       "lstm_dropout": null,
       "positional_embeddings": false,
       "lstm_hidden_size": 64,
@@ -23,6 +23,16 @@
       "include_lang_metadata": true,
       "add_attention_layer": true,
       "lang_emb_dim": 32
+    },"gru": {
+      "emb_dim": 300,
+      "bidirectional": false,
+      "dropout": 0.03,
+      "positional_embeddings": false,
+      "hidden_size": 64,
+      "num_layers": 1,
+      "include_lang_metadata": false,
+      "add_attention_layer": false,
+      "lang_emb_dim": 16
     },
     "transformer": {
       "emb_dim": 304,

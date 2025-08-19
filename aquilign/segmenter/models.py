@@ -1,5 +1,5 @@
-import sys
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from positional_encodings.torch_encodings import PositionalEncoding1D, Summer
@@ -11,12 +11,125 @@ def save_bert_embeddings():
 	word_embeddings = myBertModel.get_input_embeddings().weight.data.half()
 	torch.save(word_embeddings, "aquilign/segmenter/embeddings.npy")
 
-class RNN_Encoder(nn.Module):
-	pass
+class GRU_Encoder(nn.Module):
+	def __init__(self,
+				 input_dim,
+				 emb_dim,
+				 load_pretrained_embeddings,
+				 pretrained_weights,
+				 include_lang_metadata,
+				 attention,
+				 num_langs,
+				 lang_emb_dim,
+				 bidirectional,
+				 dropout,
+				 positional_embeddings,
+				 device,
+				 hidden_size,
+				 out_classes,
+				 num_layers,
+				 batch_size
+				 ):
+		super().__init__()
+
+		# On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
+		if load_pretrained_embeddings:
+			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
+			self.input_dim = 119547
+			emb_dim = 768
+			# Ici on vérifiera le paramètre _freeze
+			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
+			# Censé initialiser les paramètres avec les poids pré-entraînés
+			self.tok_embedding.weight.data = torch.tensor(pretrained_weights)
+		else:
+			# Sinon on utilise l'initialisation normale
+			self.tok_embedding = nn.Embedding(input_dim, emb_dim)
+		self.include_lang_metadata = include_lang_metadata
+		self.attention = attention
+		self.num_langs = num_langs
+		self.hidden_size = hidden_size
+		self.batch_size = batch_size
+
+		# Possibilité de produire des embeddings de langue que l'on va concaténer aux plongements de mots
+		if self.include_lang_metadata:
+			self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim)  # * self.scale
+			# Si on concatène les embeddings, la dimension de sortie après concaténation est la somme de
+			# la dimension des deux types de plongements
+			input_size = emb_dim + lang_emb_dim
+		else:
+			input_size = emb_dim
+
+		self.bidi = bidirectional
+		# self.dropout = nn.Dropout(dropout)
+		if not dropout:
+			rnn_dropout = 0
+		self.rnn = nn.GRU(input_size=input_size,
+						  bidirectional=self.bidi,
+						  batch_first=True,
+						  dropout=dropout,
+						  num_layers=num_layers,
+						  hidden_size=self.hidden_size)
+		self.positional_embeddings = positional_embeddings
+
+		# On peut ajouter des plongements positionnels mais avec un lstm c'est probablement moins utile
+		if positional_embeddings:
+			self.pos1Dsum = Summer(PositionalEncoding1D(emb_dim))
+		self.device = device
+		self.input_dim = input_dim
+		self.num_layers = num_layers
+
+		# Une couche d'attention multitête
+		if self.attention:
+			if self.bidi:
+				# La sortie du LSTM est doublée en taille si c'est bidirectionnel (lr et rl)
+				self.multihead_attn = nn.MultiheadAttention(self.hidden_size * 2, 8)
+			else:
+				self.multihead_attn = nn.MultiheadAttention(self.hidden_size, 8)
+
+		if self.bidi:
+			self.linear_layer = nn.Linear(self.hidden_size * 2, out_classes)
+		else:
+			self.linear_layer = nn.Linear(self.hidden_size, out_classes)
 
 
-import torch
-import torch.nn as nn
+	def forward(self, src, lang):
+		batch_size, seq_length = src.size()
+		# On plonge le texte [batch_size, max_length, embeddings_dim]
+		embedded = self.tok_embedding(src)
+		if self.include_lang_metadata:
+
+			# Shape: [batch_size, lang_metadata_dimensions]
+			lang_embedding = self.lang_embedding(lang)
+			# On augmente de dimension pour pouvoir concaténer chaque token et la langue:
+			# [batch_size, max_length, lang_metadata_dimensions]
+			projected_lang = lang_embedding.unsqueeze(1).expand(-1, seq_length,
+																-1)  # (batch_size, seq_length, embedding_dim)
+			# On concatène chaque token avec le vecteur de langue, c'est-à-dire qu'on augmente la
+			# dimensionnalité de chaque vecteur de mot dont la dimension sera la somme des deux dimensions:
+			# [batch_size, max_length, lang_metadata_dimensions + word_embedding_dimension]
+			embedded = torch.cat((embedded, projected_lang), 2)
+		else:
+			embedded = self.tok_embedding(src)
+
+		if self.positional_embeddings:
+			embedded = self.pos1Dsum(embedded)  #
+		if self.bidi:
+			init_state = torch.zeros(self.num_layers * 2, self.batch_size, self.hidden_size).to(self.device)
+		else:
+			init_state = torch.zeros(self.num_layers, self.batch_size, self.hidden_size).to(self.device)
+		rnn_out, _ = self.rnn(embedded, init_state)
+
+
+		# Attention et classification
+		if self.attention:
+			attn_output, _ = self.multihead_attn(rnn_out, rnn_out, rnn_out)
+			outs = self.linear_layer(attn_output + rnn_out)
+		else:
+			outs = self.linear_layer(rnn_out)
+		# dimension: [batch_size, max_length, 3] pour [SC], [SB], [PAD]
+		return outs
+
+
 
 
 class TransformerModel(nn.Module):
@@ -82,7 +195,7 @@ class LSTM_Encoder(nn.Module):
 	def __init__(self,
 				 input_dim: int,
 				 emb_dim: int,
-				 bidirectional_lstm: bool,
+				 bidirectional: bool,
 				 lstm_dropout: float,
 				 positional_embeddings: bool,
 				 device: str,
@@ -97,21 +210,28 @@ class LSTM_Encoder(nn.Module):
 				 load_pretrained_embeddings:bool,
 				 pretrained_weights:np.ndarray):
 		super().__init__()
+
+		# On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
 		if load_pretrained_embeddings:
+			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
 			self.input_dim = 119547
 			emb_dim = 768
+			# Ici on vérifiera le paramètre _freeze
 			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim, _freeze=True)
+			# Censé initialiser les paramètres avec les poids pré-entraînés
 			self.tok_embedding.weight.data = torch.tensor(pretrained_weights)
 		else:
+			# Sinon on utilise l'initialisation normale
 			self.tok_embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata
 		self.attention = attention
 		self.num_langs = num_langs
+
+		# Possibilité de produire des embeddings de langue que l'on va concaténer aux plongements de mots
 		if self.include_lang_metadata:
-			# Voir si c'est la meilleure méthode. Les embeddings sont de la même dimension que ceux du texte, pas forcément ouf.
-			# Autre possibilité, one-hot encoding et couche linéaire
-			# self.scale = torch.sqrt(torch.FloatTensor([0.5]))
 			self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim)  # * self.scale
+			# Si on concatène les embeddings, la dimension de sortie après concaténation est la somme de
+			# la dimension des deux types de plongements
 			lstm_input_size = emb_dim + lang_emb_dim
 		else:
 			lstm_input_size = emb_dim
@@ -125,8 +245,10 @@ class LSTM_Encoder(nn.Module):
 							num_layers=num_lstm_layers,
 							batch_first=True,
 							dropout=lstm_dropout,
-							bidirectional=bidirectional_lstm)
+							bidirectional=bidirectional)
 		self.positional_embeddings = positional_embeddings
+
+		# On peut ajouter des plongements positionnels mais avec un lstm c'est probablement moins utile
 		if positional_embeddings:
 			self.pos1Dsum = Summer(PositionalEncoding1D(emb_dim))
 		self.device = device
@@ -135,14 +257,14 @@ class LSTM_Encoder(nn.Module):
 		self.batch_size = batch_size
 
 
-
+		# Une couche d'attention multitête
 		if self.attention:
 			if self.bidi:
+				# La sortie du LSTM est doublée en taille si c'est bidirectionnel (lr et rl)
 				self.multihead_attn = nn.MultiheadAttention(self.hidden_dim * 2, 8)
 			else:
 				self.multihead_attn = nn.MultiheadAttention(self.hidden_dim, 8)
 
-		# On peut aussi ajouter une couche d'attention.
 		if self.bidi:
 			self.linear_layer = nn.Linear(lstm_hidden_size * 2, out_classes)
 		else:
@@ -151,14 +273,19 @@ class LSTM_Encoder(nn.Module):
 
 	def forward(self, src, lang):
 		batch_size, seq_length = src.size()
-		# On plonge le texte
+		# On plonge le texte [batch_size, max_length, embeddings_dim]
 		embedded = self.tok_embedding(src)
 		if self.include_lang_metadata:
+
+			# Shape: [batch_size, lang_metadata_dimensions]
 			lang_embedding = self.lang_embedding(lang)
-			# On augmente de dimension pour pouvoir concaténer chaque token et la langue
+			# On augmente de dimension pour pouvoir concaténer chaque token et la langue:
+			# [batch_size, max_length, lang_metadata_dimensions]
 			projected_lang = lang_embedding.unsqueeze(1).expand(-1, seq_length,
 																-1)  # (batch_size, seq_length, embedding_dim)
-			# On concatène chaque token avec le vecteur de langue.
+			# On concatène chaque token avec le vecteur de langue, c'est-à-dire qu'on augmente la
+			# dimensionnalité de chaque vecteur de mot dont la dimension sera la somme des deux dimensions:
+			# [batch_size, max_length, lang_metadata_dimensions + word_embedding_dimension]
 			embedded = torch.cat((embedded, projected_lang), 2)
 		else:
 			embedded = self.tok_embedding(src)
@@ -172,12 +299,16 @@ class LSTM_Encoder(nn.Module):
 			(h, c) = (torch.zeros(1, self.batch_size, self.hidden_dim).to(self.device),
 					  torch.zeros(1, self.batch_size, self.hidden_dim).to(self.device))
 		lstm_out, (h, c) = self.lstm(embedded, (h, c))
+		# La sortie est de forme [batch_size, max_length, hidden_size (*2 si c'est bidirectionnel)]:
+		# le LSTM va retourner autant de tokens en sortie qu'en entrée
 
+		# Attention et classification
 		if self.attention:
 			attn_output, _ = self.multihead_attn(lstm_out, lstm_out, lstm_out)
 			outs = self.linear_layer(attn_output + lstm_out)
 		else:
 			outs = self.linear_layer(lstm_out)
+		# dimension: [batch_size, max_length, 3] pour [SC], [SB], [PAD]
 		return outs
 
 

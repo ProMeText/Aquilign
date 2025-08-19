@@ -39,6 +39,15 @@ class Trainer:
 			lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
 			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
 			lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
+			bidirectional = config_file["architectures"][architecture]["bidirectional"]
+			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
+		elif architecture == "gru":
+			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
+			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+			hidden_size = config_file["architectures"][architecture]["hidden_size"]
+			num_layers = config_file["architectures"][architecture]["num_layers"]
+			dropout = config_file["architectures"][architecture]["dropout"]
+			bidirectional = config_file["architectures"][architecture]["bidirectional"]
 			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
 		elif architecture == "transformer":
 			hidden_dim = config_file["architectures"][architecture]["emb_dim"]
@@ -130,6 +139,7 @@ class Trainer:
 		self.epochs = epochs
 		self.batch_size = batch_size
 		self.output_dim = len(self.target_classes)
+		self.include_lang_metadata = include_lang_metadata
 
 
 		if fine_tune:
@@ -161,10 +171,15 @@ class Trainer:
 
 		else:
 			self.input_dim = len(self.input_vocab)
+
+
+			# Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
 			if architecture == "cnn":
 				EMB_DIM = 256
 				HID_DIM = 256  # each conv. layer has 2 * hid_dim filters
 				ENC_LAYERS = 10  # number of conv. blocks in encoder
+
+				# Le kernel est toujours impair, car on donne du contexte égal autour du pivot
 				ENC_KERNEL_SIZE = kernel_size  # must be odd!
 				ENC_DROPOUT = 0.25
 				self.enc = models.CnnEncoder(self.input_dim, EMB_DIM, HID_DIM, ENC_LAYERS, ENC_KERNEL_SIZE, ENC_DROPOUT,
@@ -186,7 +201,7 @@ class Trainer:
 				weights = torch.load("aquilign/segmenter/embeddings.npy")
 				self.model = models.LSTM_Encoder(input_dim=self.input_dim,
 												 emb_dim=300,
-												 bidirectional_lstm=True,
+												 bidirectional=bidirectional,
 												 lstm_dropout=lstm_dropout,
 												 positional_embeddings=False,
 												 device=self.device,
@@ -198,18 +213,38 @@ class Trainer:
 												 out_classes=self.output_dim,
 												 attention=add_attention_layer,
 												 lang_emb_dim=lang_emb_dim,
-												 load_pretrained_embeddings=True,
+												 load_pretrained_embeddings=use_pretrained_embeddings,
+												 pretrained_weights=weights)
+			elif architecture == "gru":
+				weights = torch.load("aquilign/segmenter/embeddings.npy")
+				self.model = models.GRU_Encoder(input_dim=self.input_dim,
+												 emb_dim=300,
+												 bidirectional=bidirectional,
+												 dropout=dropout,
+												 positional_embeddings=False,
+												 device=self.device,
+												 hidden_size=hidden_size,
+												 batch_size=batch_size,
+												 num_langs=len(self.lang_vocab),
+												 num_layers=num_layers,
+												 include_lang_metadata=include_lang_metadata,
+												 out_classes=self.output_dim,
+												 attention=add_attention_layer,
+												 lang_emb_dim=lang_emb_dim,
+												 load_pretrained_embeddings=use_pretrained_embeddings,
 												 pretrained_weights=weights
 						)
 		self.architecture = architecture
 		self.model.to(self.device)
-		self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
+		self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
 		self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
+		self.use_pretrained_embeddings = use_pretrained_embeddings
 
 		# Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
-		# qu'aux deux autres pour le calcul de la loss
+		# qu'aux deux autres pour le calcul de la loss. On désactive pour l'instant
 		weights = train_dataloader.datafy.target_weights.to(self.device)
-		self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
+		# self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
+		self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
 		print(self.model.__repr__())
 		self.accuracies = []
 
@@ -229,8 +264,16 @@ class Trainer:
 		print(f"Saving best model to {self.output_dir}/best.pt")
 
 	def train(self, clip=0.1):
-		for param in self.model.tok_embedding.parameters():
-			param.requires_grad = False
+		# Ici on va faire en sorte que les plongements de mots ne soient pas entraînables, si c'est des plongements pré-entraînés
+		# Une possibilité serait de dégeler les paramètres en fin d'entraînement, quelques epochs avant la fin (3-4?)
+		if self.use_pretrained_embeddings:
+			for param in self.model.tok_embedding.parameters():
+				param.requires_grad = False
+
+		# Idem pour les plongements de langue. En faire un paramètre.
+		if self.include_lang_metadata:
+			for param in self.model.lang_embedding.parameters():
+				param.requires_grad = False
 		utils.remove_file(f"{self.output_dir}/accuracies.txt")
 		print("Starting training")
 		torch.save(self.input_vocab, f"{self.output_dir}/vocab.voc")
@@ -281,8 +324,7 @@ class Trainer:
 
 	def evaluate(self, loss_calculation:bool=False, last_epoch:bool=False):
 		"""
-		Réécrire la fonction pour comparer directement target et prédiction pour
-		produire l'accuracy.
+		Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
 		"""
 		print("Evaluating model on test data")
 		debug = False
@@ -300,6 +342,7 @@ class Trainer:
 				tensor_langs = langs.to(self.device)
 				tensor_target = targets.to(self.device)
 			with torch.no_grad():
+				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
 				preds = self.model(tensor_examples, tensor_langs)
 				all_preds.append(preds)
 				all_targets.append(targets)

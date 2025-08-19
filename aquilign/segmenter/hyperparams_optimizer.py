@@ -2,6 +2,7 @@ import json
 import re
 import optuna
 import sys
+from functools import partial
 with open(sys.argv[1], "r") as input_json:
 	config_file = json.load(input_json)
 if config_file["global"]["import"] != "":
@@ -325,7 +326,8 @@ if __name__ == '__main__':
 
 
 	study = optuna.create_study(direction='maximize')
-	study.optimize(objective, pretrained_train_dataloader, pretrained_dev_dataloader, not_pretrained_train_dataloader, not_pretrained_dev_dataloader, n_trials=100)
+	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader)
+	study.optimize(objective, n_trials=100)
 	with open("trash/segmenter_hyperparasearch.txt", "w") as f:
 		f.write(study.best_params)
 	print("Best Hyperparameters:", study.best_params)

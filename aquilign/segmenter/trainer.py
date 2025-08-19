@@ -38,6 +38,8 @@ class Trainer:
 		output_dir = config_file["global"]["out_dir"]
 		base_model_name = config_file["global"]["base_model_name"]
 		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
+		if use_pretrained_embeddings:
+			os.environ["TOKENIZERS_PARALLELISM"] = "false"
 		data_augmentation = config_file["global"]["data_augmentation"]
 		self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
 		self.freeze_lang_embeddings = config_file["global"]["freeze_lang_embeddings"]
@@ -415,7 +417,7 @@ class Trainer:
 
 		# On crée un dernier dataloader: un dictionnaire avec division des langues pour avoir des résultats par langue.
 		loaded_test_data_per_lang = {}
-		batch_size = 8
+		batch_size = self.batch_size
 		for lang in self.lang_vocab:
 			current_dataloader = datafy.CustomTextDataset(mode="test",
 														  train_path=self.train_path,

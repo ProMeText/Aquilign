@@ -216,7 +216,7 @@ class Datafier:
         # Petite vérification
         assert segment_boundary + segment_content == total_samples, "Les calculs ne sont pas bons, Kévin"
         segment_content_weight = total_samples / (segment_content * 2)
-        segment_boundary_weight = total_samples / (segment_boundary * 4)
+        segment_boundary_weight = total_samples / (segment_boundary * 2)
         self.target_weights = torch.tensor([segment_content_weight, segment_boundary_weight, 0])
 
     def create_train_corpus(self):

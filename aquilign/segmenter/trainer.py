@@ -328,8 +328,8 @@ class Trainer:
 		print("Evaluating randomly initiated model")
 		self.evaluate()
 		torch.save(self.model, f"{self.output_dir}/models/model_orig.pt")
-		self.model.train()
 		for epoch in range(self.epochs):
+			self.model.train()
 			epoch_number = epoch + 1
 			last_epoch = epoch == range(self.epochs)[-1]
 			print(f"Epoch {str(epoch_number)}")

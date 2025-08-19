@@ -204,7 +204,7 @@ class Datafier:
         self.target_weights = torch.tensor([segment_content_weight, segment_boundary_weight, 0])
 
     def create_train_corpus(self):
-        train_padded_examples, train_langs, train_padded_targets = self.produce_corpus(self.train_data)
+        train_padded_examples, train_langs, train_padded_targets = self.produce_corpus(self.train_data, debug=self.debug)
         self.train_padded_examples = utils.tensorize(train_padded_examples)
         self.train_langs = utils.tensorize(train_langs)
         self.train_padded_targets = utils.tensorize(train_padded_targets)
@@ -216,7 +216,7 @@ class Datafier:
         Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
         """
         # treated_inputs = self.augment_data(self.test_data, double_corpus=False)
-        test_padded_examples, test_langs, test_padded_targets = self.produce_corpus(self.test_data)
+        test_padded_examples, test_langs, test_padded_targets = self.produce_corpus(self.test_data, debug=self.debug)
         self.test_padded_examples = utils.tensorize(test_padded_examples)
         self.test_langs = utils.tensorize(test_langs)
         self.test_padded_targets = utils.tensorize(test_padded_targets)
@@ -227,7 +227,7 @@ class Datafier:
         Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
         """
         # treated_inputs = self.augment_data(self.dev_data, double_corpus=False)
-        dev_padded_examples, dev_langs, dev_padded_targets = self.produce_corpus(self.dev_data)
+        dev_padded_examples, dev_langs, dev_padded_targets = self.produce_corpus(self.dev_data, debug=self.debug)
         self.dev_padded_examples = utils.tensorize(dev_padded_examples)
         self.dev_langs = utils.tensorize(dev_langs)
         self.dev_padded_targets = utils.tensorize(dev_padded_targets)
@@ -265,7 +265,7 @@ class Datafier:
         '''
         return data
 
-    def produce_corpus(self, data:list) -> tuple:
+    def produce_corpus(self, data:list, debug=False) -> tuple:
         """
         This function takes the targets and creates the examples.
         """
@@ -274,6 +274,8 @@ class Datafier:
         targets = []
         langs = []
         ids = []
+        if debug:
+            data = date[:100]
         for example in data:
             text = example['example']
             lang = example['lang']

@@ -16,7 +16,7 @@
   "architectures": {
     "lstm": {
       "emb_dim": 300,
-      "bidirectional_lstm": true,
+      "bidirectional": true,
       "lstm_dropout": null,
       "positional_embeddings": false,
       "lstm_hidden_size": 64,

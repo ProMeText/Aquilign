@@ -23,7 +23,7 @@ class Trainer:
 		architecture = sys.argv[2]
 		if len(sys.argv) == 4:
 			debug = sys.argv[3]
-		elif
+		else:
 			debug = False
 
 		fine_tune = False

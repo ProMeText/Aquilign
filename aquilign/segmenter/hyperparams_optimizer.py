@@ -25,7 +25,7 @@ import sys
 
 
 
-def objective(trial):
+def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader):
 	hidden_size_multiplier = trial.suggest_int("hidden_size", 4, 16)
 	hidden_size = hidden_size_multiplier * 8
 	batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
@@ -33,8 +33,13 @@ def objective(trial):
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
+	if use_pretrained_embeddings:
+		train_dataloader = bert_train_dataloader
+		dev_dataloader = bert_dev_dataloader
+	else:
+		train_dataloader = no_bert_train_dataloader
+		dev_dataloader = no_bert_dev_dataloader
 	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
-	freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
 	if use_pretrained_embeddings:
 		emb_dim = 100
 		add_attention_layer = False
@@ -44,13 +49,12 @@ def objective(trial):
 		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
 	# bidirectional = trial.suggest_categorical("bidirectional", [False, True])
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
-	lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
+	if include_lang_metadata:
+		freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
+		lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
 
 	epochs = config_file["global"]["epochs"]
-	train_path = config_file["global"]["train"]
-	test_path = config_file["global"]["test"]
 	device = config_file["global"]["device"]
-	dev_path = config_file["global"]["dev"]
 	output_dir = config_file["global"]["out_dir"]
 	base_model_name = config_file["global"]["base_model_name"]
 	if device != "cpu":
@@ -66,34 +70,7 @@ def objective(trial):
 	workers = 8
 	all_dataset_on_device = False
 	print("Loading data")
-	train_dataloader = datafy.CustomTextDataset("train",
-												train_path=train_path,
-												test_path=test_path,
-												dev_path=dev_path,
-												device=device,
-												all_dataset_on_device=False,
-												delimiter="£",
-												output_dir=output_dir,
-												create_vocab=create_vocab,
-												use_pretrained_embeddings=use_pretrained_embeddings,
-												debug=False,
-												data_augmentation=True,
-												tokenizer_name=base_model_name)
-	dev_dataloader = datafy.CustomTextDataset(mode="dev",
-											  train_path=train_path,
-											  test_path=test_path,
-											  dev_path=dev_path,
-											  device=device,
-											  delimiter="£",
-											  output_dir=output_dir,
-											  create_vocab=False,
-											  input_vocab=train_dataloader.datafy.input_vocabulary,
-											  lang_vocab=train_dataloader.datafy.lang_vocabulary,
-											  use_pretrained_embeddings=use_pretrained_embeddings,
-											  debug=False,
-											  data_augmentation=True,
-											  tokenizer_name=base_model_name,
-											  all_dataset_on_device=False)
+
 
 	loaded_dev_data = DataLoader(dev_dataloader,
 									   batch_size=batch_size,
@@ -161,7 +138,6 @@ def objective(trial):
 	accuracies = []
 	utils.remove_file(f"{output_dir}/accuracies.txt")
 	print("Starting training")
-	torch.save(input_vocab, f"{output_dir}/vocab.voc")
 
 
 	# Training phase
@@ -281,8 +257,75 @@ def evaluate(model,
 
 
 if __name__ == '__main__':
+
+	train_path = config_file["global"]["train"]
+	test_path = config_file["global"]["test"]
+	device = config_file["global"]["device"]
+	dev_path = config_file["global"]["dev"]
+	output_dir = config_file["global"]["out_dir"]
+	base_model_name = config_file["global"]["base_model_name"]
+	pretrained_train_dataloader = datafy.CustomTextDataset("train",
+												train_path=train_path,
+												test_path=test_path,
+												dev_path=dev_path,
+												device=device,
+												all_dataset_on_device=False,
+												delimiter="£",
+												output_dir=output_dir,
+												create_vocab=True,
+												use_pretrained_embeddings=True,
+												debug=False,
+												data_augmentation=True,
+												tokenizer_name=base_model_name)
+	pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
+											  train_path=train_path,
+											  test_path=test_path,
+											  dev_path=dev_path,
+											  device=device,
+											  delimiter="£",
+											  output_dir=output_dir,
+											  create_vocab=False,
+											  input_vocab=pretrained_train_dataloader.datafy.input_vocabulary,
+											  lang_vocab=pretrained_train_dataloader.datafy.lang_vocabulary,
+											  use_pretrained_embeddings=True,
+											  debug=False,
+											  data_augmentation=True,
+											  tokenizer_name=base_model_name,
+											  all_dataset_on_device=False)
+
+
+	not_pretrained_train_dataloader = datafy.CustomTextDataset("train",
+												train_path=train_path,
+												test_path=test_path,
+												dev_path=dev_path,
+												device=device,
+												all_dataset_on_device=False,
+												delimiter="£",
+												output_dir=output_dir,
+												create_vocab=True,
+												use_pretrained_embeddings=False,
+												debug=False,
+												data_augmentation=True,
+												tokenizer_name=base_model_name)
+	not_pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
+											  train_path=train_path,
+											  test_path=test_path,
+											  dev_path=dev_path,
+											  device=device,
+											  delimiter="£",
+											  output_dir=output_dir,
+											  create_vocab=False,
+											  input_vocab=not_pretrained_train_dataloader.datafy.input_vocabulary,
+											  lang_vocab=not_pretrained_train_dataloader.datafy.lang_vocabulary,
+											  use_pretrained_embeddings=False,
+											  debug=False,
+											  data_augmentation=True,
+											  tokenizer_name=base_model_name,
+											  all_dataset_on_device=False)
+
+
 	study = optuna.create_study(direction='maximize')
-	study.optimize(objective, n_trials=100)
+	study.optimize(objective, pretrained_train_dataloader, pretrained_dev_dataloader, not_pretrained_train_dataloader, not_pretrained_dev_dataloader, n_trials=100)
 	with open("trash/segmenter_hyperparasearch.txt", "w") as f:
 		f.write(study.best_params)
 	print("Best Hyperparameters:", study.best_params)

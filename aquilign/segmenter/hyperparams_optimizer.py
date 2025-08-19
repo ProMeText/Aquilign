@@ -362,7 +362,6 @@ def objective(self, trial, config_file):
 									 attention=attention_layer,
 									 lang_emb_dim=lang_emb_dim
 									 )
-	architecture = "lstm"
 	model.to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 	scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)

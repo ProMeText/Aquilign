@@ -236,7 +236,7 @@ class LSTM_Encoder(nn.Module):
 		else:
 			lstm_input_size = emb_dim
 
-		self.bidi = bidirectional_lstm
+		self.bidi = bidirectional
 		# self.dropout = nn.Dropout(dropout)
 		if not lstm_dropout:
 			lstm_dropout = 0

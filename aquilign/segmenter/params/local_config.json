@@ -14,14 +14,14 @@
   },
   "architectures": {
     "lstm": {
-      "emb_dim": 100,
+      "emb_dim": 50,
       "bidirectional": true,
       "lstm_dropout": null,
       "positional_embeddings": false,
       "lstm_hidden_size": 64,
       "num_lstm_layers": 1,
-      "include_lang_metadata": true,
-      "add_attention_layer": true,
+      "include_lang_metadata": false,
+      "add_attention_layer": false,
       "lang_emb_dim": 32
     },"gru": {
       "emb_dim": 300,

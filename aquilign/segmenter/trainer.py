@@ -247,11 +247,18 @@ class Trainer:
 		self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
 		print(self.model.__repr__())
 		self.accuracies = []
+		self.results = []
 
 	def save_model(self, epoch):
 		torch.save(self.model, f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{epoch}.pt")
 
 	def get_best_model(self):
+		"""
+		We choose the best model based on a weighted average of precision and recall.
+		"""
+		for epoch, result in enumerate(self.results):
+			epoch_number = epoch + 1
+			print(result)
 		print(self.accuracies)
 		best_epoch_accuracy = self.accuracies.index(max(self.accuracies))
 		print(f"Best model: {best_epoch_accuracy}.")
@@ -367,4 +374,5 @@ class Trainer:
 									   batch_size=self.batch_size,
 									   last_epoch=last_epoch,
 									   tokenizer=self.tokenizer)
+		self.results.append(results)
 		self.accuracies.append(results["accuracy"]["accuracy"])

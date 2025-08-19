@@ -166,7 +166,7 @@ class Datafier:
         utils.serialize_dict(self.lang_vocabulary, f"{self.output_dir}/lang_vocabulary.json")
 
 
-    def create_vocab(self, data:list[list]):
+    def create_vocab(self, data:list[dict]):
         input_vocabulary = {"[PAD]": 0,
                             "[UNK]": 1}
         examples = [item["example"] for item in data]

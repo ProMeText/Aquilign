@@ -463,3 +463,4 @@ class Trainer:
 									   last_epoch=last_epoch,
 									   tokenizer=self.tokenizer)
 		self.results.append(results)
+		print(results)

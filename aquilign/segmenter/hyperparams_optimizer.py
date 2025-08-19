@@ -49,10 +49,10 @@ def objective(trial):
 	epochs = config_file["global"]["epochs"]
 	train_path = config_file["global"]["train"]
 	test_path = config_file["global"]["test"]
+	device = config_file["global"]["device"]
 	dev_path = config_file["global"]["dev"]
 	output_dir = config_file["global"]["out_dir"]
 	base_model_name = config_file["global"]["base_model_name"]
-	device = "cpu"
 	if device != "cpu":
 		device_name = torch.cuda.get_device_name(device)
 		print(f"Device name: {device_name}")

@@ -190,7 +190,7 @@ class Datafier:
 
     def remove_punctuation(self, data) -> list[dict]:
         data_no_punct = []
-        punctuation_regexp = re.compile(r"[\.,!?:;«»\-\(\)\[\]]")
+        punctuation_regexp = re.compile(r"[\.,!?:;«”\"»\-\(\)\[\]]")
         for example in data:
             if not re.search(punctuation_regexp, example["example"]):
                 continue

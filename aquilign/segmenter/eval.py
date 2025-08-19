@@ -34,7 +34,7 @@ def compute_metrics(predictions,
     if last_epoch:
         if tokenizer:
             id_to_word = {ident: value for value, ident in tokenizer.get_vocab().items()}
-        examples_number = 20
+        examples_number = 10
         random_number = random.randint(0, len(examples) - examples_number)
         example_range = range(random_number, random_number + examples_number)
         print(f"Showing example {random_number} to {random_number + examples_number}:")

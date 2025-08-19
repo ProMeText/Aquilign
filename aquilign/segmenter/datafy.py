@@ -23,11 +23,10 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, dev_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, data_augmentation, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, model_name=None, debug=False):
+    def __init__(self, mode, train_path, test_path, dev_path, device, all_dataset_on_device, delimiter, output_dir, create_vocab, data_augmentation, tokenizer_name, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, debug=False, filter_by_lang=None):
         self.datafy = Datafier(train_path,
                                test_path,
                                dev_path,
-                               fine_tune,
                                delimiter,
                                output_dir,
                                create_vocab,
@@ -36,7 +35,8 @@ class CustomTextDataset(Dataset):
                                use_pretrained_embeddings,
                                debug,
                                data_augmentation,
-                               model_name)
+                               tokenizer_name,
+                               filter_by_lang=filter_by_lang)
         self.mode = mode
         if mode == "train":
             self.datafy.create_train_corpus()
@@ -82,7 +82,6 @@ class Datafier:
                  train_path,
                  test_path,
                  dev_path,
-                 fine_tune,
                  delimiter,
                  output_dir,
                  create_vocab,
@@ -91,7 +90,8 @@ class Datafier:
                  use_pretrained_embeddings,
                  debug,
                  data_augmentation,
-                 model_name=None
+                 tokenizer_name,
+                 filter_by_lang=None,
                  ):
         self.max_length_examples = 0
         self.frequency_dict = {}
@@ -121,25 +121,22 @@ class Datafier:
                                "[SB]": 1,  # Segment boundary > split before
                                "[PAD]": 2
                                }
+        self.filter_by_lang = filter_by_lang
         self.reverse_target_classes = {idx:token for token, idx in self.target_classes.items()}
         utils.serialize_dict(self.target_classes, f"{self.output_dir}/target_classes.json")
         utils.serialize_dict(self.reverse_target_classes, f"{self.output_dir}/reverse_target_classes.json")
         self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
-        if fine_tune:
-            self.input_vocabulary = input_vocab
-            self.update_vocab(input_vocab)
+        full_corpus = self.train_data + self.test_data + self.dev_data
+        assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
+        if create_vocab:
+            self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus)
+            self.create_lang_vocab(full_corpus)
+        elif self.use_pretrained_embeddings:
+            self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+            self.create_lang_vocab(full_corpus)
         else:
-            full_corpus = self.train_data + self.test_data + self.dev_data
-            assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
-            if create_vocab:
-                self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus)
-                self.create_lang_vocab(full_corpus)
-            elif self.use_pretrained_embeddings:
-                self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-                self.create_lang_vocab(full_corpus)
-            else:
-                self.input_vocabulary = input_vocab
-                self.lang_vocabulary = lang_vocab
+            self.input_vocabulary = input_vocab
+            self.lang_vocabulary = lang_vocab
 
 
     def update_vocab(self, input_vocab):
@@ -298,10 +295,12 @@ class Datafier:
         langs = []
         ids = []
         if debug:
-            data = data[:100]
+            data = data[:500]
         for example in data:
             text = example['example']
             lang = example['lang']
+            if self.filter_by_lang and lang != self.filter_by_lang:
+                continue
             # Si on veut utiliser des embeddings pré-entraînés, il faut tokéniser avec le tokéniseur maison
             if self.use_pretrained_embeddings:
                 try:

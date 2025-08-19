@@ -10,9 +10,9 @@
     "workers": 1,
     "out_dir": "/home/mgl/Documents/test_working",
     "data_augmentation": true,
-    "epochs": 3,
+    "epochs": 1,
     "lr": 0.0002,
-    "batch_size": 32
+    "batch_size": 8
   },
   "architectures": {
     "lstm": {

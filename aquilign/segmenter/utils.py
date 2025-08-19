@@ -3,7 +3,7 @@ import re
 import torch
 import os
 import time
-import numpy as np
+import tabulate
 
 def write_accuracy(message, path):
     with open(f"{path}accuracies.txt", "a") as output_file:
@@ -33,6 +33,11 @@ def remove_file(path):
         os.remove(path)
     except OSError:
         pass
+
+
+def format_results(results, header):
+    to_print = tabulate.tabulate(results, headers=header, tablefmt='orgtbl')
+    print(to_print)
 
 
 # function to get the index of the tokens after BERT tokenization

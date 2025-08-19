@@ -53,6 +53,9 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	if include_lang_metadata:
 		freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
 		lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
+	else:
+		freeze_lang_embeddings = False
+		lang_emb_dim = 4
 
 	epochs = config_file["global"]["epochs"]
 	device = config_file["global"]["device"]

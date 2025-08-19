@@ -283,4 +283,6 @@ def evaluate(model,
 if __name__ == '__main__':
 	study = optuna.create_study(direction='maximize')
 	study.optimize(objective, n_trials=100)
+	with open("trash/segmenter_hyperparasearch.txt", "w") as f:
+		f.write(study.best_params)
 	print("Best Hyperparameters:", study.best_params)

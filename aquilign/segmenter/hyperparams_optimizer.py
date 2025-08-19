@@ -272,7 +272,7 @@ if __name__ == '__main__':
 												all_dataset_on_device=False,
 												delimiter="£",
 												output_dir=output_dir,
-												create_vocab=True,
+												create_vocab=False,
 												use_pretrained_embeddings=True,
 												debug=False,
 												data_augmentation=True,

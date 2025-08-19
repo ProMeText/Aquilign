@@ -274,7 +274,7 @@ class Datafier:
         targets = []
         langs = []
         ids = []
-        for example in data[:100]:
+        for example in data:
             text = example['example']
             lang = example['lang']
             # Si on veut utiliser des embeddings pré-entraînés, il faut tokéniser avec le tokéniseur maison

@@ -220,7 +220,7 @@ def objective(trial):
 										 tgt_PAD_IDX=tgt_PAD_IDX,
 										 tokenizer=tokenizer)
 
-		weighted_recall_precision = (recall[1]*2 + precision[1]) / 3
+		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
 		results.append(weighted_recall_precision)
 	best_result = max(results)
 	print(f"Best epoch result: {best_result}")

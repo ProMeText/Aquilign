@@ -223,6 +223,7 @@ def objective(trial):
 		weighted_recall_precision = (recall[1]*2 + precision[1]) / 3
 		results.append(weighted_recall_precision)
 	best_result = max(results)
+	print(f"Best epoch result: {best_result}")
 	return best_result
 
 def evaluate(model,

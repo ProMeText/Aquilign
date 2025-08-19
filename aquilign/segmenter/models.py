@@ -221,6 +221,7 @@ class LSTM_Encoder(nn.Module):
 			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim, _freeze=True)
 			# Censé initialiser les paramètres avec les poids pré-entraînés
 			self.tok_embedding.weight.data = torch.tensor(pretrained_weights)
+			print(f"Pretrained embeddings loaded dtype: {pretrained_weights.dtype}")
 		else:
 			# Sinon on utilise l'initialisation normale
 			self.tok_embedding = nn.Embedding(input_dim, emb_dim)

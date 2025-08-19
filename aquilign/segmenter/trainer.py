@@ -329,7 +329,6 @@ class Trainer:
 		self.evaluate()
 		torch.save(self.model, f"{self.output_dir}/models/model_orig.pt")
 		self.model.train()
-		self.model.half()
 		for epoch in range(self.epochs):
 			epoch_number = epoch + 1
 			last_epoch = epoch == range(self.epochs)[-1]

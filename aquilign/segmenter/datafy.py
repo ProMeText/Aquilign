@@ -279,7 +279,7 @@ class Datafier:
         langs = []
         ids = []
         if debug:
-            data = date[:100]
+            data = data[:100]
         for example in data:
             text = example['example']
             lang = example['lang']

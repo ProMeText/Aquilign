@@ -38,6 +38,7 @@ class Trainer:
 		output_dir = config_file["global"]["out_dir"]
 		base_model_name = config_file["global"]["base_model_name"]
 		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
+		data_augmentation = config_file["global"]["data_augmentation"]
 		if architecture == "lstm":
 			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
 			emb_dim = config_file["architectures"][architecture]["emb_dim"]
@@ -85,6 +86,8 @@ class Trainer:
 		else:
 			create_vocab = True
 			self.tokenizer = None
+
+		self.data_augmentation = data_augmentation
 		train_dataloader = datafy.CustomTextDataset("train",
 													train_path=train_path,
 													test_path=test_path,
@@ -97,7 +100,8 @@ class Trainer:
 													create_vocab=create_vocab,
 													use_pretrained_embeddings=use_pretrained_embeddings,
 													model_name=base_model_name,
-													debug=debug)
+													debug=debug,
+													data_augmentation=self.data_augmentation)
 		test_dataloader = datafy.CustomTextDataset(mode="test",
 												   train_path=train_path,
 												   test_path=test_path,
@@ -112,7 +116,8 @@ class Trainer:
 												   lang_vocab=train_dataloader.datafy.lang_vocabulary,
 													use_pretrained_embeddings=use_pretrained_embeddings,
 													model_name=base_model_name,
-													debug=debug)
+													debug=debug,
+													data_augmentation=self.data_augmentation)
 
 		dev_dataloader = datafy.CustomTextDataset(mode="dev",
 												   train_path=train_path,
@@ -128,7 +133,8 @@ class Trainer:
 												   lang_vocab=train_dataloader.datafy.lang_vocabulary,
 													use_pretrained_embeddings=use_pretrained_embeddings,
 													model_name=base_model_name,
-													debug=debug)
+													debug=debug,
+													data_augmentation=self.data_augmentation)
 
 		self.loaded_test_data = DataLoader(test_dataloader,
 										   batch_size=batch_size,
@@ -157,7 +163,6 @@ class Trainer:
 		print(f"Number of train examples: {len(train_dataloader.datafy.train_padded_examples)}")
 		print(f"Number of test examples: {len(test_dataloader.datafy.test_padded_examples)}")
 		print(f"Total length of examples (with padding): {train_dataloader.datafy.max_length_examples}")
-
 		self.input_vocab = train_dataloader.datafy.input_vocabulary
 		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
 		self.lang_vocab = train_dataloader.datafy.lang_vocabulary
@@ -378,6 +383,7 @@ class Trainer:
 		all_targets = []
 		all_examples = []
 		self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
+		self.model.eval()
 		for examples, langs, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
 			# Timer.start_timer("preds")

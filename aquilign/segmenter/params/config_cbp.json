@@ -8,6 +8,7 @@
     "device": "cuda:0",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
     "use_pretrained_embeddings": true,
+    "data_augmentation": true,
     "workers": 8,
     "epochs": 10,
     "lr": 0.0005,

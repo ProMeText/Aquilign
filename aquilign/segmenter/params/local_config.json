@@ -9,6 +9,7 @@
     "use_pretrained_embeddings": true,
     "workers": 1,
     "out_dir": "/home/mgl/Documents/test_working",
+    "data_augmentation": true,
     "epochs": 3,
     "lr": 0.0002,
     "batch_size": 32

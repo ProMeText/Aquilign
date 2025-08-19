@@ -23,7 +23,7 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, dev_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, model_name=None, debug=False):
+    def __init__(self, mode, train_path, test_path, dev_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, data_augmentation, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, model_name=None, debug=False):
         self.datafy = Datafier(train_path,
                                test_path,
                                dev_path,
@@ -35,6 +35,7 @@ class CustomTextDataset(Dataset):
                                lang_vocab,
                                use_pretrained_embeddings,
                                debug,
+                               data_augmentation,
                                model_name)
         self.mode = mode
         if mode == "train":
@@ -89,6 +90,7 @@ class Datafier:
                  lang_vocab,
                  use_pretrained_embeddings,
                  debug,
+                 data_augmentation,
                  model_name=None
                  ):
         self.max_length_examples = 0
@@ -108,6 +110,7 @@ class Datafier:
         self.test_path = test_path
         self.dev_path = dev_path
         self.delimiter = delimiter
+        self.data_augmentation = data_augmentation
         self.train_data = self.import_json_corpus(train_path)
         self.test_data = self.import_json_corpus(test_path)
         self.dev_data = self.import_json_corpus(dev_path)
@@ -185,6 +188,18 @@ class Datafier:
         utils.serialize_dict(self.reverse_input_vocabulary, f"{self.output_dir}/reverse_input_vocabulary.json")
         utils.serialize_dict(self.input_vocabulary, f"{self.output_dir}/input_vocabulary.json")
 
+    def remove_punctuation(self, data) -> list[dict]:
+        data_no_punct = []
+        punctuation_regexp = re.compile(r"[\.,!?:;«»\-\(\)\[\]]")
+        for example in data:
+            if not re.search(punctuation_regexp, example["example"]):
+                continue
+            text = example['example']
+            lang = example['lang']
+            text = re.sub(punctuation_regexp, '', text)
+            data_no_punct.append({"example": text, "lang": lang})
+        return data_no_punct
+
     def deduce_weights(self):
         """
         Fonction simple de pondération des classes:
@@ -208,7 +223,11 @@ class Datafier:
         self.target_weights = torch.tensor([segment_content_weight, segment_boundary_weight, 0])
 
     def create_train_corpus(self):
-        train_padded_examples, train_langs, train_padded_targets = self.produce_corpus(self.train_data, debug=self.debug)
+        if self.data_augmentation:
+            full_corpus = self.train_data + self.remove_punctuation(self.train_data)
+        else:
+            full_corpus = self.train_data
+        train_padded_examples, train_langs, train_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
         self.train_padded_examples = utils.tensorize(train_padded_examples)
         self.train_langs = utils.tensorize(train_langs)
         self.train_padded_targets = utils.tensorize(train_padded_targets)
@@ -219,8 +238,11 @@ class Datafier:
         This function creates the test corpus, and uses the vocabulary of the train set to do so.
         Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
         """
-        # treated_inputs = self.augment_data(self.test_data, double_corpus=False)
-        test_padded_examples, test_langs, test_padded_targets = self.produce_corpus(self.test_data, debug=self.debug)
+        if self.data_augmentation:
+            full_corpus = self.test_data + self.remove_punctuation(self.test_data)
+        else:
+            full_corpus = self.test_data
+        test_padded_examples, test_langs, test_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
         self.test_padded_examples = utils.tensorize(test_padded_examples)
         self.test_langs = utils.tensorize(test_langs)
         self.test_padded_targets = utils.tensorize(test_padded_targets)
@@ -230,8 +252,11 @@ class Datafier:
         This function creates the dev corpus, and uses the vocabulary of the train set to do so.
         Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
         """
-        # treated_inputs = self.augment_data(self.dev_data, double_corpus=False)
-        dev_padded_examples, dev_langs, dev_padded_targets = self.produce_corpus(self.dev_data, debug=self.debug)
+        if self.data_augmentation:
+            full_corpus = self.dev_data + self.remove_punctuation(self.dev_data)
+        else:
+            full_corpus = self.dev_data
+        dev_padded_examples, dev_langs, dev_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
         self.dev_padded_examples = utils.tensorize(dev_padded_examples)
         self.dev_langs = utils.tensorize(dev_langs)
         self.dev_padded_targets = utils.tensorize(dev_padded_targets)

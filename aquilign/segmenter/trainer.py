@@ -30,11 +30,15 @@ class Trainer:
 		workers = config_file["global"]["workers"]
 		train_path = config_file["global"]["train"]
 		test_path = config_file["global"]["test"]
+		dev_path = config_file["global"]["dev"]
 		output_dir = config_file["global"]["out_dir"]
 		base_model_name = config_file["global"]["base_model_name"]
 		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
+		if use_pretrained_embeddings:
+			torch.set_default_dtype(torch.float16)
 		if architecture == "lstm":
 			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
+			emb_dim = config_file["architectures"][architecture]["emb_dim"]
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
 			lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
 			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
@@ -44,6 +48,7 @@ class Trainer:
 		elif architecture == "gru":
 			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+			emb_dim = config_file["architectures"][architecture]["emb_dim"]
 			hidden_size = config_file["architectures"][architecture]["hidden_size"]
 			num_layers = config_file["architectures"][architecture]["num_layers"]
 			dropout = config_file["architectures"][architecture]["dropout"]
@@ -81,6 +86,7 @@ class Trainer:
 		train_dataloader = datafy.CustomTextDataset("train",
 													train_path=train_path,
 													test_path=test_path,
+													dev_path=dev_path,
 													fine_tune=fine_tune,
 													device=self.device,
 													all_dataset_on_device=self.all_dataset_on_device,
@@ -92,6 +98,22 @@ class Trainer:
 		test_dataloader = datafy.CustomTextDataset(mode="test",
 												   train_path=train_path,
 												   test_path=test_path,
+													dev_path=dev_path,
+												   fine_tune=fine_tune,
+												   device=self.device,
+												   all_dataset_on_device=self.all_dataset_on_device,
+												   delimiter="£",
+												   output_dir=output_dir,
+												   create_vocab=False,
+												   input_vocab=train_dataloader.datafy.input_vocabulary,
+												   lang_vocab=train_dataloader.datafy.lang_vocabulary,
+													use_pretrained_embeddings=use_pretrained_embeddings,
+													model_name=base_model_name)
+
+		dev_dataloader = datafy.CustomTextDataset(mode="dev",
+												   train_path=train_path,
+												   test_path=test_path,
+													dev_path=dev_path,
 												   fine_tune=fine_tune,
 												   device=self.device,
 												   all_dataset_on_device=self.all_dataset_on_device,
@@ -106,10 +128,16 @@ class Trainer:
 		self.loaded_test_data = DataLoader(test_dataloader,
 										   batch_size=batch_size,
 										   shuffle=False,
-										   num_workers=8,
+										   num_workers=self.workers,
 										   pin_memory=False,
 										   drop_last=True)
 		self.loaded_train_data = DataLoader(train_dataloader,
+											batch_size=batch_size,
+											shuffle=True,
+											num_workers=self.workers,
+											pin_memory=False,
+										   drop_last=True)
+		self.loaded_dev_data = DataLoader(dev_dataloader,
 											batch_size=batch_size,
 											shuffle=True,
 											num_workers=self.workers,
@@ -140,6 +168,7 @@ class Trainer:
 		self.batch_size = batch_size
 		self.output_dim = len(self.target_classes)
 		self.include_lang_metadata = include_lang_metadata
+		self.best_model = ""
 
 
 		if fine_tune:
@@ -200,7 +229,7 @@ class Trainer:
 			elif architecture == "lstm":
 				weights = torch.load("aquilign/segmenter/embeddings.npy")
 				self.model = models.LSTM_Encoder(input_dim=self.input_dim,
-												 emb_dim=300,
+												 emb_dim=emb_dim,
 												 bidirectional=bidirectional,
 												 lstm_dropout=lstm_dropout,
 												 positional_embeddings=False,
@@ -218,7 +247,7 @@ class Trainer:
 			elif architecture == "gru":
 				weights = torch.load("aquilign/segmenter/embeddings.npy")
 				self.model = models.GRU_Encoder(input_dim=self.input_dim,
-												 emb_dim=300,
+												 emb_dim=emb_dim,
 												 bidirectional=bidirectional,
 												 dropout=dropout,
 												 positional_embeddings=False,
@@ -250,25 +279,31 @@ class Trainer:
 		self.results = []
 
 	def save_model(self, epoch):
-		torch.save(self.model, f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{epoch}.pt")
+		torch.save(self.model.state_dict(), f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{epoch}.pt")
+
 
 	def get_best_model(self):
 		"""
 		We choose the best model based on a weighted average of precision and recall.
 		"""
+		weighted_averages = []
 		for epoch, result in enumerate(self.results):
-			epoch_number = epoch + 1
-			print(result)
-		print(self.accuracies)
-		best_epoch_accuracy = self.accuracies.index(max(self.accuracies))
-		print(f"Best model: {best_epoch_accuracy}.")
+			recall = result["recall"][1]
+			precision = result["precision"][1]
+			weighted = (precision + (recall*2) ) / 3
+			weighted_averages.append(weighted.item())
+
+		max_average = max(weighted_averages)
+		best_epoch = weighted_averages.index(max_average) + 1
+		print(f"Best model: {best_epoch} with {max_average} weighted precision and recall.")
 		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
 		for model in models:
-			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch_accuracy}.pt":
-				shutil.copy(model, f"{self.output_dir}/best.pt")
+			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch}.pt":
+				shutil.copy(model, f"{self.output_dir}/models/best/best.pt")
 			else:
 				os.remove(model)
-		print(f"Saving best model to {self.output_dir}/best.pt")
+		print(f"Saving best model to {self.output_dir}/models/best/best.pt")
+		self.best_model = f"{self.output_dir}/models/best/best.pt"
 
 	def train(self, clip=0.1):
 		# Ici on va faire en sorte que les plongements de mots ne soient pas entraînables, si c'est des plongements pré-entraînés
@@ -283,11 +318,13 @@ class Trainer:
 				param.requires_grad = False
 		utils.remove_file(f"{self.output_dir}/accuracies.txt")
 		print("Starting training")
-		torch.save(self.input_vocab, f"{self.output_dir}/vocab.voc")
+		os.makedirs(f"{self.output_dir}/models/best", exist_ok=True)
+		torch.save(self.input_vocab, f"{self.output_dir}/models/best/vocab.voc")
 		print("Evaluating randomly initiated model")
 		self.evaluate()
-		torch.save(self.model, f"{self.output_dir}/model_orig.pt")
+		torch.save(self.model, f"{self.output_dir}/models/model_orig.pt")
 		self.model.train()
+		self.model.half()
 		for epoch in range(self.epochs):
 			epoch_number = epoch + 1
 			last_epoch = epoch == range(self.epochs)[-1]
@@ -326,14 +363,54 @@ class Trainer:
 			self.evaluate(last_epoch=last_epoch)
 			self.save_model(epoch_number)
 		self.get_best_model()
+		self.evaluate_best_model()
 
+	def evaluate_best_model(self):
+		"""
+				Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
+				"""
+		print("Evaluating best model on test data")
+		all_preds = []
+		all_targets = []
+		all_examples = []
+		self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
+		for examples, langs, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
+			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
+			# Timer.start_timer("preds")
+			if not self.all_dataset_on_device:
+				tensor_examples = examples.to(self.device)
+				tensor_langs = langs.to(self.device)
+				tensor_target = targets.to(self.device)
+			with torch.no_grad():
+				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
+				preds = self.model(tensor_examples, tensor_langs)
+				all_preds.append(preds)
+				all_targets.append(targets)
+				all_examples.append(examples)
+
+		# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
+		cat_preds = torch.cat(all_preds, dim=0)
+		cat_targets = torch.cat(all_targets, dim=0)
+		cat_examples = torch.cat(all_examples, dim=0)
+		results = eval.compute_metrics(predictions=cat_preds,
+									   labels=cat_targets,
+									   examples=cat_examples,
+									   id_to_word=self.reverse_input_vocab,
+									   idx_to_class=self.reverse_target_classes,
+									   padding_idx=self.tgt_PAD_IDX,
+									   batch_size=self.batch_size,
+									   last_epoch=True,
+									   tokenizer=self.tokenizer)
+
+		print("Global results on test data with best model: ")
+		print(results)
 
 
 	def evaluate(self, loss_calculation:bool=False, last_epoch:bool=False):
 		"""
 		Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
 		"""
-		print("Evaluating model on test data")
+		print("Evaluating model on dev data")
 		debug = False
 		epoch_accuracy = []
 		epoch_loss = []
@@ -341,7 +418,7 @@ class Trainer:
 		all_preds = []
 		all_targets = []
 		all_examples = []
-		for examples, langs, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
+		for examples, langs, targets in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):
 			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
 			# Timer.start_timer("preds")
 			if not self.all_dataset_on_device:
@@ -375,4 +452,3 @@ class Trainer:
 									   last_epoch=last_epoch,
 									   tokenizer=self.tokenizer)
 		self.results.append(results)
-		self.accuracies.append(results["accuracy"]["accuracy"])

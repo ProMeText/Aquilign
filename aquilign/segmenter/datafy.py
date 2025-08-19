@@ -23,9 +23,10 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, model_name=None):
+    def __init__(self, mode, train_path, test_path, dev_path, fine_tune, device, all_dataset_on_device, delimiter, output_dir, create_vocab, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, model_name=None):
         self.datafy = Datafier(train_path,
                                test_path,
+                               dev_path,
                                fine_tune,
                                delimiter,
                                output_dir,
@@ -37,8 +38,10 @@ class CustomTextDataset(Dataset):
         self.mode = mode
         if mode == "train":
             self.datafy.create_train_corpus()
-        else:
+        elif mode == "test":
             self.datafy.create_test_corpus()
+        else:
+            self.datafy.create_dev_corpus()
         if all_dataset_on_device:
             self.datafy.train_padded_examples = torch.LongTensor(self.datafy.train_padded_examples).to(device)
             self.datafy.test_padded_examples = torch.LongTensor(self.datafy.test_padded_examples).to(device)
@@ -50,18 +53,25 @@ class CustomTextDataset(Dataset):
     def __len__(self):
         if self.mode == "train":
             return len(self.datafy.train_padded_examples)
-        else:
+        elif self.mode == "test":
             return len(self.datafy.test_padded_examples)
+        else:
+            return len(self.datafy.dev_padded_examples)
 
     def __getitem__(self, idx):
         if self.mode == "train":
             examples = self.datafy.train_padded_examples[idx]
             labels = self.datafy.train_padded_targets[idx]
             langs = self.datafy.train_langs[idx]
-        else:
+        elif self.mode == "test":
             examples = self.datafy.test_padded_examples[idx]
             labels = self.datafy.test_padded_targets[idx]
             langs = self.datafy.test_langs[idx]
+        else:
+            examples = self.datafy.dev_padded_examples[idx]
+            labels = self.datafy.dev_padded_targets[idx]
+            langs = self.datafy.dev_langs[idx]
+
         return examples, langs, labels
 
 
@@ -69,6 +79,7 @@ class Datafier:
     def __init__(self,
                  train_path,
                  test_path,
+                 dev_path,
                  fine_tune,
                  delimiter,
                  output_dir,
@@ -88,11 +99,15 @@ class Datafier:
         self.train_padded_targets = []
         self.test_padded_examples = []
         self.test_padded_targets = []
+        self.dev_padded_examples = []
+        self.dev_padded_targets = []
         self.train_path = train_path
         self.test_path = test_path
+        self.dev_path = dev_path
         self.delimiter = delimiter
         self.train_data = self.import_json_corpus(train_path)
         self.test_data = self.import_json_corpus(test_path)
+        self.dev_data = self.import_json_corpus(dev_path)
         self.previous_model_vocab = input_vocab
         self.use_pretrained_embeddings = use_pretrained_embeddings
         self.target_classes = {"[SC]": 0,  # Segment content > no split
@@ -107,7 +122,7 @@ class Datafier:
             self.input_vocabulary = input_vocab
             self.update_vocab(input_vocab)
         else:
-            full_corpus = self.train_data + self.test_data
+            full_corpus = self.train_data + self.test_data + self.dev_data
             assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
             if create_vocab:
                 self.create_vocab(full_corpus)
@@ -206,6 +221,17 @@ class Datafier:
         self.test_langs = utils.tensorize(test_langs)
         self.test_padded_targets = utils.tensorize(test_padded_targets)
 
+    def create_dev_corpus(self):
+        """
+        This function creates the dev corpus, and uses the vocabulary of the train set to do so.
+        Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
+        """
+        # treated_inputs = self.augment_data(self.dev_data, double_corpus=False)
+        dev_padded_examples, dev_langs, dev_padded_targets = self.produce_corpus(self.dev_data)
+        self.dev_padded_examples = utils.tensorize(dev_padded_examples)
+        self.dev_langs = utils.tensorize(dev_langs)
+        self.dev_padded_targets = utils.tensorize(dev_padded_targets)
+
     def get_frequency(self, data_as_string):
         for char in data_as_string:
             try:
@@ -248,7 +274,7 @@ class Datafier:
         targets = []
         langs = []
         ids = []
-        for example in data:
+        for example in data[:100]:
             text = example['example']
             lang = example['lang']
             # Si on veut utiliser des embeddings pré-entraînés, il faut tokéniser avec le tokéniseur maison

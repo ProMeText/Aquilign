@@ -2,12 +2,13 @@
   "global": {
     "train": "../multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json",
     "test": "../multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json",
+    "dev": "../multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/dev.json",
     "import": "",
     "device": "cpu",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
     "use_pretrained_embeddings": true,
     "workers": 1,
-    "out_dir": "/home/mgl/Documents/test_working/",
+    "out_dir": "/home/mgl/Documents/test_working",
     "epochs": 3,
     "lr": 0.0002,
     "batch_size": 32
@@ -17,13 +18,14 @@
       "emb_dim": 50,
       "bidirectional": true,
       "lstm_dropout": null,
-      "positional_embeddings": false,
+      "positional_embeddings": true,
       "lstm_hidden_size": 64,
       "num_lstm_layers": 1,
       "include_lang_metadata": false,
       "add_attention_layer": false,
       "lang_emb_dim": 32
-    },"gru": {
+    },
+    "gru": {
       "emb_dim": 300,
       "bidirectional": false,
       "dropout": 0.03,

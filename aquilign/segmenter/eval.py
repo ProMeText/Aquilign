@@ -116,5 +116,5 @@ def compute_metrics(predictions,
     f1_l = []
     [f1_l.extend(v) for k, v in f1.items()]
 
-    print({"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l})
-    return {"accuracy": acc, "recall": recall_l, "precision": precision_l, "f1": f1_l}
+    results = {"accuracy": acc['accuracy'], "recall": recall_l, "precision": precision_l, "f1": f1_l}
+    return results

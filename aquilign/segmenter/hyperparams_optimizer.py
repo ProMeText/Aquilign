@@ -177,8 +177,8 @@ def objective(trial):
 			for param in model.lang_embedding.parameters():
 				param.requires_grad = False
 	results = []
-	model.train()
 	for epoch in range(epochs):
+		model.train()
 		epoch_number = epoch + 1
 		print(f"Epoch {str(epoch_number)}")
 		for examples, langs, targets in tqdm.tqdm(loaded_train_data, unit_scale=batch_size):

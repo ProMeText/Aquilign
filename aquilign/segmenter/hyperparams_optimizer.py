@@ -1,11 +1,18 @@
+import json
 import re
 import optuna
+import sys
+with open(sys.argv[1], "r") as input_json:
+	config_file = json.load(input_json)
+if config_file["global"]["import"] != "":
+	sys.path.append(config_file["global"]["import"])
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
 import aquilign.segmenter.eval as eval
 import aquilign.segmenter.datafy as datafy
 import torch
 import datetime
+from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 import tqdm
 from statistics import mean
@@ -16,302 +23,77 @@ import shutil
 import sys
 
 
-class Trainer:
-	def  __init__(self,
-				  config_file):
-
-		architecture = sys.argv[2]
-
-		fine_tune = False
-		epochs = config_file["global"]["epochs"]
-		batch_size = config_file["global"]["batch_size"]
-		lr = config_file["global"]["lr"]
-		device = config_file["global"]["device"]
-		workers = config_file["global"]["workers"]
-		train_path = config_file["global"]["train"]
-		test_path = config_file["global"]["test"]
-		output_dir = config_file["global"]["out_dir"]
-		if architecture == "lstm":
-			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
-			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
-			lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
-			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
-			lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
-			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
-		elif architecture == "transformer":
-			hidden_dim = config_file["architectures"][architecture]["emb_dim"]
-			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
-			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
-			num_heads = config_file["architectures"][architecture]["num_heads"]
-			num_transformers_layers = config_file["architectures"][architecture]["num_transformers_layers"]
 
 
-
-		# First we prepare the corpus
-		now = datetime.datetime.now()
-		self.device = device
-		if self.device != "cpu":
-			device_name = torch.cuda.get_device_name(self.device)
-			print(f"Device name: {device_name}")
-		self.workers = workers
-		max_length = 300
-		self.timestamp = now.strftime("%d-%m-%Y_%H:%M:%S")
-		if fine_tune:
-			input_vocab = torch.load(pretrained_params.get("vocab"))
-		else:
-			input_vocab = None
-		self.all_dataset_on_device = False
-		print("Loading data")
-		train_dataloader = datafy.CustomTextDataset("train",
-													train_path=train_path,
-													test_path=test_path,
-													fine_tune=fine_tune,
-													max_length=max_length,
-													device=self.device,
-													all_dataset_on_device=self.all_dataset_on_device,
-													delimiter="£",
-													output_dir=output_dir,
-													create_vocab=True)
-		test_dataloader = datafy.CustomTextDataset(mode="test",
-												   train_path=train_path,
-												   test_path=test_path,
-												   fine_tune=fine_tune,
-												   max_length=max_length,
-												   device=self.device,
-												   all_dataset_on_device=self.all_dataset_on_device,
-												   delimiter="£",
-												   output_dir=output_dir,
-												   create_vocab=False,
-												   input_vocab=train_dataloader.datafy.input_vocabulary,
-												   lang_vocab=train_dataloader.datafy.lang_vocabulary)
-
-		self.loaded_test_data = DataLoader(test_dataloader,
-										   batch_size=batch_size,
-										   shuffle=False,
-										   num_workers=8,
-										   pin_memory=False,
-										   drop_last=True)
-		self.loaded_train_data = DataLoader(train_dataloader,
-											batch_size=batch_size,
-											shuffle=True,
-											num_workers=self.workers,
-											pin_memory=False,
-										   drop_last=True)
-
-		self.output_dir = output_dir
-		# On crée l'output dir:
-		os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
-		os.makedirs(f"{self.output_dir}/best", exist_ok=True)
-
-		print(f"Number of train examples: {len(train_dataloader.datafy.train_padded_examples)}")
-		print(f"Number of test examples: {len(test_dataloader.datafy.test_padded_examples)}")
-		print(f"Total length of examples (with padding): {train_dataloader.datafy.max_length_examples}")
-
-		self.input_vocab = train_dataloader.datafy.input_vocabulary
-		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
-		self.lang_vocab = train_dataloader.datafy.lang_vocabulary
-		self.target_classes = train_dataloader.datafy.target_classes
-		self.reverse_target_classes = train_dataloader.datafy.reverse_target_classes
-
-		self.corpus_size = train_dataloader.__len__()
-		self.steps = self.corpus_size // batch_size
-
-		self.test_steps = test_dataloader.__len__() // batch_size
-		self.tgt_PAD_IDX = self.target_classes["<PAD>"]
-		self.epochs = epochs
-		self.batch_size = batch_size
-		self.output_dim = len(self.target_classes)
-
-
-		if fine_tune:
-			self.pretrained_model = pretrained_params.get('model', None)
-			self.pretrained_vocab = pretrained_params.get('vocab', None)
-			self.input_vocab = train_dataloader.datafy.input_vocabulary
-			self.input_dim = len(self.input_vocab)
-			torch.save(self.input_vocab, f"{output_dir}/vocab.voc")
-			if self.device == 'cpu':
-				self.pre_trained_model = torch.load(self.pretrained_model, map_location=self.device)
-			else:
-				self.pre_trained_model = torch.load(self.pretrained_model).to(self.device)
-			self.pretrained_vocab = torch.load(self.pretrained_vocab)
-			pre_trained_weights = self.pre_trained_model.encoder.tok_embedding.weight
-			embs_dim = pre_trained_weights.shape[1]
-			self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
-
-			# We create the updated embs:
-			# First we create randomly initiated tensors corresponding to the number of new chars in the new dataset
-			number_new_chars = len(self.input_vocab) - len(self.pretrained_vocab)
-			new_vectors = torch.zeros(number_new_chars, embs_dim).to(self.device)
-
-			# We then add the new vectors to the pre-trained weights
-			updated_vectors = torch.cat((pre_trained_weights, new_vectors), 0)
-			# We then take the pre-trained model and modify its embedding layer to match
-			# new + old vocabulary
-			self.model = self.pre_trained_model
-			self.model.encoder.tok_embedding = nn.Embedding.from_pretrained(updated_vectors)
-
-		else:
-			self.input_dim = len(self.input_vocab)
-			if architecture == "cnn":
-				EMB_DIM = 256
-				HID_DIM = 256  # each conv. layer has 2 * hid_dim filters
-				ENC_LAYERS = 10  # number of conv. blocks in encoder
-				ENC_KERNEL_SIZE = kernel_size  # must be odd!
-				ENC_DROPOUT = 0.25
-				self.enc = models.CnnEncoder(self.input_dim, EMB_DIM, HID_DIM, ENC_LAYERS, ENC_KERNEL_SIZE, ENC_DROPOUT,
-										  self.device)
-				self.dec = models.LinearDecoder(EMB_DIM, self.output_dim)
-				self.model = seq2seq.Seq2Seq(self.enc, self.dec)
-			elif architecture == "rnn":
-				pass
-			elif architecture == "transformer":
-				self.model = models.TransformerModel(input_dim=self.input_dim,
-													 hidden_dim=hidden_dim,
-													 num_heads=num_heads,
-													 num_layers=num_transformers_layers,
-													 output_dim=self.output_dim,
-													 num_langs=len(self.lang_vocab),
-													 lang_emb_dim=lang_emb_dim,
-													 include_lang_metadata=True)
-			elif architecture == "lstm":
-				self.model = models.LSTM_Encoder(input_dim=self.input_dim,
-												 emb_dim=300,
-												 bidirectional_lstm=True,
-												 lstm_dropout=lstm_dropout,
-												 positional_embeddings=False,
-												 device=self.device,
-												 lstm_hidden_size=lstm_hidden_size,
-												 batch_size=batch_size,
-												 num_langs=len(self.lang_vocab),
-												 num_lstm_layers=num_lstm_layers,
-												 include_lang_metadata=include_lang_metadata,
-												 out_classes=self.output_dim,
-												 attention=add_attention_layer,
-												 lang_emb_dim=lang_emb_dim
-						)
-		self.architecture = architecture
-		self.model.to(self.device)
-		self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
-		self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
-
-		# Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
-		# qu'aux deux autres pour le calcul de la loss
-		weights = train_dataloader.datafy.target_weights.to(self.device)
-		self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
-		print(self.model.__repr__())
-		self.accuracies = []
-
-	def save_model(self, epoch):
-		torch.save(self.model, f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{epoch}.pt")
-
-	def get_best_model(self):
-		print(self.accuracies)
-		best_epoch_accuracy = self.accuracies.index(max(self.accuracies))
-		print(f"Best model: {best_epoch_accuracy}.")
-		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
-		for model in models:
-			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch_accuracy}.pt":
-				shutil.copy(model, f"{self.output_dir}/best.pt")
-			else:
-				os.remove(model)
-		print(f"Saving best model to {self.output_dir}/best.pt")
-
-
-
-
-	def evaluate(self, loss_calculation:bool=False, last_epoch:bool=False):
-		"""
-		Réécrire la fonction pour comparer directement target et prédiction pour
-		produire l'accuracy.
-		"""
-		print("Evaluating model on test data")
-		debug = False
-		epoch_accuracy = []
-		epoch_loss = []
-		# Timer = utils.Timer()
-		all_preds = []
-		all_targets = []
-		all_examples = []
-		for examples, langs, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
-			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
-			# Timer.start_timer("preds")
-			if not self.all_dataset_on_device:
-				tensor_examples = examples.to(self.device)
-				tensor_langs = langs.to(self.device)
-				tensor_target = targets.to(self.device)
-			with torch.no_grad():
-				preds = self.model(tensor_examples, tensor_langs)
-				all_preds.append(preds)
-				all_targets.append(targets)
-				all_examples.append(examples)
-
-				if loss_calculation:
-					output_dim = preds.shape[-1]
-					output = preds.contiguous().view(-1, output_dim)
-					tgt = tensor_target.contiguous().view(-1)
-					loss = self.criterion(output, tgt)
-
-		# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
-		cat_preds = torch.cat(all_preds, dim=0)
-		cat_targets = torch.cat(all_targets, dim=0)
-		cat_examples = torch.cat(all_examples, dim=0)
-		results = eval.compute_metrics(predictions=cat_preds,
-									   labels=cat_targets,
-									   examples=cat_examples,
-									   idx_to_word=self.reverse_input_vocab,
-									   idx_to_class=self.reverse_target_classes,
-									   padding_idx=self.tgt_PAD_IDX,
-									   batch_size=self.batch_size,
-									   last_epoch=last_epoch)
-		self.accuracies.append(results["accuracy"]["accuracy"])
-
-
-
-
-def objective(self, trial, config_file):
-	hidden_size = trial.suggest_int("hidden_size", 32, 256)
-	batch_size = trial.suggest_int("batch_size", 32, 256)
+def objective(trial):
+	hidden_size_multiplier = trial.suggest_int("hidden_size", 4, 16)
+	hidden_size = hidden_size_multiplier * 8
+	batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
+	batch_size = batch_size_multiplier * 8
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
-	input_dim = trial.suggest_int("input_dim", 32, 256)
-	include_lang_metadata = trial.suggest_bool("include_lang_metadata", False, True)
-	attention_layer = trial.suggest_bool("attention_layer", False, True)
-	lang_emb_dim = trial.suggest_int("lang_emb_dim", 32, 200)
+	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
+	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
+	if use_pretrained_embeddings:
+		emb_dim = 100
+		add_attention_layer = False
+		os.environ["TOKENIZERS_PARALLELISM"] = "false"
+	else:
+		emb_dim = trial.suggest_int("input_dim", 200, 300)
+		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
+	# bidirectional = trial.suggest_categorical("bidirectional", [False, True])
+	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
+	lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
 
 	epochs = config_file["global"]["epochs"]
 	train_path = config_file["global"]["train"]
 	test_path = config_file["global"]["test"]
 	dev_path = config_file["global"]["dev"]
 	output_dir = config_file["global"]["out_dir"]
-	device = "cuda:0"
+	base_model_name = config_file["global"]["base_model_name"]
+	device = "cpu"
 	if device != "cpu":
 		device_name = torch.cuda.get_device_name(device)
 		print(f"Device name: {device_name}")
+
+	if use_pretrained_embeddings:
+		create_vocab = False
+		tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+	else:
+		create_vocab = True
+		tokenizer = None
 	workers = 8
-	input_vocab = None
 	all_dataset_on_device = False
 	print("Loading data")
 	train_dataloader = datafy.CustomTextDataset("train",
 												train_path=train_path,
-												test_path=dev_path,
-												fine_tune=False,
+												test_path=test_path,
+												dev_path=dev_path,
 												device=device,
-												all_dataset_on_device=all_dataset_on_device,
+												all_dataset_on_device=False,
 												delimiter="£",
 												output_dir=output_dir,
-												create_vocab=True)
-	test_dataloader = datafy.CustomTextDataset(mode="dev",
-											   train_path=train_path,
-											   test_path=dev_path,
-											   fine_tune=False,
-											   device=device,
-											   all_dataset_on_device=all_dataset_on_device,
-											   delimiter="£",
-											   output_dir=output_dir,
-											   create_vocab=False,
-											   input_vocab=train_dataloader.datafy.input_vocabulary,
-											   lang_vocab=train_dataloader.datafy.lang_vocabulary)
+												create_vocab=create_vocab,
+												use_pretrained_embeddings=use_pretrained_embeddings,
+												debug=False,
+												data_augmentation=True,
+												tokenizer_name=base_model_name)
+	dev_dataloader = datafy.CustomTextDataset(mode="dev",
+											  train_path=train_path,
+											  test_path=test_path,
+											  dev_path=dev_path,
+											  device=device,
+											  delimiter="£",
+											  output_dir=output_dir,
+											  create_vocab=False,
+											  input_vocab=train_dataloader.datafy.input_vocabulary,
+											  lang_vocab=train_dataloader.datafy.lang_vocabulary,
+											  use_pretrained_embeddings=use_pretrained_embeddings,
+											  debug=False,
+											  data_augmentation=True,
+											  tokenizer_name=base_model_name,
+											  all_dataset_on_device=False)
 
-	loaded_test_data = DataLoader(test_dataloader,
+	loaded_dev_data = DataLoader(dev_dataloader,
 									   batch_size=batch_size,
 									   shuffle=False,
 									   num_workers=8,
@@ -330,7 +112,7 @@ def objective(self, trial, config_file):
 	os.makedirs(f"{output_dir}/best", exist_ok=True)
 
 	print(f"Number of train examples: {len(train_dataloader.datafy.train_padded_examples)}")
-	print(f"Number of test examples: {len(test_dataloader.datafy.test_padded_examples)}")
+	print(f"Number of test examples: {len(dev_dataloader.datafy.test_padded_examples)}")
 	print(f"Total length of examples (with padding): {train_dataloader.datafy.max_length_examples}")
 
 	input_vocab = train_dataloader.datafy.input_vocabulary
@@ -340,17 +122,16 @@ def objective(self, trial, config_file):
 	reverse_target_classes = train_dataloader.datafy.reverse_target_classes
 
 	corpus_size = train_dataloader.__len__()
-	steps = corpus_size // batch_size
-
-	test_steps = test_dataloader.__len__() // batch_size
-	tgt_PAD_IDX = target_classes["<PAD>"]
+	tgt_PAD_IDX = target_classes["[PAD]"]
 	epochs = epochs
-	batch_size = batch_size
-	output_dim = len(target_classes)
 
+	input_dim = len(input_vocab)
+	output_dim = len(target_classes)
+	weights = torch.load("aquilign/segmenter/embeddings.npy")
 	model = models.LSTM_Encoder(input_dim=input_dim,
-									 emb_dim=300,
-									 bidirectional_lstm=True,
+									 emb_dim=emb_dim,
+									 bidirectional=bidirectional,
+									 lstm_dropout=0,
 									 positional_embeddings=False,
 									 device=device,
 									 lstm_hidden_size=hidden_size,
@@ -359,17 +140,21 @@ def objective(self, trial, config_file):
 									 num_lstm_layers=1,
 									 include_lang_metadata=include_lang_metadata,
 									 out_classes=output_dim,
-									 attention=attention_layer,
-									 lang_emb_dim=lang_emb_dim
-									 )
+									 attention=add_attention_layer,
+									 lang_emb_dim=lang_emb_dim,
+									 load_pretrained_embeddings=use_pretrained_embeddings,
+									 pretrained_weights=weights)
 	model.to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 	scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
 
 	# Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
 	# qu'aux deux autres pour le calcul de la loss
-	weights = train_dataloader.datafy.target_weights.to(device)
-	criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=tgt_PAD_IDX)
+	if balance_class_weights:
+		weights = train_dataloader.datafy.target_weights.to(device)
+		criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=tgt_PAD_IDX)
+	else:
+		criterion = torch.nn.CrossEntropyLoss(ignore_index=tgt_PAD_IDX)
 	print(model.__repr__())
 	accuracies = []
 	utils.remove_file(f"{output_dir}/accuracies.txt")
@@ -378,10 +163,10 @@ def objective(self, trial, config_file):
 
 
 	# Training phase
+	results = []
 	model.train()
 	for epoch in range(epochs):
 		epoch_number = epoch + 1
-		last_epoch = epoch == range(epochs)[-1]
 		print(f"Epoch {str(epoch_number)}")
 		for examples, langs, targets in tqdm.tqdm(loaded_train_data, unit_scale=batch_size):
 			# Shape [batch_size, max_length]
@@ -409,10 +194,79 @@ def objective(self, trial, config_file):
 			# tgt = [batch size * tgt len - 1]
 			loss = criterion(output, tgt)
 			loss.backward()
-			torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+			torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
 			optimizer.step()
 
-		# model.eval()
 		scheduler.step()
-		evaluate(last_epoch=last_epoch)
-		save_model(epoch_number)
+		recall, precision, f1 = evaluate(model=model,
+										 device=device,
+										 loaded_dev_data=loaded_dev_data,
+										 batch_size=batch_size,
+										 reverse_input_vocab=reverse_input_vocab,
+										 reverse_target_classes=reverse_target_classes,
+										 tgt_PAD_IDX=tgt_PAD_IDX,
+										 tokenizer=tokenizer)
+
+		weighted_recall_precision = (recall[1]*2 + precision[1]) / 3
+		results.append(weighted_recall_precision)
+	best_result = max(results)
+	return best_result
+
+def evaluate(model,
+			 device,
+			 loaded_dev_data,
+			 batch_size,
+			 reverse_input_vocab,
+			 reverse_target_classes,
+			 tgt_PAD_IDX,
+			 tokenizer):
+	"""
+	Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
+	"""
+	print("Evaluating model on dev data")
+	debug = False
+	epoch_accuracy = []
+	epoch_loss = []
+	# Timer = utils.Timer()
+	all_preds = []
+	all_targets = []
+	all_examples = []
+	model.eval()
+	for examples, langs, targets in tqdm.tqdm(loaded_dev_data, unit_scale=batch_size):
+		# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
+		# Timer.start_timer("preds")
+		tensor_examples = examples.to(device)
+		tensor_langs = langs.to(device)
+		tensor_target = targets.to(device)
+		with torch.no_grad():
+			# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
+			preds = model(tensor_examples, tensor_langs)
+			all_preds.append(preds)
+			all_targets.append(targets)
+			all_examples.append(examples)
+
+	# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
+	cat_preds = torch.cat(all_preds, dim=0)
+	cat_targets = torch.cat(all_targets, dim=0)
+	cat_examples = torch.cat(all_examples, dim=0)
+	results = eval.compute_metrics(predictions=cat_preds,
+								   labels=cat_targets,
+								   examples=cat_examples,
+								   id_to_word=reverse_input_vocab,
+								   idx_to_class=reverse_target_classes,
+								   padding_idx=tgt_PAD_IDX,
+								   batch_size=batch_size,
+								   last_epoch=False,
+								   tokenizer=tokenizer)
+
+	recall = ["Recall", results["recall"][0], results["recall"][1]]
+	precision = ["Precision", results["precision"][0], results["precision"][1]]
+	f1 = ["F1", results["f1"][0], results["f1"][1]]
+	return recall, precision, f1
+
+
+
+if __name__ == '__main__':
+	study = optuna.create_study(direction='maximize')
+	study.optimize(objective, n_trials=100)
+	print("Best Hyperparameters:", study.best_params)

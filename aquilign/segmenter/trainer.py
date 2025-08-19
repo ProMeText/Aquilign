@@ -141,7 +141,7 @@ class Trainer:
 													use_pretrained_embeddings=use_pretrained_embeddings,
 													debug=self.debug,
 													data_augmentation=self.data_augmentation,
-														 tokenizer_name=base_model_name)
+													tokenizer_name=base_model_name)
 
 		self.loaded_test_data = DataLoader(self.test_dataloader,
 										   batch_size=batch_size,
@@ -541,3 +541,4 @@ class Trainer:
 		header = ["", "Segment Content", "Segment Boundary"]
 		print(f"Results for all langs:")
 		utils.format_results(results=[precision, recall, f1], header=header)
+		return (recall, precision, f1)

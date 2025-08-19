@@ -285,7 +285,7 @@ class Datafier:
         return "".join(normalized)
 
 
-    def produce_corpus(self, data:list, debug=False) -> tuple:
+    def produce_corpus(self, data:list, debug=True) -> tuple:
         """
         This function takes the targets and creates the examples.
         """

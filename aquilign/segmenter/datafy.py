@@ -132,7 +132,7 @@ class Datafier:
             full_corpus = self.train_data + self.test_data + self.dev_data
             assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
             if create_vocab:
-                self.create_vocab(full_corpus)
+                self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus)
                 self.create_lang_vocab(full_corpus)
             elif self.use_pretrained_embeddings:
                 self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -287,12 +287,6 @@ class Datafier:
 
         return "".join(normalized)
 
-    def augment_data(self, data: list, double_corpus=False) -> list:
-        '''
-        This function takes the data set and randomly modifies its segmentation to produce the targets
-        :param double_corpus: If set to True, the data will be doubled, and then augmented
-        '''
-        return data
 
     def produce_corpus(self, data:list, debug=False) -> tuple:
         """

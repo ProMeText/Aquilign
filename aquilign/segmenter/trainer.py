@@ -351,6 +351,7 @@ class Trainer:
 				for param in self.model.lang_embedding.parameters():
 					param.requires_grad = False
 		utils.remove_file(f"{self.output_dir}/accuracies.txt")
+		utils.remove_files(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
 		print("Starting training")
 		os.makedirs(f"{self.output_dir}/models/best", exist_ok=True)
 		torch.save(self.input_vocab, f"{self.output_dir}/models/best/vocab.voc")
@@ -512,12 +513,14 @@ class Trainer:
 										   last_epoch=False,
 										   tokenizer=self.tokenizer)
 			results_per_lang[lang] = results
+
 			recall = ["Recall", results["recall"][0], results["recall"][1]]
 			precision = ["Precision", results["precision"][0], results["precision"][1]]
 			f1 = ["F1", results["f1"][0], results["f1"][1]]
 			header = ["", "Segment Content", "Segment Boundary"]
 			print(f"Results for {lang}:")
 			utils.format_results(results=[precision, recall, f1], header=header)
+
 
 
 

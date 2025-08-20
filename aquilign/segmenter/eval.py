@@ -103,9 +103,11 @@ def compute_metrics(predictions,
     ###
     print(len(predictions_as_list))
     print(len(labels_as_list))
+
     predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx]  != 2], dtype='int32')
     labels = np.array([item for item in labels_as_list if item != 2], dtype='int32')
-    acc = metric1.compute(predictions=predictions, references=labels)
+
+    accuracy = metric1.compute(predictions=predictions, references=labels)
     recall = metric2.compute(predictions=predictions, references=labels, average=None)
     recall_l = []
     [recall_l.extend(v) for k, v in recall.items()]
@@ -116,5 +118,5 @@ def compute_metrics(predictions,
     f1_l = []
     [f1_l.extend(v) for k, v in f1.items()]
 
-    results = {"accuracy": acc['accuracy'], "recall": recall_l, "precision": precision_l, "f1": f1_l}
+    results = {"accuracy": accuracy, "recall": recall_l, "precision": precision_l, "f1": f1_l}
     return results

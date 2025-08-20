@@ -1,3 +1,4 @@
+import glob
 import json
 import re
 import torch
@@ -27,6 +28,12 @@ class Timer:
         lapse = time.time()
         print(lapse - self.start)
 
+def remove_files(path):
+    for file in glob.glob(path):
+        try:
+            os.remove(file)
+        except OSError:
+            pass
 
 def remove_file(path):
     try:

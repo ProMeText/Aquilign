@@ -80,6 +80,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	print("Loading data")
 
 
+
 	loaded_dev_data = DataLoader(dev_dataloader,
 									   batch_size=batch_size,
 									   shuffle=False,
@@ -208,6 +209,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 
 		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
 		results.append(weighted_recall_precision)
+		with open("../trash/results.txt", "a") as f:
+			f.write(f"Epoch {epoch_number}: {weighted_recall_precision}")
 	best_result = max(results)
 	print(f"Best epoch result: {best_result}")
 	return best_result
@@ -265,8 +268,15 @@ def evaluate(model,
 	return recall, precision, f1
 
 
+def print_trial_info(study, trial):
+	with open("../trash/segmenter_hyperparasearch.txt", "a") as f:
+		f.write(f"---")
+		f.write(f"Trial {trial.number} - Paramètres : {trial.params}")
+		f.write(f"Valeur de la métrique : {trial.value}\n")
 
 if __name__ == '__main__':
+	if os.path.exists("../trash/segmenter_hyperparasearch.txt"):
+		os.remove("../trash/segmenter_hyperparasearch.txt")
 
 	train_path = config_file["global"]["train"]
 	test_path = config_file["global"]["test"]
@@ -332,7 +342,7 @@ if __name__ == '__main__':
 
 	study = optuna.create_study(direction='maximize')
 	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader)
-	study.optimize(objective, n_trials=100)
-	with open("../trash/segmenter_hyperparasearch.txt", "w") as f:
+	study.optimize(objective, n_trials=100, callbacks=[print_trial_info])
+	with open("../trash/segmenter_hyperparasearch.txt", "a") as f:
 		f.write(study.best_params)
 	print("Best Hyperparameters:", study.best_params)

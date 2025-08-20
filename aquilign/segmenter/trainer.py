@@ -339,6 +339,7 @@ class Trainer:
 				shutil.copy(model, f"{self.output_dir}/models/best/{self.architecture}/best.pt")
 				print(f"Saving best model to {self.output_dir}/models/best/{self.architecture}/best.pt")
 			else:
+				continue
 				os.remove(model)
 		self.best_model = f"{self.output_dir}/models/best/{self.architecture}/best.pt"
 

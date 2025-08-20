@@ -270,9 +270,9 @@ def evaluate(model,
 
 def print_trial_info(study, trial):
 	with open("../trash/segmenter_hyperparasearch.txt", "a") as f:
-		f.write(f"---\n")
 		f.write(f"Trial {trial.number} - Paramètres : {trial.params}\n")
 		f.write(f"Valeur de la métrique : {trial.value}\n")
+		f.write(f"---\n")
 
 if __name__ == '__main__':
 	if os.path.exists("../trash/segmenter_hyperparasearch.txt"):

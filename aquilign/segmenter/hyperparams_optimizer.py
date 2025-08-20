@@ -52,8 +52,12 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	if architecture != "transformers":
 		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
-	if architecture == "transformers":
+		batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
+		batch_size = batch_size_multiplier * 8
+	else:
 		num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
+		batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
+		batch_size = batch_size_multiplier * 4
 
 	# bidirectional = trial.suggest_categorical("bidirectional", [False, True])
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
@@ -62,12 +66,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		if architecture == "transformers":
 			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
 			lang_emb_dim *= 8
-			batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
-			batch_size = batch_size_multiplier * 4
 		else:
 			lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
-			batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
-			batch_size = batch_size_multiplier * 8
 
 	else:
 		freeze_lang_embeddings = False

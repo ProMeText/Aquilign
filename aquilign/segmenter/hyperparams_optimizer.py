@@ -296,7 +296,11 @@ if __name__ == '__main__':
 	architecture = sys.argv[2]
 	if os.path.exists(f"../trash/segmenter_hyperparasearch_{architecture}.txt"):
 		os.remove(f"../trash/segmenter_hyperparasearch_{architecture}.txt")
-	debug = sys.argv[3]
+
+	if len(sys.argv) == 4:
+		debug = True if sys.argv[3] == "True" else False
+	else:
+		debug = False
 	train_path = config_file["global"]["train"]
 	test_path = config_file["global"]["test"]
 	device = config_file["global"]["device"]

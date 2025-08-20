@@ -384,6 +384,7 @@ class CnnEncoder(nn.Module):
 				 attention,
 				 lang_emb_dim,
 				 load_pretrained_embeddings,
+				 use_bert_tokenizer,
 				 pretrained_weights):
 		super().__init__()
 
@@ -396,10 +397,23 @@ class CnnEncoder(nn.Module):
 		self.include_lang_metadata = include_lang_metadata
 		self.device = device
 		self.scale = torch.sqrt(torch.FloatTensor([0.5])).to(device)
-		self.embedding = nn.Embedding(input_dim, emb_dim)
 		self.positional_embeddings = positional_embeddings
 
 		# Possibilité de produire des embeddings de langue que l'on va concaténer aux plongements de mots
+
+		if load_pretrained_embeddings or use_bert_tokenizer:
+			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
+			self.input_dim = 119547
+			emb_dim = 768
+			# Ici on vérifiera le paramètre _freeze
+			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
+			# Censé initialiser les paramètres avec les poids pré-entraînés
+			self.embedding.weight.data = torch.tensor(pretrained_weights)
+			print(f"Pretrained embeddings loaded dtype: {pretrained_weights.dtype}")
+		else:
+			# Sinon on utilise l'initialisation normale
+			self.embedding = nn.Embedding(input_dim, emb_dim)
+
 		if self.include_lang_metadata:
 			self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim)  # * self.scale
 			# Si on concatène les embeddings, la dimension de sortie après concaténation est la somme de

@@ -289,6 +289,7 @@ class Trainer:
 									   attention=add_attention_layer,
 									   lang_emb_dim=lang_emb_dim,
 									   load_pretrained_embeddings=use_pretrained_embeddings,
+										use_bert_tokenizer=use_bert_tokenizer,
 										linear_layers_hidden_size=linear_layers_hidden_size,
 										linear_layers=linear_layers,
 									   pretrained_weights=weights

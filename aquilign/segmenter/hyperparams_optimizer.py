@@ -41,15 +41,16 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		train_dataloader = bert_train_dataloader
 		dev_dataloader = bert_dev_dataloader
 		emb_dim = 100
+		use_bert_tokenizer = True
 	else:
 		use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
+		emb_dim = trial.suggest_int("input_dim", 200, 300)
 		if use_bert_tokenizer:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
 		else:
 			train_dataloader = no_bert_train_dataloader
 			dev_dataloader = no_bert_dev_dataloader
-			emb_dim = trial.suggest_int("input_dim", 200, 300)
 	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
@@ -71,10 +72,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		print(f"Device name: {device_name}")
 
 	if use_pretrained_embeddings:
-		create_vocab = False
 		tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 	else:
-		create_vocab = True
 		tokenizer = None
 	workers = 8
 	all_dataset_on_device = False

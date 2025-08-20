@@ -20,7 +20,7 @@ import sys
 
 
 
-def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture):
+def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, device):
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 16)
 	hidden_size = hidden_size_multiplier * 8
@@ -101,7 +101,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										pin_memory=False,
 										drop_last=True)
 
-	output_dir = output_dir
+
 	# On crée l'output dir:
 	os.makedirs(f"{output_dir}/models/.tmp", exist_ok=True)
 	os.makedirs(f"{output_dir}/best", exist_ok=True)
@@ -147,6 +147,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 											 emb_dim=emb_dim,
 											 num_heads=8,
 											 num_layers=num_transformers_layers,
+											 device=device,
 											 output_dim=output_dim,
 											 num_langs=len(lang_vocab),
 											 lang_emb_dim=lang_emb_dim,
@@ -364,7 +365,7 @@ if __name__ == '__main__':
 
 
 	study = optuna.create_study(direction='maximize')
-	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader, architecture=architecture)
+	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader, architecture=architecture, device=device)
 	study.optimize(objective, n_trials=50, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 		f.write(study.best_params)

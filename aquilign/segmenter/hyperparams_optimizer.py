@@ -24,11 +24,9 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 16)
 	hidden_size = hidden_size_multiplier * 8
-	batch_size_multiplier = trial.suggest_int("batch_size", 32, 256)
 	linear_layers = trial.suggest_int("linear_layers", 1, 4)
 	linear_layers_hidden_size = trial.suggest_int("linear_layers_hidden_size", 64, 128)
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
-	batch_size = batch_size_multiplier * 8
 	if architecture == "lstm":
 		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
 	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
@@ -64,8 +62,12 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		if architecture == "transformers":
 			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
 			lang_emb_dim *= 8
+			batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
+			batch_size = batch_size_multiplier * 4
 		else:
 			lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
+			batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
+			batch_size = batch_size_multiplier * 8
 
 	else:
 		freeze_lang_embeddings = False

@@ -62,8 +62,6 @@ class GRU_Encoder(nn.Module):
 
 		self.bidi = bidirectional
 		# self.dropout = nn.Dropout(dropout)
-		if not dropout:
-			rnn_dropout = 0
 		self.rnn = nn.GRU(input_size=input_size,
 						  bidirectional=self.bidi,
 						  batch_first=True,

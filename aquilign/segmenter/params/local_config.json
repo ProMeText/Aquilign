@@ -38,7 +38,7 @@
       "dropout": 0.03,
       "positional_embeddings": false,
       "hidden_size": 64,
-      "num_layers": 1,
+      "num_layers": 2,
       "include_lang_metadata": false,
       "add_attention_layer": false,
       "lang_emb_dim": 16

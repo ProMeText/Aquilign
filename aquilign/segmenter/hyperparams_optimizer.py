@@ -29,6 +29,9 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	if architecture == "lstm":
 		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
+	elif architecture == "gru":
+		num_gru_layers = trial.suggest_int("num_gru_layers", 1, 2)
+		gru_dropout = trial.suggest_float("num_gru_layers", 0, 0.5)
 	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
 	if use_pretrained_embeddings:
 		train_dataloader = bert_train_dataloader
@@ -50,13 +53,12 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			dev_dataloader = no_bert_dev_dataloader
 	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
+	batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
 	if architecture != "transformers":
 		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
-		batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
 		batch_size = batch_size_multiplier * 8
 	else:
 		num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
-		batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
 		batch_size = batch_size_multiplier * 4
 
 	# bidirectional = trial.suggest_categorical("bidirectional", [False, True])
@@ -159,6 +161,24 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										     load_pretrained_embeddings=use_pretrained_embeddings,
 										 	  use_bert_tokenizer=use_bert_tokenizer,
 										      pretrained_weights=weights)
+	elif architecture == "gru":
+		model = models.GRU_Encoder(input_dim=input_dim,
+								   emb_dim=emb_dim,
+								   bidirectional=True,
+								   dropout=gru_dropout,
+								   positional_embeddings=False,
+								   device=device,
+								   hidden_size=hidden_size,
+								   batch_size=batch_size,
+								   num_langs=len(lang_vocab),
+								   num_layers=num_gru_layers,
+								   include_lang_metadata=include_lang_metadata,
+								   out_classes=output_dim,
+								   attention=add_attention_layer,
+								   lang_emb_dim=lang_emb_dim,
+								   load_pretrained_embeddings=use_pretrained_embeddings,
+								   pretrained_weights=weights
+								   )
 	model.to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 	scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)

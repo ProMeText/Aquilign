@@ -77,7 +77,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
 	if include_lang_metadata:
 		freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
-		if architecture == "transformers":
+		if architecture == "transformers" or add_attention_layer:
 			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
 			lang_emb_dim *= 8
 		else:

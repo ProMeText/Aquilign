@@ -24,7 +24,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 16)
 	hidden_size = hidden_size_multiplier * 8
-	batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
+	batch_size_multiplier = trial.suggest_int("batch_size", 32, 256)
 	linear_layers = trial.suggest_int("linear_layers", 1, 4)
 	linear_layers_hidden_size = trial.suggest_int("linear_layers_hidden_size", 64, 128)
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])

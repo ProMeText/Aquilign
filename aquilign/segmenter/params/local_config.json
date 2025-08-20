@@ -64,6 +64,7 @@
       "num_heads": 8,
       "kernel_size": 5,
       "dropout": 0.5,
+      "cnn_scale": 0.5,
       "num_cnn_layers": 10
     }
   }

@@ -45,6 +45,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		kernel_size = trial.suggest_int("kernel_size", 1, 7)
 		kernel_size = kernel_size * 2 + 1
 		cnn_dropout = trial.suggest_float("cnn_dropout", 0, 0.8)
+		cnn_scale = trial.suggest_float("cnn_scale", 0, 0.8)
 	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
 	if use_pretrained_embeddings:
 		train_dataloader = bert_train_dataloader
@@ -209,7 +210,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 								  use_bert_tokenizer=use_bert_tokenizer,
 								  linear_layers_hidden_size=linear_layers_hidden_size,
 								  linear_layers=linear_layers,
-								  pretrained_weights=weights
+								  pretrained_weights=weights,
+								  cnn_scale=cnn_scale
 								  )
 
 	model.to(device)

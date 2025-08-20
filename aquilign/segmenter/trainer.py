@@ -79,6 +79,7 @@ class Trainer:
 			hidden_dim = config_file["architectures"][architecture]["emb_dim"]
 			emb_dim = config_file["architectures"][architecture]["emb_dim"]
 			dropout = config_file["architectures"][architecture]["dropout"]
+			cnn_scale = config_file["architectures"][architecture]["cnn_scale"]
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
 			hidden_size = config_file["architectures"][architecture]["hidden_size"]
 			linear_layers_hidden_size = config_file["architectures"][architecture]["linear_layers_hidden_size"]
@@ -292,7 +293,8 @@ class Trainer:
 										use_bert_tokenizer=use_bert_tokenizer,
 										linear_layers_hidden_size=linear_layers_hidden_size,
 										linear_layers=linear_layers,
-									   pretrained_weights=weights
+									   pretrained_weights=weights,
+										scale=cnn_scale
 									   )
 		self.architecture = architecture
 		self.model.to(self.device)

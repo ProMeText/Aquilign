@@ -385,11 +385,13 @@ class CnnEncoder(nn.Module):
 				 lang_emb_dim,
 				 load_pretrained_embeddings,
 				 use_bert_tokenizer,
-				 pretrained_weights):
+				 pretrained_weights,
+				 cnn_scale):
 		super().__init__()
 
 		assert kernel_size % 2 == 1, "Kernel size must be odd!"
 		self.linear_layers = linear_layers
+		self.scale = cnn_scale
 		self.hidden_dim = hidden_size
 		self.num_langs = num_langs
 		self.attention = attention

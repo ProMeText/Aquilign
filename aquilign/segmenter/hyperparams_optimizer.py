@@ -172,6 +172,10 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	accuracies = []
 	utils.remove_file(f"{output_dir}/accuracies.txt")
 	print("Starting training")
+	examples = examples.to(device)
+	targets = targets.to(device)
+	langs = langs.to(device)
+
 
 	# Training phase
 
@@ -191,9 +195,6 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		epoch_number = epoch + 1
 		print(f"Epoch {str(epoch_number)}")
 		for examples, langs, targets in tqdm.tqdm(loaded_train_data, unit_scale=batch_size):
-			examples = examples.to(device)
-			targets = targets.to(device)
-			langs = langs.to(device)
 			# Shape [batch_size, max_length]
 			# tensor_examples = examples.to(device)
 			# Shape [batch_size, max_length]

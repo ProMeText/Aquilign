@@ -31,7 +31,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
 	elif architecture == "gru":
 		num_gru_layers = trial.suggest_int("num_gru_layers", 1, 2)
-		gru_dropout = trial.suggest_float("num_gru_layers", 0, 0.5)
+		gru_dropout = trial.suggest_float("gru_dropout", 0, 0.5)
 	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
 	if use_pretrained_embeddings:
 		train_dataloader = bert_train_dataloader

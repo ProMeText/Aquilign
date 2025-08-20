@@ -172,7 +172,9 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	accuracies = []
 	utils.remove_file(f"{output_dir}/accuracies.txt")
 	print("Starting training")
-
+	examples = examples.to(device)
+	targets = targets.to(device)
+	langs = langs.to(device)
 
 	# Training phase
 

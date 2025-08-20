@@ -340,7 +340,7 @@ class Trainer:
 				print(f"Saving best model to {self.output_dir}/models/best/{self.architecture}/best.pt")
 			else:
 				os.remove(model)
-		self.best_model = f"{self.output_dir}/models/best/{architecture}/best.pt"
+		self.best_model = f"{self.output_dir}/models/best/{self.architecture}/best.pt"
 
 	def train(self, clip=0.1):
 		# Ici on va faire en sorte que les plongements de mots ne soient pas entraînables, si c'est des plongements pré-entraînés

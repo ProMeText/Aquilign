@@ -361,7 +361,7 @@ if __name__ == '__main__':
 
 	study = optuna.create_study(direction='maximize')
 	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader, architecture=architecture)
-	study.optimize(objective, n_trials=100, callbacks=[print_trial_info])
+	study.optimize(objective, n_trials=50, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 		f.write(study.best_params)
 	print("Best Hyperparameters:", study.best_params)

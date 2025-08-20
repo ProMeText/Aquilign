@@ -26,16 +26,17 @@ import sys
 
 
 
-def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader):
+def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture):
+	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	hidden_size_multiplier = trial.suggest_int("hidden_size", 1, 16)
 	hidden_size = hidden_size_multiplier * 8
 	batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
 	linear_layers = trial.suggest_int("linear_layers", 1, 4)
 	linear_layers_hidden_size = trial.suggest_int("linear_layers_hidden_size", 64, 128)
-	batch_size = batch_size_multiplier * 8
-	num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
-	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
+	batch_size = batch_size_multiplier * 8
+	if architecture == "lstm":
+		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
 	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
 	if use_pretrained_embeddings:
 		train_dataloader = bert_train_dataloader
@@ -53,7 +54,11 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			dev_dataloader = no_bert_dev_dataloader
 	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
-	add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
+	if architecture != "transformers":
+		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
+	if architecture == "transformers":
+		num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
+
 	# bidirectional = trial.suggest_categorical("bidirectional", [False, True])
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
 	if include_lang_metadata:
@@ -76,7 +81,6 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	else:
 		tokenizer = None
 	workers = 8
-	all_dataset_on_device = False
 	print("Loading data")
 
 
@@ -115,25 +119,36 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	input_dim = len(input_vocab)
 	output_dim = len(target_classes)
 	weights = torch.load("aquilign/segmenter/embeddings.npy")
-	model = models.LSTM_Encoder(input_dim=input_dim,
-									 emb_dim=emb_dim,
-									 bidirectional=True,
-									 lstm_dropout=0,
-									 positional_embeddings=False,
-									 device=device,
-									 lstm_hidden_size=hidden_size,
-									 batch_size=batch_size,
-									 num_langs=len(lang_vocab),
-									 num_lstm_layers=num_lstm_layers,
-									 include_lang_metadata=include_lang_metadata,
-									 out_classes=output_dim,
-									 attention=add_attention_layer,
-									 lang_emb_dim=lang_emb_dim,
-									 load_pretrained_embeddings=use_pretrained_embeddings,
-									 pretrained_weights=weights,
-									 linear_layers=linear_layers,
-									 linear_layers_hidden_size=linear_layers_hidden_size,
-									 use_bert_tokenizer=use_bert_tokenizer)
+	if architecture == "lstm":
+		model = models.LSTM_Encoder(input_dim=input_dim,
+										 emb_dim=emb_dim,
+										 bidirectional=True,
+										 lstm_dropout=0,
+										 positional_embeddings=False,
+										 device=device,
+										 lstm_hidden_size=hidden_size,
+										 batch_size=batch_size,
+										 num_langs=len(lang_vocab),
+										 num_lstm_layers=num_lstm_layers,
+										 include_lang_metadata=include_lang_metadata,
+										 out_classes=output_dim,
+										 attention=add_attention_layer,
+										 lang_emb_dim=lang_emb_dim,
+										 load_pretrained_embeddings=use_pretrained_embeddings,
+										 pretrained_weights=weights,
+										 linear_layers=linear_layers,
+										 linear_layers_hidden_size=linear_layers_hidden_size,
+										 use_bert_tokenizer=use_bert_tokenizer)
+	elif architecture == "transformers":
+		self.model = models.TransformerModel(input_dim=input_dim,
+											 hidden_dim=emb_dim,
+											 num_heads=8,
+											 num_layers=num_transformers_layers,
+											 output_dim=output_dim,
+											 num_langs=len(lang_vocab),
+											 lang_emb_dim=lang_emb_dim,
+											 include_lang_metadata=include_lang_metadata,
+											 linear_layers_hidden_size=linear_layers_hidden_size)
 	model.to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 	scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
@@ -209,7 +224,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 
 		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
 		results.append(weighted_recall_precision)
-		with open("../trash/segmenter_hyperparasearch.txt", "a") as f:
+		with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 			f.write(f"Epoch {epoch_number}: {weighted_recall_precision}\n")
 	best_result = max(results)
 	print(f"Best epoch result: {best_result}")
@@ -269,14 +284,14 @@ def evaluate(model,
 
 
 def print_trial_info(study, trial):
-	with open("../trash/segmenter_hyperparasearch.txt", "a") as f:
+	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 		f.write(f"Trial {trial.number} - Paramètres : {trial.params}\n")
 		f.write(f"Valeur de la métrique : {trial.value}\n")
 		f.write(f"---\n")
 
 if __name__ == '__main__':
-	if os.path.exists("../trash/segmenter_hyperparasearch.txt"):
-		os.remove("../trash/segmenter_hyperparasearch.txt")
+	if os.path.exists(f"../trash/segmenter_hyperparasearch_{architecture}.txt"):
+		os.remove(f"../trash/segmenter_hyperparasearch_{architecture}.txt")
 
 	train_path = config_file["global"]["train"]
 	test_path = config_file["global"]["test"]
@@ -341,8 +356,9 @@ if __name__ == '__main__':
 
 
 	study = optuna.create_study(direction='maximize')
-	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader)
+	architecture = sys.argv[2]
+	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader, architecture=architecture)
 	study.optimize(objective, n_trials=100, callbacks=[print_trial_info])
-	with open("../trash/segmenter_hyperparasearch.txt", "a") as f:
+	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 		f.write(study.best_params)
 	print("Best Hyperparameters:", study.best_params)

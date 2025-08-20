@@ -142,7 +142,8 @@ class TransformerModel(nn.Module):
 				 output_dim,
 				 num_langs,
 				 lang_emb_dim,
-				 include_lang_metadata):
+				 include_lang_metadata,
+				 linear_layers_hidden_size):
 		super(TransformerModel, self).__init__()
 
 		self.num_langs = num_langs
@@ -162,6 +163,20 @@ class TransformerModel(nn.Module):
 
 		# Couche de sortie
 		self.fc_out = nn.Linear(hidden_dim, output_dim)
+		layers = []
+		if self.linear_layers == 1:
+			layers.append(nn.Linear(hidden_dim, output_dim))
+		else:
+			layers.append(nn.Linear(hidden_dim, linear_layers_hidden_size))
+			layers.append(nn.ReLU())
+			for layer in range(self.linear_layers):
+				if layer != self.linear_layers - 2:
+					layers.append(nn.Linear(linear_layers_hidden_size, linear_layers_hidden_size))
+					layers.append(nn.ReLU())
+				else:
+					layers.append(nn.Linear(linear_layers_hidden_size, output_dim))
+					break
+		self.layers = nn.Sequential(*layers)
 
 	def forward(self, src, lang):
 		# x : (batch_size, seq_length, input_dim)
@@ -187,7 +202,7 @@ class TransformerModel(nn.Module):
 		# last_out = transformer_out[-1, :, :]  # (batch_size, hidden_dim)
 
 		# Passer à travers la couche de sortie
-		output = self.fc_out(transformer_out)  # (batch_size, output_dim)
+		output = self.layers(transformer_out)  # (batch_size, output_dim)
 
 		return output
 

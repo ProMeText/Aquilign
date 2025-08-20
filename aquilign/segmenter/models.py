@@ -396,7 +396,6 @@ class CnnEncoder(nn.Module):
 		self.out_classes = out_classes
 		self.include_lang_metadata = include_lang_metadata
 		self.device = device
-		self.scale = torch.sqrt(torch.FloatTensor([0.5])).to(device)
 		self.positional_embeddings = positional_embeddings
 
 		# Possibilité de produire des embeddings de langue que l'on va concaténer aux plongements de mots
@@ -545,16 +544,13 @@ class CnnEncoder(nn.Module):
 
 		# conved = [batch size, src len, emb dim]
 
-		# elementwise sum output (conved) and input (embedded) to be used for attention
-		combined = (conved + embedded) * self.scale
-
 		# transformed = self.transformerEncoder(conved)
 		# Attention et classification
 		if self.attention:
-			attn_output, _ = self.multihead_attn(combined, combined, combined)
-			outs = self.decoder(attn_output + combined)
+			attn_output, _ = self.multihead_attn(conved, conved, conved)
+			outs = self.decoder(attn_output + conved)
 		else:
-			outs = self.decoder(combined)
+			outs = self.decoder(conved)
 
 
 		return outs

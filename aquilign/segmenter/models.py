@@ -160,7 +160,7 @@ class TransformerModel(nn.Module):
 			self.input_dim = 119547
 			emb_dim = 768
 			# Ici on vérifiera le paramètre _freeze
-			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim).to(device)
+			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
 			# Censé initialiser les paramètres avec les poids pré-entraînés
 			self.embedding.weight.data = torch.tensor(pretrained_weights)
 			print(f"Pretrained embeddings loaded dtype: {pretrained_weights.dtype}")

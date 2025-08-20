@@ -1,5 +1,4 @@
 import json
-import re
 import optuna
 import sys
 from functools import partial
@@ -12,15 +11,10 @@ import aquilign.segmenter.models as models
 import aquilign.segmenter.eval as eval
 import aquilign.segmenter.datafy as datafy
 import torch
-import datetime
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 import tqdm
-from statistics import mean
-import numpy as np
 import os
-import glob
-import shutil
 import sys
 
 
@@ -28,7 +22,7 @@ import sys
 
 def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture):
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
-	hidden_size_multiplier = trial.suggest_int("hidden_size", 1, 16)
+	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 16)
 	hidden_size = hidden_size_multiplier * 8
 	batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
 	linear_layers = trial.suggest_int("linear_layers", 1, 4)
@@ -45,7 +39,11 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		use_bert_tokenizer = True
 	else:
 		use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
-		emb_dim = trial.suggest_int("input_dim", 200, 300)
+		if architecture == "transformers":
+			emb_dim = trial.suggest_int("input_dim", 25, 37)
+			emb_dim *= 8
+		else:
+			emb_dim = trial.suggest_int("input_dim", 200, 300)
 		if use_bert_tokenizer:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
@@ -64,6 +62,12 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	if include_lang_metadata:
 		freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
 		lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
+		if architecture == "transformers":
+			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
+			lang_emb_dim *= 8
+		else:
+			lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
+
 	else:
 		freeze_lang_embeddings = False
 		lang_emb_dim = 4
@@ -140,7 +144,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										 linear_layers_hidden_size=linear_layers_hidden_size,
 										 use_bert_tokenizer=use_bert_tokenizer)
 	elif architecture == "transformers":
-		self.model = models.TransformerModel(input_dim=input_dim,
+		model = models.TransformerModel(input_dim=input_dim,
 											 hidden_dim=emb_dim,
 											 num_heads=8,
 											 num_layers=num_transformers_layers,

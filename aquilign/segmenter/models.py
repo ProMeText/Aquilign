@@ -431,6 +431,7 @@ class CnnEncoder(nn.Module):
 			self.hid2emb = nn.Linear(self.hidden_dim + lang_emb_dim, cnn_emb_dim)
 		else:
 			self.emb2hid = nn.Linear(cnn_emb_dim, self.hidden_dim)
+			self.hid2emb = nn.Linear(self.hidden_dim, cnn_emb_dim)
 
 		if self.include_lang_metadata:
 			in_channel = self.hidden_dim + lang_emb_dim

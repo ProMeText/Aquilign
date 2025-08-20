@@ -370,34 +370,91 @@ class CnnEncoder(nn.Module):
 	def __init__(self,
 				 input_dim,
 				 emb_dim,
-				 hid_dim,
-				 n_layers,
 				 kernel_size,
 				 dropout,
-				 device):
+				 device,
+				 linear_layers_hidden_size,
+				 linear_layers,
+				 out_classes,
+				 positional_embeddings,
+				 hidden_size,
+				 num_langs,
+				 num_conv_layers,
+				 include_lang_metadata,
+				 attention,
+				 lang_emb_dim,
+				 load_pretrained_embeddings,
+				 pretrained_weights):
 		super().__init__()
 
 		assert kernel_size % 2 == 1, "Kernel size must be odd!"
-
+		self.linear_layers = linear_layers
+		self.hidden_dim = hidden_size
+		self.num_langs = num_langs
+		self.attention = attention
+		self.out_classes = out_classes
+		self.include_lang_metadata = include_lang_metadata
 		self.device = device
-
 		self.scale = torch.sqrt(torch.FloatTensor([0.5])).to(device)
-
 		self.embedding = nn.Embedding(input_dim, emb_dim)
+		self.positional_embeddings = positional_embeddings
 
-		self.emb2hid = nn.Linear(emb_dim, hid_dim)
-		self.hid2emb = nn.Linear(hid_dim, emb_dim)
+		# Possibilité de produire des embeddings de langue que l'on va concaténer aux plongements de mots
+		if self.include_lang_metadata:
+			self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim)  # * self.scale
+			# Si on concatène les embeddings, la dimension de sortie après concaténation est la somme de
+			# la dimension des deux types de plongements
+			cnn_emb_dim = emb_dim + lang_emb_dim
+		else:
+			cnn_emb_dim = emb_dim
 
-		self.convs = nn.ModuleList([nn.Conv1d(in_channels=hid_dim,
-											  out_channels=2 * hid_dim,
+		if positional_embeddings:
+			self.pos1Dsum = Summer(PositionalEncoding1D(cnn_emb_dim))
+
+		if include_lang_metadata:
+			self.emb2hid = nn.Linear(cnn_emb_dim, self.hidden_dim + lang_emb_dim)
+			self.hid2emb = nn.Linear(self.hidden_dim + lang_emb_dim, cnn_emb_dim)
+		else:
+			self.emb2hid = nn.Linear(cnn_emb_dim, self.hidden_dim)
+
+		if self.include_lang_metadata:
+			in_channel = self.hidden_dim + lang_emb_dim
+		else:
+			in_channel = self.hidden_dim
+		self.convs = nn.ModuleList([nn.Conv1d(in_channels=in_channel,
+											  out_channels=2 * in_channel,
 											  kernel_size=kernel_size,
 											  padding=(kernel_size - 1) // 2)
-									for _ in range(n_layers)])
+									for _ in range(num_conv_layers)])
 
 		self.dropout = nn.Dropout(dropout)
 
-	def forward(self, src):
+
+		# Une couche d'attention multitête
+		if self.attention:
+			self.multihead_attn = nn.MultiheadAttention(cnn_emb_dim, 8)
+
+
+		layers = []
+
+		if self.linear_layers == 1:
+			layers.append(nn.Linear(cnn_emb_dim, self.out_classes))
+		else:
+			layers.append(nn.Linear(cnn_emb_dim, linear_layers_hidden_size))
+			layers.append(nn.ReLU())
+			for layer in range(self.linear_layers):
+				if layer != self.linear_layers - 2:
+					layers.append(nn.Linear(linear_layers_hidden_size, linear_layers_hidden_size))
+					layers.append(nn.ReLU())
+				else:
+					layers.append(nn.Linear(linear_layers_hidden_size, self.out_classes))
+					break
+
+		self.decoder = nn.Sequential(*layers)
+
+	def forward(self, src, lang):
 		# src = [batch size, src len]
+		batch_size, seq_length = src.size()
 
 		# batch_size = src.shape[0]
 		# src_len = src.shape[1]
@@ -410,9 +467,24 @@ class CnnEncoder(nn.Module):
 		# pos = [batch size, src len]
 
 		# embed tokens
-		tok_embedded = self.embedding(src)
+		if self.include_lang_metadata:
+			embedded = self.embedding(src)
+			# Shape: [batch_size, lang_metadata_dimensions]
+			lang_embedding = self.lang_embedding(lang)
+			# On augmente de dimension pour pouvoir concaténer chaque token et la langue:
+			# [batch_size, max_length, lang_metadata_dimensions]
+			projected_lang = lang_embedding.unsqueeze(1).expand(-1, seq_length,
+																-1)  # (batch_size, seq_length, embedding_dim)
+			# On concatène chaque token avec le vecteur de langue, c'est-à-dire qu'on augmente la
+			# dimensionnalité de chaque vecteur de mot dont la dimension sera la somme des deux dimensions:
+			# [batch_size, max_length, lang_metadata_dimensions + word_embedding_dimension]
+			tok_embedded = torch.cat((embedded, projected_lang), 2)
+		else:
+			tok_embedded = self.embedding(src)
 		# pos_embedded = torch.zeros(tok_embedded.shape)
 
+		if self.positional_embeddings:
+			embedded = self.pos1Dsum(tok_embedded)
 		# tok_embedded = pos_embedded = [batch size, src len, emb dim]
 
 		# combine embeddings by elementwise summing
@@ -463,28 +535,16 @@ class CnnEncoder(nn.Module):
 		combined = (conved + embedded) * self.scale
 
 		# transformed = self.transformerEncoder(conved)
+		# Attention et classification
+		if self.attention:
+			attn_output, _ = self.multihead_attn(combined, combined, combined)
+			outs = self.decoder(attn_output + combined)
+		else:
+			outs = self.decoder(combined)
 
-		# combined = [batch size, src len, emb dim]
 
-		return combined, combined
+		return outs
 
-
-class LinearDecoder(nn.Module):
-	"""
-    Simple Linear Decoder that outputs a probability distribution
-    over the vocabulary
-    Parameters
-    ===========
-    label_encoder : LabelEncoder
-    in_features : int, input dimension
-    """
-
-	def __init__(self, enc_dim, out_dim):
-		super().__init__()
-		self.decoder = nn.Linear(enc_dim, out_dim)
-
-	def forward(self, enc_outs):
-		return self.decoder(enc_outs)
 
 
 if __name__ == '__main__':

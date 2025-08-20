@@ -35,6 +35,20 @@
       "lang_emb_dim": 32,
       "num_heads": 8,
       "num_transformers_layers": 2
+    },
+    "cnn": {
+      "emb_dim": 304,
+      "include_lang_metadata": true,
+      "lang_emb_dim": 32,
+      "hidden_size": 64,
+      "linear_layers": 2,
+      "positional_embeddings": true,
+      "linear_layers_hidden_size": 128,
+      "add_attention_layer": true,
+      "num_heads": 8,
+      "kernel_size": 5,
+      "dropout": 0.5,
+      "num_cnn_layers": 10
     }
   }
 }

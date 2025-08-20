@@ -63,14 +63,31 @@ class Trainer:
 			hidden_size = config_file["architectures"][architecture]["hidden_size"]
 			num_layers = config_file["architectures"][architecture]["num_layers"]
 			dropout = config_file["architectures"][architecture]["dropout"]
+			linear_layers = config_file["architectures"][architecture]["linear_layers"]
 			bidirectional = config_file["architectures"][architecture]["bidirectional"]
 			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
 		elif architecture == "transformer":
 			hidden_dim = config_file["architectures"][architecture]["emb_dim"]
+			emb_dim = config_file["architectures"][architecture]["emb_dim"]
 			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
 			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
+			linear_layers = config_file["architectures"][architecture]["linear_layers"]
 			num_heads = config_file["architectures"][architecture]["num_heads"]
 			num_transformers_layers = config_file["architectures"][architecture]["num_transformers_layers"]
+		elif architecture == "cnn":
+			hidden_dim = config_file["architectures"][architecture]["emb_dim"]
+			emb_dim = config_file["architectures"][architecture]["emb_dim"]
+			dropout = config_file["architectures"][architecture]["dropout"]
+			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+			hidden_size = config_file["architectures"][architecture]["hidden_size"]
+			linear_layers_hidden_size = config_file["architectures"][architecture]["linear_layers_hidden_size"]
+			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
+			kernel_size = config_file['architectures'][architecture]["kernel_size"]
+			positional_embeddings = config_file['architectures'][architecture]["positional_embeddings"]
+			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
+			linear_layers = config_file["architectures"][architecture]["linear_layers"]
+			num_heads = config_file["architectures"][architecture]["num_heads"]
+			num_cnn_layers = config_file["architectures"][architecture]["num_cnn_layers"]
 
 
 
@@ -205,21 +222,10 @@ class Trainer:
 
 
 		# Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
-		if architecture == "cnn":
-			EMB_DIM = 256
-			HID_DIM = 256  # each conv. layer has 2 * hid_dim filters
-			ENC_LAYERS = 10  # number of conv. blocks in encoder
 
-			# Le kernel est toujours impair, car on donne du contexte égal autour du pivot
-			ENC_KERNEL_SIZE = kernel_size  # must be odd!
-			ENC_DROPOUT = 0.25
-			self.enc = models.CnnEncoder(self.input_dim, EMB_DIM, HID_DIM, ENC_LAYERS, ENC_KERNEL_SIZE, ENC_DROPOUT,
-									  self.device)
-			self.dec = models.LinearDecoder(EMB_DIM, self.output_dim)
-			self.model = seq2seq.Seq2Seq(self.enc, self.dec)
-		elif architecture == "rnn":
-			pass
-		elif architecture == "transformer":
+		weights = torch.load("aquilign/segmenter/embeddings.npy")
+
+		if architecture == "transformer":
 			self.model = models.TransformerModel(input_dim=self.input_dim,
 												 hidden_dim=hidden_dim,
 												 num_heads=num_heads,
@@ -250,7 +256,6 @@ class Trainer:
 											 linear_layers_hidden_size=linear_layers_hidden_size,
 											 use_bert_tokenizer=use_bert_tokenizer)
 		elif architecture == "gru":
-			weights = torch.load("aquilign/segmenter/embeddings.npy")
 			self.model = models.GRU_Encoder(input_dim=self.input_dim,
 											 emb_dim=emb_dim,
 											 bidirectional=bidirectional,
@@ -268,6 +273,25 @@ class Trainer:
 											 load_pretrained_embeddings=use_pretrained_embeddings,
 											 pretrained_weights=weights
 					)
+		elif architecture == "cnn":
+			self.model = models.CnnEncoder(input_dim=self.input_dim,
+									   emb_dim=emb_dim,
+									   dropout=dropout,
+									   kernel_size=kernel_size,
+									   positional_embeddings=positional_embeddings,
+									   device=self.device,
+									   hidden_size=hidden_size,
+									   num_langs=len(self.lang_vocab),
+									   num_conv_layers=num_cnn_layers,
+									   include_lang_metadata=include_lang_metadata,
+									   out_classes=self.output_dim,
+									   attention=add_attention_layer,
+									   lang_emb_dim=lang_emb_dim,
+									   load_pretrained_embeddings=use_pretrained_embeddings,
+										linear_layers_hidden_size=linear_layers_hidden_size,
+										linear_layers=linear_layers,
+									   pretrained_weights=weights
+									   )
 		self.architecture = architecture
 		self.model.to(self.device)
 		self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)

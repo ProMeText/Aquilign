@@ -29,6 +29,10 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	if architecture == "lstm":
 		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
+		if num_lstm_layers == 1:
+			lstm_dropout = 0
+		else:
+			lstm_dropout = trial.suggest_float("lstm_dropout", 0, 0.5)
 	elif architecture == "gru":
 		num_gru_layers = trial.suggest_int("num_gru_layers", 1, 2)
 		gru_dropout = trial.suggest_float("gru_dropout", 0, 0.5)
@@ -130,7 +134,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		model = models.LSTM_Encoder(input_dim=input_dim,
 										 emb_dim=emb_dim,
 										 bidirectional=True,
-										 lstm_dropout=0,
+										 lstm_dropout=lstm_dropout,
 										 positional_embeddings=False,
 										 device=device,
 										 lstm_hidden_size=hidden_size,

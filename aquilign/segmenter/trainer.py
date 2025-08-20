@@ -22,7 +22,7 @@ class Trainer:
 
 		architecture = sys.argv[2]
 		if len(sys.argv) == 4:
-			self.debug = sys.argv[3]
+			self.debug = True if sys.argv[3] == "True" else False
 		else:
 			self.debug = False
 

@@ -46,6 +46,14 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		kernel_size = kernel_size * 2 + 1
 		cnn_dropout = trial.suggest_float("cnn_dropout", 0, 0.8)
 		cnn_scale = trial.suggest_float("cnn_scale", 0, 0.8)
+
+	batch_size_multiplier = trial.suggest_int("batch_size", 2, 10)
+	if architecture != "transformers":
+		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
+		batch_size = batch_size_multiplier * 8
+	else:
+		num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
+		batch_size = batch_size_multiplier * 4
 	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
 	if use_pretrained_embeddings:
 		train_dataloader = bert_train_dataloader
@@ -54,7 +62,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		use_bert_tokenizer = True
 	else:
 		use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
-		if architecture == "transformers":
+		if architecture == "transformers" or add_attention_layer:
 			emb_dim = trial.suggest_int("input_dim", 25, 37)
 			emb_dim *= 8
 		else:
@@ -66,13 +74,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			train_dataloader = no_bert_train_dataloader
 			dev_dataloader = no_bert_dev_dataloader
 	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
-	batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
-	if architecture != "transformers":
-		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
-		batch_size = batch_size_multiplier * 8
-	else:
-		num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
-		batch_size = batch_size_multiplier * 4
+	# batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
 
 	# bidirectional = trial.suggest_categorical("bidirectional", [False, True])
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])

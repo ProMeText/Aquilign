@@ -209,11 +209,14 @@ class LSTM_Encoder(nn.Module):
 				 attention: bool,
 				 lang_emb_dim: int,
 				 load_pretrained_embeddings:bool,
-				 pretrained_weights:np.ndarray):
+				 pretrained_weights:np.ndarray,
+				 linear_layers:int,
+				 linear_layers_hidden_size:int,
+				 use_bert_tokenizer:bool):
 		super().__init__()
 
 		# On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
-		if load_pretrained_embeddings:
+		if load_pretrained_embeddings or use_bert_tokenizer:
 			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
 			self.input_dim = 119547
 			emb_dim = 768
@@ -228,6 +231,7 @@ class LSTM_Encoder(nn.Module):
 		self.include_lang_metadata = include_lang_metadata
 		self.attention = attention
 		self.num_langs = num_langs
+		self.linear_layers = linear_layers
 
 		# Possibilité de produire des embeddings de langue que l'on va concaténer aux plongements de mots
 		if self.include_lang_metadata:
@@ -257,6 +261,7 @@ class LSTM_Encoder(nn.Module):
 		self.input_dim = input_dim
 		self.hidden_dim = lstm_hidden_size
 		self.batch_size = batch_size
+		self.num_lstm_layers = num_lstm_layers
 
 
 		# Une couche d'attention multitête
@@ -267,11 +272,27 @@ class LSTM_Encoder(nn.Module):
 			else:
 				self.multihead_attn = nn.MultiheadAttention(self.hidden_dim, 8)
 
-		if self.bidi:
-			self.linear_layer = nn.Linear(lstm_hidden_size * 2, out_classes)
+		layers = []
+		if self.linear_layers == 1:
+			if self.bidi:
+				layers.append(nn.Linear(lstm_hidden_size * 2, out_classes))
+			else:
+				layers.append(nn.Linear(lstm_hidden_size, out_classes))
 		else:
-			self.linear_layer = nn.Linear(lstm_hidden_size, out_classes)
+			if self.bidi:
+				layers.append(nn.Linear(lstm_hidden_size * 2, linear_layers_hidden_size))
+			else:
+				layers.append(nn.Linear(lstm_hidden_size, linear_layers_hidden_size))
+			layers.append(nn.ReLU())
+			for layer in range(self.linear_layers):
+				if layer != self.linear_layers - 2:
+					layers.append(nn.Linear(linear_layers_hidden_size, linear_layers_hidden_size))
+					layers.append(nn.ReLU())
+				else:
+					layers.append(nn.Linear(linear_layers_hidden_size, out_classes))
+					break
 
+		self.layers = nn.Sequential(*layers)
 
 	def forward(self, src, lang):
 		batch_size, seq_length = src.size()
@@ -295,11 +316,11 @@ class LSTM_Encoder(nn.Module):
 		if self.positional_embeddings:
 			embedded = self.pos1Dsum(embedded)  #
 		if self.bidi:
-			(h, c) = (torch.zeros(2, self.batch_size, self.hidden_dim).to(self.device),
-					  torch.zeros(2, self.batch_size, self.hidden_dim).to(self.device))
+			(h, c) = (torch.zeros(2 * self.num_lstm_layers, self.batch_size, self.hidden_dim).to(self.device),
+					  torch.zeros(2 * self.num_lstm_layers, self.batch_size, self.hidden_dim).to(self.device))
 		else:
-			(h, c) = (torch.zeros(1, self.batch_size, self.hidden_dim).to(self.device),
-					  torch.zeros(1, self.batch_size, self.hidden_dim).to(self.device))
+			(h, c) = (torch.zeros(1 * self.num_lstm_layers, self.batch_size, self.hidden_dim).to(self.device),
+					  torch.zeros(1 * self.num_lstm_layers, self.batch_size, self.hidden_dim).to(self.device))
 		lstm_out, (h, c) = self.lstm(embedded, (h, c))
 		# La sortie est de forme [batch_size, max_length, hidden_size (*2 si c'est bidirectionnel)]:
 		# le LSTM va retourner autant de tokens en sortie qu'en entrée
@@ -307,9 +328,9 @@ class LSTM_Encoder(nn.Module):
 		# Attention et classification
 		if self.attention:
 			attn_output, _ = self.multihead_attn(lstm_out, lstm_out, lstm_out)
-			outs = self.linear_layer(attn_output + lstm_out)
+			outs = self.layers(attn_output + lstm_out)
 		else:
-			outs = self.linear_layer(lstm_out)
+			outs = self.layers(lstm_out)
 		# dimension: [batch_size, max_length, 3] pour [SC], [SB], [PAD]
 		return outs
 

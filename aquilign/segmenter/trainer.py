@@ -38,7 +38,8 @@ class Trainer:
 		output_dir = config_file["global"]["out_dir"]
 		base_model_name = config_file["global"]["base_model_name"]
 		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
-		if use_pretrained_embeddings:
+		use_bert_tokenizer = config_file["global"]["use_bert_tokenizer"]
+		if use_pretrained_embeddings or use_bert_tokenizer:
 			os.environ["TOKENIZERS_PARALLELISM"] = "false"
 		data_augmentation = config_file["global"]["data_augmentation"]
 		self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
@@ -50,6 +51,8 @@ class Trainer:
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
 			lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
 			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
+			linear_layers = config_file["architectures"][architecture]["linear_layers"]
+			linear_layers_hidden_size = config_file["architectures"][architecture]["linear_layers_hidden_size"]
 			lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
 			bidirectional = config_file["architectures"][architecture]["bidirectional"]
 			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
@@ -85,8 +88,12 @@ class Trainer:
 			create_vocab = False
 			self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 		else:
-			create_vocab = True
-			self.tokenizer = None
+			if use_bert_tokenizer:
+				create_vocab = False
+				self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+			else:
+				create_vocab = True
+				self.tokenizer = None
 
 		self.train_path = train_path
 		self.test_path = test_path
@@ -103,20 +110,19 @@ class Trainer:
 													test_path=test_path,
 													dev_path=dev_path,
 													device=self.device,
-													all_dataset_on_device=self.all_dataset_on_device,
 													delimiter="£",
 													output_dir=output_dir,
 													create_vocab=create_vocab,
 													use_pretrained_embeddings=use_pretrained_embeddings,
 													debug=self.debug,
 													data_augmentation=self.data_augmentation,
-														 tokenizer_name=base_model_name)
+													tokenizer_name=base_model_name,
+													use_bert_tokenizer=use_bert_tokenizer)
 		self.test_dataloader = datafy.CustomTextDataset(mode="test",
 												   train_path=train_path,
 												   test_path=test_path,
 													dev_path=dev_path,
 												   device=self.device,
-												   all_dataset_on_device=self.all_dataset_on_device,
 												   delimiter="£",
 												   output_dir=output_dir,
 												   create_vocab=False,
@@ -125,14 +131,14 @@ class Trainer:
 													use_pretrained_embeddings=use_pretrained_embeddings,
 													debug=self.debug,
 													data_augmentation=self.data_augmentation,
-														tokenizer_name=base_model_name)
+													tokenizer_name=base_model_name,
+													use_bert_tokenizer=use_bert_tokenizer)
 
 		self.dev_dataloader = datafy.CustomTextDataset(mode="dev",
 												   train_path=train_path,
 												   test_path=test_path,
 													dev_path=dev_path,
 												   device=self.device,
-												   all_dataset_on_device=self.all_dataset_on_device,
 												   delimiter="£",
 												   output_dir=output_dir,
 												   create_vocab=False,
@@ -141,7 +147,8 @@ class Trainer:
 													use_pretrained_embeddings=use_pretrained_embeddings,
 													debug=self.debug,
 													data_augmentation=self.data_augmentation,
-													tokenizer_name=base_model_name)
+													tokenizer_name=base_model_name,
+													use_bert_tokenizer=use_bert_tokenizer)
 
 		self.loaded_test_data = DataLoader(self.test_dataloader,
 										   batch_size=batch_size,
@@ -238,7 +245,10 @@ class Trainer:
 											 attention=add_attention_layer,
 											 lang_emb_dim=lang_emb_dim,
 											 load_pretrained_embeddings=use_pretrained_embeddings,
-											 pretrained_weights=weights)
+											 pretrained_weights=weights,
+											 linear_layers=linear_layers,
+											 linear_layers_hidden_size=linear_layers_hidden_size,
+											 use_bert_tokenizer=use_bert_tokenizer)
 		elif architecture == "gru":
 			weights = torch.load("aquilign/segmenter/embeddings.npy")
 			self.model = models.GRU_Encoder(input_dim=self.input_dim,
@@ -277,6 +287,7 @@ class Trainer:
 
 	def save_model(self, epoch):
 		torch.save(self.model.state_dict(), f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{epoch}.pt")
+		print(f"Model saved to {self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{epoch}.pt")
 
 
 	def get_best_model(self):
@@ -297,9 +308,9 @@ class Trainer:
 		for model in models:
 			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch}.pt":
 				shutil.copy(model, f"{self.output_dir}/models/best/best.pt")
+				print(f"Saving best model to {self.output_dir}/models/best/best.pt")
 			else:
 				os.remove(model)
-		print(f"Saving best model to {self.output_dir}/models/best/best.pt")
 		self.best_model = f"{self.output_dir}/models/best/best.pt"
 
 	def train(self, clip=0.1):
@@ -424,7 +435,6 @@ class Trainer:
 														  test_path=self.test_path,
 														  dev_path=self.dev_path,
 														  device=self.device,
-														  all_dataset_on_device=self.all_dataset_on_device,
 														  delimiter="£",
 														  output_dir=self.output_dir,
 														  create_vocab=False,

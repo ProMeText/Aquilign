@@ -23,7 +23,7 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, dev_path, device, all_dataset_on_device, delimiter, output_dir, create_vocab, data_augmentation, tokenizer_name, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, debug=False, filter_by_lang=None):
+    def __init__(self, mode, train_path, test_path, dev_path, device, delimiter, output_dir, create_vocab, data_augmentation, tokenizer_name, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, debug=False, filter_by_lang=None, use_bert_tokenizer=False):
         self.datafy = Datafier(train_path,
                                test_path,
                                dev_path,
@@ -35,8 +35,9 @@ class CustomTextDataset(Dataset):
                                use_pretrained_embeddings,
                                debug,
                                data_augmentation,
-                               tokenizer_name,
-                               filter_by_lang=filter_by_lang)
+                               tokenizer_name=tokenizer_name,
+                               filter_by_lang=filter_by_lang,
+                               use_bert_tokenizer=use_bert_tokenizer)
         self.mode = mode
         if mode == "train":
             self.datafy.create_train_corpus()
@@ -44,13 +45,6 @@ class CustomTextDataset(Dataset):
             self.datafy.create_test_corpus()
         else:
             self.datafy.create_dev_corpus()
-        if all_dataset_on_device:
-            self.datafy.train_padded_examples = torch.LongTensor(self.datafy.train_padded_examples).to(device)
-            self.datafy.test_padded_examples = torch.LongTensor(self.datafy.test_padded_examples).to(device)
-            self.datafy.train_padded_targets = torch.LongTensor(self.datafy.train_padded_targets).to(device)
-            self.datafy.test_padded_targets = torch.LongTensor(self.datafy.test_padded_targets).to(device)
-            self.datafy.train_langs = torch.LongTensor(self.datafy.train_langs).to(device)
-            self.datafy.test_langs = torch.LongTensor(self.datafy.test_langs).to(device)
 
     def __len__(self):
         if self.mode == "train":
@@ -92,6 +86,7 @@ class Datafier:
                  data_augmentation,
                  tokenizer_name,
                  filter_by_lang=None,
+                 use_bert_tokenizer=False
                  ):
         self.max_length_examples = 0
         self.frequency_dict = {}
@@ -116,6 +111,7 @@ class Datafier:
         self.dev_data = self.import_json_corpus(dev_path)
         self.previous_model_vocab = input_vocab
         self.use_pretrained_embeddings = use_pretrained_embeddings
+        self.use_bert_tokenizer = use_bert_tokenizer
         self.debug = debug
         self.target_classes = {"[SC]": 0,  # Segment content > no split
                                "[SB]": 1,  # Segment boundary > split before
@@ -131,7 +127,7 @@ class Datafier:
         if create_vocab:
             self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus)
             self.create_lang_vocab(full_corpus)
-        elif self.use_pretrained_embeddings:
+        elif self.use_pretrained_embeddings or self.use_bert_tokenizer:
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
             self.create_lang_vocab(full_corpus)
         else:
@@ -302,7 +298,7 @@ class Datafier:
             if self.filter_by_lang and lang != self.filter_by_lang:
                 continue
             # Si on veut utiliser des embeddings pré-entraînés, il faut tokéniser avec le tokéniseur maison
-            if self.use_pretrained_embeddings:
+            if self.use_pretrained_embeddings or self.use_bert_tokenizer:
                 try:
                     example, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380)
                     ids.append(idents)
@@ -338,7 +334,7 @@ class Datafier:
             print(max_length_targets)
             exit(0)
 
-        if self.use_pretrained_embeddings is False:
+        if self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
             pad_value = "[PAD]"
             padded_examples = []
             padded_targets = []

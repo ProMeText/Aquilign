@@ -27,27 +27,32 @@ import sys
 
 
 def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader):
-	hidden_size_multiplier = trial.suggest_int("hidden_size", 4, 16)
+	hidden_size_multiplier = trial.suggest_int("hidden_size", 1, 16)
 	hidden_size = hidden_size_multiplier * 8
 	batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
+	linear_layers = trial.suggest_int("linear_layers", 1, 4)
+	linear_layers_hidden_size = trial.suggest_int("linear_layers_hidden_size", 64, 128)
 	batch_size = batch_size_multiplier * 8
+	num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
 	if use_pretrained_embeddings:
 		train_dataloader = bert_train_dataloader
 		dev_dataloader = bert_dev_dataloader
-	else:
-		train_dataloader = no_bert_train_dataloader
-		dev_dataloader = no_bert_dev_dataloader
-	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
-	if use_pretrained_embeddings:
 		emb_dim = 100
-		add_attention_layer = False
-		os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	else:
-		emb_dim = trial.suggest_int("input_dim", 200, 300)
-		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
+		use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
+		if use_bert_tokenizer:
+			train_dataloader = bert_train_dataloader
+			dev_dataloader = bert_dev_dataloader
+		else:
+			train_dataloader = no_bert_train_dataloader
+			dev_dataloader = no_bert_dev_dataloader
+			emb_dim = trial.suggest_int("input_dim", 200, 300)
+	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
+	os.environ["TOKENIZERS_PARALLELISM"] = "false"
+	add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
 	# bidirectional = trial.suggest_categorical("bidirectional", [False, True])
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
 	if include_lang_metadata:
@@ -104,7 +109,6 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	target_classes = train_dataloader.datafy.target_classes
 	reverse_target_classes = train_dataloader.datafy.reverse_target_classes
 
-	corpus_size = train_dataloader.__len__()
 	tgt_PAD_IDX = target_classes["[PAD]"]
 	epochs = epochs
 
@@ -120,13 +124,16 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 									 lstm_hidden_size=hidden_size,
 									 batch_size=batch_size,
 									 num_langs=len(lang_vocab),
-									 num_lstm_layers=1,
+									 num_lstm_layers=num_lstm_layers,
 									 include_lang_metadata=include_lang_metadata,
 									 out_classes=output_dim,
 									 attention=add_attention_layer,
 									 lang_emb_dim=lang_emb_dim,
 									 load_pretrained_embeddings=use_pretrained_embeddings,
-									 pretrained_weights=weights)
+									 pretrained_weights=weights,
+									 linear_layers=linear_layers,
+									 linear_layers_hidden_size=linear_layers_hidden_size,
+									 use_bert_tokenizer=use_bert_tokenizer)
 	model.to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 	scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
@@ -273,7 +280,6 @@ if __name__ == '__main__':
 												test_path=test_path,
 												dev_path=dev_path,
 												device=device,
-												all_dataset_on_device=False,
 												delimiter="£",
 												output_dir=output_dir,
 												create_vocab=False,
@@ -294,8 +300,7 @@ if __name__ == '__main__':
 											  use_pretrained_embeddings=True,
 											  debug=False,
 											  data_augmentation=True,
-											  tokenizer_name=base_model_name,
-											  all_dataset_on_device=False)
+											  tokenizer_name=base_model_name)
 
 
 	not_pretrained_train_dataloader = datafy.CustomTextDataset("train",
@@ -303,7 +308,6 @@ if __name__ == '__main__':
 												test_path=test_path,
 												dev_path=dev_path,
 												device=device,
-												all_dataset_on_device=False,
 												delimiter="£",
 												output_dir=output_dir,
 												create_vocab=True,
@@ -324,13 +328,12 @@ if __name__ == '__main__':
 											  use_pretrained_embeddings=False,
 											  debug=False,
 											  data_augmentation=True,
-											  tokenizer_name=base_model_name,
-											  all_dataset_on_device=False)
+											  tokenizer_name=base_model_name)
 
 
 	study = optuna.create_study(direction='maximize')
 	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader)
 	study.optimize(objective, n_trials=100)
-	with open("trash/segmenter_hyperparasearch.txt", "w") as f:
+	with open("../trash/segmenter_hyperparasearch.txt", "w") as f:
 		f.write(study.best_params)
 	print("Best Hyperparameters:", study.best_params)

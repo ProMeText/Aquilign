@@ -318,10 +318,10 @@ class Trainer:
 		# Une possibilité serait de dégeler les paramètres en fin d'entraînement, quelques epochs avant la fin (3-4?)
 		if self.use_pretrained_embeddings:
 			if self.freeze_embeddings:
-				for param in self.model.tok_embedding.parameters():
+				for param in self.model.embedding.parameters():
 					param.requires_grad = False
 
-		# Idem pour les plongements de langue. En faire un paramètre.
+		# Idem pour les plongements de langue.
 		if self.include_lang_metadata:
 			if self.freeze_lang_embeddings:
 				for param in self.model.lang_embedding.parameters():

@@ -61,7 +61,6 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
 	if include_lang_metadata:
 		freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
-		lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
 		if architecture == "transformers":
 			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
 			lang_emb_dim *= 8
@@ -145,14 +144,18 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										 use_bert_tokenizer=use_bert_tokenizer)
 	elif architecture == "transformers":
 		model = models.TransformerModel(input_dim=input_dim,
-											 hidden_dim=emb_dim,
+											 emb_dim=emb_dim,
 											 num_heads=8,
 											 num_layers=num_transformers_layers,
 											 output_dim=output_dim,
 											 num_langs=len(lang_vocab),
 											 lang_emb_dim=lang_emb_dim,
 											 include_lang_metadata=include_lang_metadata,
-											 linear_layers_hidden_size=linear_layers_hidden_size)
+										     linear_layers=linear_layers,
+											 linear_layers_hidden_size=linear_layers_hidden_size,
+										     load_pretrained_embeddings=use_pretrained_embeddings,
+										 	  use_bert_tokenizer=use_bert_tokenizer,
+										      pretrained_weights=weights)
 	model.to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 	scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
@@ -174,7 +177,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 
 	if use_pretrained_embeddings:
 		if freeze_embeddings:
-			for param in model.tok_embedding.parameters():
+			for param in model.embedding.parameters():
 				param.requires_grad = False
 
 	# Idem pour les plongements de langue. En faire un paramètre.
@@ -192,10 +195,6 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			# tensor_examples = examples.to(device)
 			# Shape [batch_size, max_length]
 			# tensor_targets = targets.to(device)
-			if not all_dataset_on_device:
-				examples = examples.to(device)
-				targets = targets.to(device)
-				langs = langs.to(device)
 
 			# https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
 			# for param in model.parameters():
@@ -297,7 +296,7 @@ if __name__ == '__main__':
 	architecture = sys.argv[2]
 	if os.path.exists(f"../trash/segmenter_hyperparasearch_{architecture}.txt"):
 		os.remove(f"../trash/segmenter_hyperparasearch_{architecture}.txt")
-
+	debug = sys.argv[3]
 	train_path = config_file["global"]["train"]
 	test_path = config_file["global"]["test"]
 	device = config_file["global"]["device"]
@@ -313,7 +312,7 @@ if __name__ == '__main__':
 												output_dir=output_dir,
 												create_vocab=False,
 												use_pretrained_embeddings=True,
-												debug=False,
+												debug=debug,
 												data_augmentation=True,
 												tokenizer_name=base_model_name)
 	pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
@@ -327,7 +326,7 @@ if __name__ == '__main__':
 											  input_vocab=pretrained_train_dataloader.datafy.input_vocabulary,
 											  lang_vocab=pretrained_train_dataloader.datafy.lang_vocabulary,
 											  use_pretrained_embeddings=True,
-											  debug=False,
+											  debug=debug,
 											  data_augmentation=True,
 											  tokenizer_name=base_model_name)
 
@@ -341,7 +340,7 @@ if __name__ == '__main__':
 												output_dir=output_dir,
 												create_vocab=True,
 												use_pretrained_embeddings=False,
-												debug=False,
+												debug=debug,
 												data_augmentation=True,
 												tokenizer_name=base_model_name)
 	not_pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
@@ -355,7 +354,7 @@ if __name__ == '__main__':
 											  input_vocab=not_pretrained_train_dataloader.datafy.input_vocabulary,
 											  lang_vocab=not_pretrained_train_dataloader.datafy.lang_vocabulary,
 											  use_pretrained_embeddings=False,
-											  debug=False,
+											  debug=debug,
 											  data_augmentation=True,
 											  tokenizer_name=base_model_name)
 

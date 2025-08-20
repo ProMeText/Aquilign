@@ -39,12 +39,12 @@ class GRU_Encoder(nn.Module):
 			self.input_dim = 119547
 			emb_dim = 768
 			# Ici on vérifiera le paramètre _freeze
-			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
+			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
 			# Censé initialiser les paramètres avec les poids pré-entraînés
-			self.tok_embedding.weight.data = torch.tensor(pretrained_weights)
+			self.embedding.weight.data = torch.tensor(pretrained_weights)
 		else:
 			# Sinon on utilise l'initialisation normale
-			self.tok_embedding = nn.Embedding(input_dim, emb_dim)
+			self.embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata
 		self.attention = attention
 		self.num_langs = num_langs
@@ -96,7 +96,7 @@ class GRU_Encoder(nn.Module):
 	def forward(self, src, lang):
 		batch_size, seq_length = src.size()
 		# On plonge le texte [batch_size, max_length, embeddings_dim]
-		embedded = self.tok_embedding(src)
+		embedded = self.embedding(src)
 		if self.include_lang_metadata:
 
 			# Shape: [batch_size, lang_metadata_dimensions]
@@ -110,7 +110,7 @@ class GRU_Encoder(nn.Module):
 			# [batch_size, max_length, lang_metadata_dimensions + word_embedding_dimension]
 			embedded = torch.cat((embedded, projected_lang), 2)
 		else:
-			embedded = self.tok_embedding(src)
+			embedded = self.embedding(src)
 
 		if self.positional_embeddings:
 			embedded = self.pos1Dsum(embedded)  #
@@ -135,42 +135,60 @@ class GRU_Encoder(nn.Module):
 
 class TransformerModel(nn.Module):
 	def __init__(self,
-				 input_dim,
-				 hidden_dim,
-				 num_heads,
-				 num_layers,
-				 output_dim,
-				 num_langs,
-				 lang_emb_dim,
-				 include_lang_metadata,
-				 linear_layers_hidden_size):
+				 input_dim:int,
+				 emb_dim:int,
+				 num_heads:int,
+				 num_layers:int,
+				 output_dim:int,
+				 num_langs:int,
+				 lang_emb_dim:int,
+				 include_lang_metadata:bool,
+				 linear_layers:int,
+				 linear_layers_hidden_size:int,
+				 load_pretrained_embeddings:bool,
+				 use_bert_tokenizer:bool,
+				 pretrained_weights:np.ndarray):
 		super(TransformerModel, self).__init__()
 
 		self.num_langs = num_langs
 		self.lang_emb_dim = lang_emb_dim
 		self.include_lang_metadata = include_lang_metadata
 		# Couche d'embedding pour transformer les entrées dans l'espace de dimension hidden_dim
-		self.embedding = nn.Embedding(input_dim, hidden_dim)
+		if load_pretrained_embeddings or use_bert_tokenizer:
+			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
+			self.input_dim = 119547
+			emb_dim = 768
+			# Ici on vérifiera le paramètre _freeze
+			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
+			# Censé initialiser les paramètres avec les poids pré-entraînés
+			self.embedding.weight.data = torch.tensor(pretrained_weights)
+			print(f"Pretrained embeddings loaded dtype: {pretrained_weights.dtype}")
+		else:
+			# Sinon on utilise l'initialisation normale
+			self.embedding = nn.Embedding(input_dim, emb_dim)
 
 		if self.include_lang_metadata:
 			self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim)  # * self.scale
-			hidden_dim = hidden_dim + lang_emb_dim
+			hidden_dim = emb_dim + lang_emb_dim
+		else:
+			hidden_dim = emb_dim
 
 
 		# Encoder du Transformer
+		print(hidden_dim)
+		print(emb_dim)
+		print(lang_emb_dim)
 		encoder_layer = nn.TransformerEncoderLayer(d_model=hidden_dim, nhead=num_heads)
 		self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
-		# Couche de sortie
-		self.fc_out = nn.Linear(hidden_dim, output_dim)
 		layers = []
-		if self.linear_layers == 1:
+		if linear_layers == 1:
 			layers.append(nn.Linear(hidden_dim, output_dim))
 		else:
 			layers.append(nn.Linear(hidden_dim, linear_layers_hidden_size))
 			layers.append(nn.ReLU())
-			for layer in range(self.linear_layers):
-				if layer != self.linear_layers - 2:
+			for layer in range(linear_layers):
+				if layer != linear_layers - 2:
 					layers.append(nn.Linear(linear_layers_hidden_size, linear_layers_hidden_size))
 					layers.append(nn.ReLU())
 				else:
@@ -236,13 +254,13 @@ class LSTM_Encoder(nn.Module):
 			self.input_dim = 119547
 			emb_dim = 768
 			# Ici on vérifiera le paramètre _freeze
-			self.tok_embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim, _freeze=True)
+			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
 			# Censé initialiser les paramètres avec les poids pré-entraînés
-			self.tok_embedding.weight.data = torch.tensor(pretrained_weights)
+			self.embedding.weight.data = torch.tensor(pretrained_weights)
 			print(f"Pretrained embeddings loaded dtype: {pretrained_weights.dtype}")
 		else:
 			# Sinon on utilise l'initialisation normale
-			self.tok_embedding = nn.Embedding(input_dim, emb_dim)
+			self.embedding = nn.Embedding(input_dim, emb_dim)
 		self.include_lang_metadata = include_lang_metadata
 		self.attention = attention
 		self.num_langs = num_langs
@@ -312,7 +330,7 @@ class LSTM_Encoder(nn.Module):
 	def forward(self, src, lang):
 		batch_size, seq_length = src.size()
 		# On plonge le texte [batch_size, max_length, embeddings_dim]
-		embedded = self.tok_embedding(src)
+		embedded = self.embedding(src)
 		if self.include_lang_metadata:
 
 			# Shape: [batch_size, lang_metadata_dimensions]
@@ -326,7 +344,7 @@ class LSTM_Encoder(nn.Module):
 			# [batch_size, max_length, lang_metadata_dimensions + word_embedding_dimension]
 			embedded = torch.cat((embedded, projected_lang), 2)
 		else:
-			embedded = self.tok_embedding(src)
+			embedded = self.embedding(src)
 
 		if self.positional_embeddings:
 			embedded = self.pos1Dsum(embedded)  #
@@ -369,7 +387,7 @@ class CnnEncoder(nn.Module):
 
 		self.scale = torch.sqrt(torch.FloatTensor([0.5])).to(device)
 
-		self.tok_embedding = nn.Embedding(input_dim, emb_dim)
+		self.embedding = nn.Embedding(input_dim, emb_dim)
 
 		self.emb2hid = nn.Linear(emb_dim, hid_dim)
 		self.hid2emb = nn.Linear(hid_dim, emb_dim)
@@ -396,7 +414,7 @@ class CnnEncoder(nn.Module):
 		# pos = [batch size, src len]
 
 		# embed tokens
-		tok_embedded = self.tok_embedding(src)
+		tok_embedded = self.embedding(src)
 		# pos_embedded = torch.zeros(tok_embedded.shape)
 
 		# tok_embedded = pos_embedded = [batch size, src len, emb dim]

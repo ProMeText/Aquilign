@@ -209,8 +209,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 
 		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
 		results.append(weighted_recall_precision)
-		with open("../trash/results.txt", "a") as f:
-			f.write(f"Epoch {epoch_number}: {weighted_recall_precision}")
+		with open("../trash/segmenter_hyperparasearch.txt", "a") as f:
+			f.write(f"Epoch {epoch_number}: {weighted_recall_precision}\n")
 	best_result = max(results)
 	print(f"Best epoch result: {best_result}")
 	return best_result
@@ -270,8 +270,8 @@ def evaluate(model,
 
 def print_trial_info(study, trial):
 	with open("../trash/segmenter_hyperparasearch.txt", "a") as f:
-		f.write(f"---")
-		f.write(f"Trial {trial.number} - Paramètres : {trial.params}")
+		f.write(f"---\n")
+		f.write(f"Trial {trial.number} - Paramètres : {trial.params}\n")
 		f.write(f"Valeur de la métrique : {trial.value}\n")
 
 if __name__ == '__main__':

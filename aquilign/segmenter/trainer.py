@@ -327,7 +327,7 @@ class Trainer:
 			weighted_averages.append(weighted.item())
 
 		max_average = max(weighted_averages)
-		best_epoch = weighted_averages.index(max_average) + 1
+		best_epoch = weighted_averages.index(max_average)
 		print(f"Best model: {best_epoch} with {max_average} weighted precision and recall.")
 		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
 		try:

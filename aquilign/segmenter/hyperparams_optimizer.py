@@ -290,6 +290,7 @@ def print_trial_info(study, trial):
 		f.write(f"---\n")
 
 if __name__ == '__main__':
+	architecture = sys.argv[2]
 	if os.path.exists(f"../trash/segmenter_hyperparasearch_{architecture}.txt"):
 		os.remove(f"../trash/segmenter_hyperparasearch_{architecture}.txt")
 
@@ -356,7 +357,6 @@ if __name__ == '__main__':
 
 
 	study = optuna.create_study(direction='maximize')
-	architecture = sys.argv[2]
 	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader, architecture=architecture)
 	study.optimize(objective, n_trials=100, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:

@@ -331,13 +331,13 @@ class Trainer:
 		print(f"Best model: {best_epoch} with {max_average} weighted precision and recall.")
 		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
 		try:
-			os.mkdir(f"{self.output_dir}/models/best/{architecture}")
+			os.mkdir(f"{self.output_dir}/models/best/{self.architecture}")
 		except OSError:
 			pass
 		for model in models:
 			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch}.pt":
-				shutil.copy(model, f"{self.output_dir}/models/best/{architecture}/best.pt")
-				print(f"Saving best model to {self.output_dir}/models/best/{architecture}/best.pt")
+				shutil.copy(model, f"{self.output_dir}/models/best/{self.architecture}/best.pt")
+				print(f"Saving best model to {self.output_dir}/models/best/{self.architecture}/best.pt")
 			else:
 				os.remove(model)
 		self.best_model = f"{self.output_dir}/models/best/{architecture}/best.pt"

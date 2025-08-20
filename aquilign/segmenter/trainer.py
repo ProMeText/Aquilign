@@ -1,4 +1,5 @@
 import re
+from platform import architecture
 
 from transformers import AutoTokenizer
 
@@ -329,13 +330,17 @@ class Trainer:
 		best_epoch = weighted_averages.index(max_average) + 1
 		print(f"Best model: {best_epoch} with {max_average} weighted precision and recall.")
 		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
+		try:
+			os.mkdir(f"{self.output_dir}/models/best/{architecture}")
+		except OSError:
+			pass
 		for model in models:
 			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch}.pt":
-				shutil.copy(model, f"{self.output_dir}/models/best/best.pt")
-				print(f"Saving best model to {self.output_dir}/models/best/best.pt")
+				shutil.copy(model, f"{self.output_dir}/models/best/{architecture}/best.pt")
+				print(f"Saving best model to {self.output_dir}/models/best/{architecture}/best.pt")
 			else:
 				os.remove(model)
-		self.best_model = f"{self.output_dir}/models/best/best.pt"
+		self.best_model = f"{self.output_dir}/models/best/{architecture}/best.pt"
 
 	def train(self, clip=0.1):
 		# Ici on va faire en sorte que les plongements de mots ne soient pas entraînables, si c'est des plongements pré-entraînés

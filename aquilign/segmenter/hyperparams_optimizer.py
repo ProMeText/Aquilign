@@ -26,7 +26,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 16)
 	hidden_size = hidden_size_multiplier * 8
 	linear_layers = trial.suggest_int("linear_layers", 1, 4)
-	linear_layers_hidden_size = trial.suggest_int("linear_layers_hidden_size", 64, 256)
+	linear_layers_hidden_size = trial.suggest_categorical("linear_layers_hidden_size", 32, 64, 128, 256)
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	if architecture == "lstm":
 		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
@@ -287,7 +287,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										 tokenizer=tokenizer)
 
 		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
-		results.append(weighted_recall_precision)
+		# results.append(weighted_recall_precision)
+		results.append(f1)
 		with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 			f.write(f"Epoch {epoch_number}: {weighted_recall_precision} (recall: {recall[2]}, precision: {precision[2]})\n")
 	best_result = max(results)

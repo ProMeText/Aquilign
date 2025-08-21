@@ -1,6 +1,7 @@
 import copy
 import json
 import random
+import statistics
 
 import evaluate
 import numpy as np
@@ -41,24 +42,28 @@ def compute_ambiguity_metrics(tokens,
         target_predictions = np.array([pred for token, pred in zip(tokens, predictions) if token == target_token])
 
         current_accuracy = accuracy.compute(predictions=target_predictions, references=target_labels)
-        current_recall_sc = recall.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["recall"].tolist()[0]
-        current_precision_sc = precision.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["precision"].tolist()[0]
-        current_f1_sc = f1.compute(predictions=target_predictions, references=target_labels, average=None)["f1"].tolist()[0]
-        current_recall_sb = recall.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["recall"].tolist()[1]
-        current_precision_sb = precision.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["precision"].tolist()[1]
-        current_f1_sb = f1.compute(predictions=target_predictions, references=target_labels, average=None)["f1"].tolist()[1]
-        results_per_token.append((id_to_word[target_token], {"accuracy": current_accuracy,
+        current_recall = recall.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["recall"]
+        current_recall_sc = current_recall.tolist()[0]
+        current_recall_sb = current_recall.tolist()[1]
+        current_precision = precision.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["precision"]
+        current_precision_sc = current_precision.tolist()[0]
+        current_precision_sb = current_precision.tolist()[1]
+        current_f1 = f1.compute(predictions=target_predictions, references=target_labels, average=None)["f1"]
+        current_f1_sc = current_f1.tolist()[0]
+        current_f1_sb = current_f1.tolist()[1]
+        results_per_token.append((id_to_word[target_token], {"accuracy": current_accuracy['accuracy'],
                                                             "precision": [current_recall_sc, current_recall_sb],
                                                              "recall": [current_precision_sc, current_precision_sb],
                                                              "f1": [current_f1_sc, current_f1_sb]}))
-
+    mean_accuracy = statistics.mean([float(item[1]["accuracy"]) for item in results_per_token])
     with open(f"{output_dir}/resultats_ambiguite.txt", "w") as output_ambiguity:
+        output_ambiguity.write(f"Mean accuracy: {mean_accuracy}.\n\n")
         for results in results_per_token:
             recall = ["Recall", results[1]["recall"][0], results[1]["recall"][1]]
             precision = ["Precision", results[1]["precision"][0], results[1]["precision"][1]]
             f1 = ["F1", results[1]["f1"][0], results[1]["f1"][1]]
             header = ["", "Segment Content", "Segment Boundary"]
-            output_ambiguity.write(f"Results for {results[0]}: accuracy {results[1]['accuracy']['accuracy']}\n\n"
+            output_ambiguity.write(f"Results for {results[0]}: accuracy {results[1]['accuracy']}\n"
                   f"{utils.format_results(results=[precision, recall, f1], header=header, print_to_term=False)}"
                   f"\n\n\n")
 
@@ -102,7 +107,10 @@ def compute_metrics(predictions,
             example_as_string = " ".join([id_to_word[ident] for ident in example]).replace(" ##", "")
             print(example_as_string)
             label = labels[idx].tolist()[1:]
-            position_first_left_padding = next(index for index, ident in enumerate(example) if ident == 0)
+            try:
+                position_first_left_padding = next(index for index, ident in enumerate(example) if ident == 0)
+            except StopIteration:
+                position_first_left_padding = -1
             example_no_padding = example[:position_first_left_padding]
             label_no_padding = label[:position_first_left_padding]
 

@@ -29,6 +29,8 @@ def compute_ambiguity_metrics(tokens,
     tokens = np.array(tokens, dtype='int32').flatten()
     labels = np.array(labels, dtype='int32').flatten()
     ambiguous_tokens = utils.identify_ambiguous_tokens(tokens.tolist(), labels.tolist(), id_to_word, word_to_id)
+
+    accuracy = evaluate.load("accuracy")
     recall = evaluate.load("recall")
     precision = evaluate.load("precision")
     f1 = evaluate.load("f1")
@@ -37,6 +39,7 @@ def compute_ambiguity_metrics(tokens,
         target_labels = np.array([label for token, label in zip(tokens, labels) if token == target_token])
         target_predictions = np.array([pred for token, pred in zip(tokens, predictions) if token == target_token])
 
+        current_accuracy = accuracy.compute(predictions=predictions, references=labels)
         current_recall_sc = recall.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["recall"].tolist()[0]
         current_precision_sc = precision.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["precision"].tolist()[0]
         current_f1_sc = f1.compute(predictions=target_predictions, references=target_labels, average=None)["f1"].tolist()[0]
@@ -53,7 +56,7 @@ def compute_ambiguity_metrics(tokens,
             precision = ["Precision", results[1]["precision"][0], results[1]["precision"][1]]
             f1 = ["F1", results[1]["f1"][0], results[1]["f1"][1]]
             header = ["", "Segment Content", "Segment Boundary"]
-            output_ambiguity.write(f"Results for {results[0]}:\n\n"
+            output_ambiguity.write(f"Results for {results[0]}: accuracy {current_accuracy}\n\n"
                   f"{utils.format_results(results=[precision, recall, f1], header=header, print_to_term=False)}"
                   f"\n\n\n")
 

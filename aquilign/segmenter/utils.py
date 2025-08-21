@@ -204,7 +204,6 @@ def identify_ambiguous_tokens(tokens,
     # print(ambiguous_tokens)
     ambiguous_with_taux_ambiguite = [(token, {"label": label, "taux_ambiguite": taux_ambiguite(label)}) for token, label in ambiguous_tokens.items() if all(item > 2 for item in label.values())]
     ambiguous_with_taux_ambiguite.sort(key=lambda x: x[1]["taux_ambiguite"], reverse=True)
-    print(ambiguous_with_taux_ambiguite)
     ambiguous_tokens = [token[0] for token in ambiguous_with_taux_ambiguite]
     ambiguous_ids = [word_to_id[token] for token in ambiguous_tokens]
     return ambiguous_ids

@@ -35,13 +35,12 @@ def compute_ambiguity_metrics(tokens,
     precision = evaluate.load("precision")
     f1 = evaluate.load("f1")
     results_per_token = []
-    target_labels = np.array([label for token, label in zip(tokens, labels) if token in ambiguous_tokens])
-    target_predictions = np.array([token for token, label in zip(tokens, labels) if token in ambiguous_tokens])
-    for target_token in ambiguous_tokens:
-        target_labels = np.array([label for token, label in zip(target_labels, target_predictions) if token == target_token])
-        target_predictions = np.array([pred for token, pred in zip(target_labels, target_predictions) if token == target_token])
 
-        current_accuracy = accuracy.compute(predictions=predictions, references=labels)
+    for target_token in ambiguous_tokens:
+        target_labels = np.array([label for token, label in zip(tokens, labels) if token == target_token])
+        target_predictions = np.array([pred for token, pred in zip(tokens, predictions) if token == target_token])
+
+        current_accuracy = accuracy.compute(predictions=target_predictions, references=target_labels)
         current_recall_sc = recall.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["recall"].tolist()[0]
         current_precision_sc = precision.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["precision"].tolist()[0]
         current_f1_sc = f1.compute(predictions=target_predictions, references=target_labels, average=None)["f1"].tolist()[0]
@@ -59,7 +58,7 @@ def compute_ambiguity_metrics(tokens,
             precision = ["Precision", results[1]["precision"][0], results[1]["precision"][1]]
             f1 = ["F1", results[1]["f1"][0], results[1]["f1"][1]]
             header = ["", "Segment Content", "Segment Boundary"]
-            output_ambiguity.write(f"Results for {results[0]}: accuracy {results[1]['accuracy']}\n\n"
+            output_ambiguity.write(f"Results for {results[0]}: accuracy {results[1]['accuracy']['accuracy']}\n\n"
                   f"{utils.format_results(results=[precision, recall, f1], header=header, print_to_term=False)}"
                   f"\n\n\n")
 

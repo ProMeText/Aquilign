@@ -291,7 +291,7 @@ class Datafier:
         langs = []
         ids = []
         if debug:
-            data = data[:500]
+            data = data[:100]
         for example in data:
             text = example['example']
             lang = example['lang']

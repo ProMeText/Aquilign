@@ -5,6 +5,7 @@ import torch
 import os
 import time
 import tabulate
+import statistics
 
 def write_accuracy(message, path):
     with open(f"{path}accuracies.txt", "a") as output_file:
@@ -42,9 +43,12 @@ def remove_file(path):
         pass
 
 
-def format_results(results, header):
+def format_results(results, header, print_to_term=True):
     to_print = tabulate.tabulate(results, headers=header, tablefmt='orgtbl')
-    print(to_print)
+    if print_to_term:
+        print(to_print)
+    else:
+        return to_print
 
 
 # function to get the index of the tokens after BERT tokenization
@@ -184,3 +188,28 @@ def encode_text(input_text:str, token_to_idx:dict, delimiters):
 
 def decode_text():
 	pass
+
+def identify_ambiguous_tokens(tokens,
+                              labels,
+                              id_to_word,
+                              word_to_id):
+
+    out_dict = {token: {} for token in tokens}
+    for token, label in zip(tokens, labels):
+        try:
+            out_dict[token][label] += 1
+        except KeyError:
+            out_dict[token][label] = 1
+    ambiguous_tokens = {id_to_word[token]: labels for token, labels in out_dict.items() if len(labels) > 1}
+    # print(ambiguous_tokens)
+    ambiguous_with_taux_ambiguite = [(token, {"label": label, "taux_ambiguite": taux_ambiguite(label)}) for token, label in ambiguous_tokens.items() if all(item > 2 for item in label.values())]
+    ambiguous_with_taux_ambiguite.sort(key=lambda x: x[1]["taux_ambiguite"], reverse=True)
+    print(ambiguous_with_taux_ambiguite)
+    ambiguous_tokens = [token[0] for token in ambiguous_with_taux_ambiguite]
+    ambiguous_ids = [word_to_id[token] for token in ambiguous_tokens]
+    return ambiguous_ids
+
+def taux_ambiguite(label):
+    values = label.values()
+    pstdev = statistics.pstdev(values)
+    return  statistics.mean(values)**2 / (pstdev + 1)

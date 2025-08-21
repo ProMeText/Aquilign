@@ -294,7 +294,7 @@ class Trainer:
 										linear_layers_hidden_size=linear_layers_hidden_size,
 										linear_layers=linear_layers,
 									   pretrained_weights=weights,
-										scale=cnn_scale
+										cnn_scale=cnn_scale
 									   )
 		self.architecture = architecture
 		self.model.to(self.device)
@@ -435,6 +435,12 @@ class Trainer:
 		cat_preds = torch.cat(all_preds, dim=0)
 		cat_targets = torch.cat(all_targets, dim=0)
 		cat_examples = torch.cat(all_examples, dim=0)
+		ambiguity = eval.compute_ambiguity_metrics(tokens=cat_examples,
+												   labels=cat_targets,
+												   predictions=cat_preds,
+												   id_to_word=self.reverse_input_vocab,
+												   word_to_id=self.input_vocab,
+												   output_dir = self.output_dir)
 		results = eval.compute_metrics(predictions=cat_preds,
 									   labels=cat_targets,
 									   examples=cat_examples,
@@ -566,10 +572,10 @@ class Trainer:
 					tgt = tensor_target.contiguous().view(-1)
 					loss = self.criterion(output, tgt)
 
-		# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
-		cat_preds = torch.cat(all_preds, dim=0)
-		cat_targets = torch.cat(all_targets, dim=0)
-		cat_examples = torch.cat(all_examples, dim=0)
+		# On supprime les batchs:
+		cat_preds = torch.cat(all_preds, dim=0) # [num_examples, max_dim, num_classes]
+		cat_targets = torch.cat(all_targets, dim=0) # [num_examples, max_dim]
+		cat_examples = torch.cat(all_examples, dim=0) # [num_examples, max_dim]
 		results = eval.compute_metrics(predictions=cat_preds,
 									   labels=cat_targets,
 									   examples=cat_examples,

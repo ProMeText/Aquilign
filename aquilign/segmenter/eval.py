@@ -5,6 +5,57 @@ import random
 import evaluate
 import numpy as np
 import torch
+import aquilign.segmenter.utils as utils
+
+
+
+
+
+def compute_ambiguity_metrics(tokens,
+                              predictions,
+                              labels,
+                              id_to_word,
+                              word_to_id,
+                              output_dir):
+    """
+    This function produces a confusion matrix for the ambiguous tokens.
+    """
+
+    predictions = np.argmax(predictions, axis=2)
+    predictions = np.array(predictions, dtype='int32').flatten()
+    tokens = np.array(tokens, dtype='int32').flatten()
+    labels = np.array(labels, dtype='int32').flatten()
+    ambiguous_tokens = utils.identify_ambiguous_tokens(tokens.tolist(), labels.tolist(), id_to_word, word_to_id)
+    recall = evaluate.load("recall")
+    precision = evaluate.load("precision")
+    f1 = evaluate.load("f1")
+    results_per_token = []
+    for target_token in ambiguous_tokens:
+        target_labels = np.array([label for token, label in zip(tokens, labels) if token == target_token])
+        target_predictions = np.array([pred for token, pred in zip(tokens, predictions) if token == target_token])
+
+        current_recall_sc = recall.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["recall"].tolist()[0]
+        current_precision_sc = precision.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["precision"].tolist()[0]
+        current_f1_sc = f1.compute(predictions=target_predictions, references=target_labels, average=None)["f1"].tolist()[0]
+        current_recall_sb = recall.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["recall"].tolist()[1]
+        current_precision_sb = precision.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["precision"].tolist()[1]
+        current_f1_sb = f1.compute(predictions=target_predictions, references=target_labels, average=None)["f1"].tolist()[1]
+        results_per_token.append((id_to_word[target_token], {"precision": [current_recall_sc, current_recall_sb],
+                                                             "recall": [current_precision_sc, current_precision_sb],
+                                                             "f1": [current_f1_sc, current_f1_sb]}))
+
+    with open(f"{output_dir}/resultats_ambiguite.txt", "w") as output_ambiguity:
+        for results in results_per_token:
+            recall = ["Recall", results[1]["recall"][0], results[1]["recall"][1]]
+            precision = ["Precision", results[1]["precision"][0], results[1]["precision"][1]]
+            f1 = ["F1", results[1]["f1"][0], results[1]["f1"][1]]
+            header = ["", "Segment Content", "Segment Boundary"]
+            output_ambiguity.write(f"Results for {results[0]}:\n\n"
+                  f"{utils.format_results(results=[precision, recall, f1], header=header, print_to_term=False)}"
+                  f"\n\n\n")
+
+
+
 
 def compute_metrics(predictions,
                     labels,

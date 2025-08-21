@@ -22,8 +22,6 @@ import sys
 
 def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, device):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 16)
 	hidden_size = hidden_size_multiplier * 8
@@ -291,7 +289,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
 		results.append(weighted_recall_precision)
 		with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
-			f.write(f"Epoch {epoch_number}: {weighted_recall_precision}\n")
+			f.write(f"Epoch {epoch_number}: {weighted_recall_precision} (recall: {recall[2]}, precision: {precision[2]})\n")
 	best_result = max(results)
 	print(f"Best epoch result: {best_result}")
 	return best_result

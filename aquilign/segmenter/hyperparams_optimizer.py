@@ -26,14 +26,14 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 16)
 	hidden_size = hidden_size_multiplier * 8
 	linear_layers = trial.suggest_int("linear_layers", 1, 4)
-	linear_layers_hidden_size = trial.suggest_int("linear_layers_hidden_size", 64, 128)
+	linear_layers_hidden_size = trial.suggest_int("linear_layers_hidden_size", 64, 256)
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	if architecture == "lstm":
 		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
 		if num_lstm_layers == 1:
 			lstm_dropout = 0
 		else:
-			lstm_dropout = trial.suggest_float("lstm_dropout", 0, 0.5)
+			lstm_dropout = trial.suggest_float("lstm_dropout", 0, 0.8)
 	elif architecture == "gru":
 		num_gru_layers = trial.suggest_int("num_gru_layers", 1, 2)
 		gru_dropout = trial.suggest_float("gru_dropout", 0, 0.5)

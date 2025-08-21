@@ -72,9 +72,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			train_dataloader = no_bert_train_dataloader
 			dev_dataloader = no_bert_dev_dataloader
 	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
-	# batch_size_multiplier = trial.suggest_int("batch_size", 2, 32)
 
-	# bidirectional = trial.suggest_categorical("bidirectional", [False, True])
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
 	if include_lang_metadata:
 		freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
@@ -368,6 +366,7 @@ if __name__ == '__main__':
 	dev_path = config_file["global"]["dev"]
 	output_dir = config_file["global"]["out_dir"]
 	base_model_name = config_file["global"]["base_model_name"]
+	data_augmentation = config_file["global"]["data_augmentation"]
 	pretrained_train_dataloader = datafy.CustomTextDataset("train",
 												train_path=train_path,
 												test_path=test_path,
@@ -378,7 +377,7 @@ if __name__ == '__main__':
 												create_vocab=False,
 												use_pretrained_embeddings=True,
 												debug=debug,
-												data_augmentation=True,
+												data_augmentation=data_augmentation,
 												tokenizer_name=base_model_name)
 	pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
 											  train_path=train_path,
@@ -392,7 +391,7 @@ if __name__ == '__main__':
 											  lang_vocab=pretrained_train_dataloader.datafy.lang_vocabulary,
 											  use_pretrained_embeddings=True,
 											  debug=debug,
-											  data_augmentation=True,
+											  data_augmentation=data_augmentation,
 											  tokenizer_name=base_model_name)
 
 
@@ -406,7 +405,7 @@ if __name__ == '__main__':
 												create_vocab=True,
 												use_pretrained_embeddings=False,
 												debug=debug,
-												data_augmentation=True,
+												data_augmentation=data_augmentation,
 												tokenizer_name=base_model_name)
 	not_pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
 											  train_path=train_path,
@@ -420,7 +419,7 @@ if __name__ == '__main__':
 											  lang_vocab=not_pretrained_train_dataloader.datafy.lang_vocabulary,
 											  use_pretrained_embeddings=False,
 											  debug=debug,
-											  data_augmentation=True,
+											  data_augmentation=data_augmentation,
 											  tokenizer_name=base_model_name)
 
 

@@ -12,54 +12,43 @@
     "out_dir": "/home/mgl/Documents/test_working",
     "data_augmentation": true,
     "freeze_embeddings": false,
+    "emb_dim": 300,
     "freeze_lang_embeddings": false,
+    "linear_layers": 2,
+    "linear_layers_hidden_size": 128,
     "balance_class_weights": true,
+    "include_lang_metadata": false,
+    "lang_emb_dim": 32,
     "epochs": 2,
     "lr": 0.0002,
     "batch_size": 8
   },
   "architectures": {
     "lstm": {
-      "emb_dim": 50,
       "bidirectional": true,
       "lstm_dropout": null,
       "positional_embeddings": true,
       "lstm_hidden_size": 64,
       "num_lstm_layers": 2,
-      "linear_layers": 2,
-      "linear_layers_hidden_size": 128,
-      "include_lang_metadata": false,
-      "add_attention_layer": false,
-      "lang_emb_dim": 32
+      "add_attention_layer": false
     },
     "gru": {
-      "emb_dim": 300,
       "bidirectional": false,
       "dropout": 0.03,
       "positional_embeddings": false,
       "hidden_size": 64,
       "num_layers": 2,
-      "include_lang_metadata": false,
       "linear_layers_hidden_size": 128,
-      "add_attention_layer": false,
-      "lang_emb_dim": 16
+      "add_attention_layer": false
     },
     "transformer": {
-      "emb_dim": 304,
-      "include_lang_metadata": true,
-      "lang_emb_dim": 32,
       "num_heads": 8,
-      "linear_layers_hidden_size": 128,
       "num_transformers_layers": 2
     },
     "cnn": {
-      "emb_dim": 304,
-      "include_lang_metadata": true,
-      "lang_emb_dim": 32,
       "hidden_size": 64,
       "linear_layers": 2,
       "positional_embeddings": true,
-      "linear_layers_hidden_size": 128,
       "add_attention_layer": true,
       "num_heads": 8,
       "kernel_size": 5,

@@ -46,48 +46,33 @@ class Trainer:
 		self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
 		self.freeze_lang_embeddings = config_file["global"]["freeze_lang_embeddings"]
 		self.balance_class_weights = config_file["global"]["balance_class_weights"]
+		include_lang_metadata = config_file["global"]["include_lang_metadata"]
+		lang_emb_dim = config_file["global"]["lang_emb_dim"]
+		linear_layers = config_file["global"]["linear_layers"]
+		linear_layers_hidden_size = config_file["global"]["linear_layers_hidden_size"]
+		emb_dim = config_file["global"]["emb_dim"]
 		if architecture == "lstm":
-			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
-			emb_dim = config_file["architectures"][architecture]["emb_dim"]
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
 			lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
 			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
-			linear_layers = config_file["architectures"][architecture]["linear_layers"]
-			linear_layers_hidden_size = config_file["architectures"][architecture]["linear_layers_hidden_size"]
 			lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
 			bidirectional = config_file["architectures"][architecture]["bidirectional"]
-			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
 		elif architecture == "gru":
-			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
-			emb_dim = config_file["architectures"][architecture]["emb_dim"]
 			hidden_size = config_file["architectures"][architecture]["hidden_size"]
 			num_layers = config_file["architectures"][architecture]["num_layers"]
 			dropout = config_file["architectures"][architecture]["dropout"]
-			linear_layers = config_file["architectures"][architecture]["linear_layers"]
 			bidirectional = config_file["architectures"][architecture]["bidirectional"]
-			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
 		elif architecture == "transformer":
-			hidden_dim = config_file["architectures"][architecture]["emb_dim"]
-			emb_dim = config_file["architectures"][architecture]["emb_dim"]
-			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
-			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
-			linear_layers = config_file["architectures"][architecture]["linear_layers"]
 			num_heads = config_file["architectures"][architecture]["num_heads"]
 			num_transformers_layers = config_file["architectures"][architecture]["num_transformers_layers"]
 		elif architecture == "cnn":
-			hidden_dim = config_file["architectures"][architecture]["emb_dim"]
-			emb_dim = config_file["architectures"][architecture]["emb_dim"]
 			dropout = config_file["architectures"][architecture]["dropout"]
 			cnn_scale = config_file["architectures"][architecture]["cnn_scale"]
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
 			hidden_size = config_file["architectures"][architecture]["hidden_size"]
-			linear_layers_hidden_size = config_file["architectures"][architecture]["linear_layers_hidden_size"]
-			include_lang_metadata = config_file["architectures"][architecture]["include_lang_metadata"]
 			kernel_size = config_file['architectures'][architecture]["kernel_size"]
 			positional_embeddings = config_file['architectures'][architecture]["positional_embeddings"]
-			lang_emb_dim = config_file["architectures"][architecture]["lang_emb_dim"]
-			linear_layers = config_file["architectures"][architecture]["linear_layers"]
 			num_heads = config_file["architectures"][architecture]["num_heads"]
 			num_cnn_layers = config_file["architectures"][architecture]["num_cnn_layers"]
 
@@ -229,15 +214,20 @@ class Trainer:
 
 		if architecture == "transformer":
 			self.model = models.TransformerModel(input_dim=self.input_dim,
-												 hidden_dim=hidden_dim,
+												 emb_dim=emb_dim,
 												 num_heads=num_heads,
 												 num_layers=num_transformers_layers,
 												 output_dim=self.output_dim,
 												 num_langs=len(self.lang_vocab),
 												 lang_emb_dim=lang_emb_dim,
-												 include_lang_metadata=True)
+												 include_lang_metadata=True,
+												 device=device,
+												 linear_layers=linear_layers,
+												 linear_layers_hidden_size=linear_layers_hidden_size,
+												 load_pretrained_embeddings=use_pretrained_embeddings,
+												 use_bert_tokenizer=use_bert_tokenizer,
+												 pretrained_weights=weights)
 		elif architecture == "lstm":
-			weights = torch.load("aquilign/segmenter/embeddings.npy")
 			self.model = models.LSTM_Encoder(input_dim=self.input_dim,
 											 emb_dim=emb_dim,
 											 bidirectional=bidirectional,

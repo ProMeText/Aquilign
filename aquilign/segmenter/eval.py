@@ -17,7 +17,8 @@ def compute_ambiguity_metrics(tokens,
                               labels,
                               id_to_word,
                               word_to_id,
-                              output_dir):
+                              output_dir,
+                              name:None):
     """
     This function produces a confusion matrix for the ambiguous tokens.
     """
@@ -56,7 +57,11 @@ def compute_ambiguity_metrics(tokens,
                                                              "recall": [current_precision_sc, current_precision_sb],
                                                              "f1": [current_f1_sc, current_f1_sb]}))
     mean_accuracy = statistics.mean([float(item[1]["accuracy"]) for item in results_per_token])
-    with open(f"{output_dir}/resultats_ambiguite.txt", "w") as output_ambiguity:
+    if name:
+        out_file = f"{output_dir}/resultats_ambiguite_{name}.txt"
+    else:
+        out_file = f"{output_dir}/resultats_ambiguite.txt"
+    with open(out_file, "w") as output_ambiguity:
         output_ambiguity.write(f"Mean accuracy: {mean_accuracy}.\n\n")
         for results in results_per_token:
             recall = ["Recall", results[1]["recall"][0], results[1]["recall"][1]]

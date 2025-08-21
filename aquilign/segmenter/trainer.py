@@ -508,6 +508,13 @@ class Trainer:
 			cat_preds = torch.cat(all_preds, dim=0)
 			cat_targets = torch.cat(all_targets, dim=0)
 			cat_examples = torch.cat(all_examples, dim=0)
+			ambiguity = eval.compute_ambiguity_metrics(tokens=cat_examples,
+													   labels=cat_targets,
+													   predictions=cat_preds,
+													   id_to_word=self.reverse_input_vocab,
+													   word_to_id=self.input_vocab,
+													   output_dir=self.output_dir,
+													   name=lang)
 			results = eval.compute_metrics(predictions=cat_preds,
 										   labels=cat_targets,
 										   examples=cat_examples,

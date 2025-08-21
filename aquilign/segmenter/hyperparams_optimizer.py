@@ -284,7 +284,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 
 		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
 		# results.append(weighted_recall_precision)
-		results.append(f1)
+		results.append(f1[2])
 		with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 			f.write(f"Epoch {epoch_number}: {weighted_recall_precision} (recall: {recall[2]}, precision: {precision[2]})\n")
 	best_result = max(results)

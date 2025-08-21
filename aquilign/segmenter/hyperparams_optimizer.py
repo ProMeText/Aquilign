@@ -63,10 +63,10 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		# use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
 		use_bert_tokenizer = False
 		if architecture == "transformers" or add_attention_layer:
-			emb_dim = trial.suggest_int("input_dim", 25, 50)
-			emb_dim *= 8
+			emb_dim = trial.suggest_int("input_dim", 25, 37)
 		else:
-			emb_dim = trial.suggest_int("input_dim", 200, 300)
+			emb_dim = trial.suggest_int("input_dim", 25, 50)
+		emb_dim *= 8
 		if use_bert_tokenizer:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
@@ -78,12 +78,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
 	if include_lang_metadata:
 		freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
-		if architecture == "transformers" or add_attention_layer:
-			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
-			lang_emb_dim *= 8
-		else:
-			lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64)
-
+		lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
+		lang_emb_dim *=8
 	else:
 		freeze_lang_embeddings = False
 		lang_emb_dim = 4

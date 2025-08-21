@@ -7,48 +7,52 @@
     "out_dir": "/projects/users/mgillele/trash/test_segmenter",
     "device": "cuda:0",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
+    "data_augmentation": false,
+    "freeze_embeddings": false,
+    "emb_dim": 300,
+    "freeze_lang_embeddings": false,
+    "linear_layers": 4,
+    "linear_layers_hidden_size": 256,
+    "balance_class_weights": true,
+    "include_lang_metadata": true,
+    "lang_emb_dim": 32,
+    "epochs": 20,
     "use_pretrained_embeddings": false,
     "use_bert_tokenizer": false,
-    "data_augmentation": true,
-    "workers": 8,
-    "freeze_embeddings": false,
-    "freeze_lang_embeddings": false,
-    "balance_class_weights": true,
-    "epochs": 10,
-    "lr": 0.0005,
-    "batch_size": 64
+    "lr": 0.0002,
+    "batch_size": 8
   },
   "architectures": {
     "lstm": {
-      "emb_dim": 300,
       "bidirectional": true,
       "lstm_dropout": null,
-      "positional_embeddings": false,
+      "positional_embeddings": true,
       "lstm_hidden_size": 64,
-      "num_lstm_layers": 1,
-      "include_lang_metadata": true,
-      "add_attention_layer": true,
-      "lang_emb_dim": 32
+      "num_lstm_layers": 2,
+      "add_attention_layer": false
+    },
+    "gru": {
+      "bidirectional": false,
+      "dropout": 0.03,
+      "positional_embeddings": false,
+      "hidden_size": 64,
+      "num_layers": 2,
+      "linear_layers_hidden_size": 128,
+      "add_attention_layer": false
     },
     "transformer": {
-      "emb_dim": 304,
-      "include_lang_metadata": true,
-      "lang_emb_dim": 32,
       "num_heads": 8,
-      "num_transformers_layers": 2
+      "num_transformers_layers": 8
     },
     "cnn": {
-      "emb_dim": 304,
-      "include_lang_metadata": true,
-      "lang_emb_dim": 32,
       "hidden_size": 64,
       "linear_layers": 2,
       "positional_embeddings": true,
-      "linear_layers_hidden_size": 128,
       "add_attention_layer": true,
       "num_heads": 8,
       "kernel_size": 5,
       "dropout": 0.5,
+      "cnn_scale": 0.5,
       "num_cnn_layers": 10
     }
   }

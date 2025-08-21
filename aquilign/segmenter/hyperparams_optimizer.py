@@ -52,14 +52,16 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	else:
 		num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
 		batch_size = batch_size_multiplier * 4
-	use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
+	# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
+	use_pretrained_embeddings = False
 	if use_pretrained_embeddings:
 		train_dataloader = bert_train_dataloader
 		dev_dataloader = bert_dev_dataloader
 		emb_dim = 100
 		use_bert_tokenizer = True
 	else:
-		use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
+		# use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
+		use_bert_tokenizer = False
 		if architecture == "transformers" or add_attention_layer:
 			emb_dim = trial.suggest_int("input_dim", 25, 37)
 			emb_dim *= 8

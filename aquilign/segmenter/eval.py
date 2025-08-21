@@ -21,6 +21,9 @@ def compute_ambiguity_metrics(tokens,
     This function produces a confusion matrix for the ambiguous tokens.
     """
 
+    predictions = predictions.cpu()
+    labels = labels.cpu()
+    tokens = tokens.cpu()
     predictions = np.argmax(predictions, axis=2)
     predictions = np.array(predictions, dtype='int32').flatten()
     tokens = np.array(tokens, dtype='int32').flatten()

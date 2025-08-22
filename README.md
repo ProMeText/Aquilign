@@ -254,7 +254,7 @@ under the *Investissements d'avenir* programme with the reference:
 
 It has benefited from the CBP (Centre Blaise Pascal) computing infrastructure, hosted at the École Normale Supérieure de Lyon.  
 <p align="center">
-<img src="http://www.cbp.ens-lyon.fr/lib/tpl/CBP-scanlines/images/cbpsmn_logo.png" alt="CBP Logo" width="600"/>
+<img src="http://www.cbp.ens-lyon.fr/lib/tpl/CBP-scanlines/images/cbpsmn_logo.png" alt="CBP Logo" width="400"/>
 </p>
 
 > Ce projet a également bénéficié des infrastructures de calcul du Centre Blaise Pascal, hébergé à l'École 

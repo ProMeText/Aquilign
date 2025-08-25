@@ -242,7 +242,8 @@ class LSTM_Encoder(nn.Module):
 				 linear_layers:int,
 				 linear_layers_hidden_size:int,
 				 use_bert_tokenizer:bool,
-				 keep_bert_dimensions:bool):
+				 keep_bert_dimensions:bool,
+				 linear_dropout:float):
 		super().__init__()
 
 		# On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
@@ -294,6 +295,7 @@ class LSTM_Encoder(nn.Module):
 		self.hidden_dim = lstm_hidden_size
 		self.batch_size = batch_size
 		self.num_lstm_layers = num_lstm_layers
+		self.linear_dropout = linear_dropout
 
 
 		# Une couche d'attention multitête
@@ -320,6 +322,7 @@ class LSTM_Encoder(nn.Module):
 				if layer != self.linear_layers - 2:
 					layers.append(nn.Linear(linear_layers_hidden_size, linear_layers_hidden_size))
 					layers.append(nn.ReLU())
+					layers.append(nn.Dropout(self.linear_dropout))
 				else:
 					layers.append(nn.Linear(linear_layers_hidden_size, out_classes))
 					break
@@ -389,7 +392,8 @@ class CnnEncoder(nn.Module):
 				 use_bert_tokenizer,
 				 pretrained_weights,
 				 cnn_scale,
-				 keep_bert_dimensions):
+				 keep_bert_dimensions,
+				 linear_dropout):
 		super().__init__()
 
 		assert kernel_size % 2 == 1, "Kernel size must be odd!"
@@ -402,6 +406,7 @@ class CnnEncoder(nn.Module):
 		self.include_lang_metadata = include_lang_metadata
 		self.device = device
 		self.positional_embeddings = positional_embeddings
+		self.linear_dropout = linear_dropout
 
 		# Possibilité de produire des embeddings de langue que l'on va concaténer aux plongements de mots
 
@@ -465,6 +470,7 @@ class CnnEncoder(nn.Module):
 				if layer != self.linear_layers - 2:
 					layers.append(nn.Linear(linear_layers_hidden_size, linear_layers_hidden_size))
 					layers.append(nn.ReLU())
+					layers.append(nn.Dropout(linear_dropout))
 				else:
 					layers.append(nn.Linear(linear_layers_hidden_size, self.out_classes))
 					break

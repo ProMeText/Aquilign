@@ -10,14 +10,14 @@ parser.add_argument("-a", "--architecture", default="lstm",
 					help="Architecture to be tested")
 parser.add_argument("-p", "--parameters", default=None,
 					help="Path to parameters file")
-parser.add_argument("-r", "--reduce", default=False,
-					help="Force parameters numbers reduction")
+parser.add_argument("-size", "--model_size", default=False,
+					help="Include parameters numbers in optimization")
 parser.add_argument("-d", "--debug", default=False,
 					help="Debug mode")
 args = parser.parse_args()
 architecture = args.architecture
 debug = args.debug
-reduce = args.reduce
+model_size = args.model_size
 parameters = args.parameters
 
 with open(parameters, "r") as input_json:
@@ -33,12 +33,10 @@ from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 import tqdm
 import os
-import sys
 
 
 
-
-def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, reduce):
+def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, model_size):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 20)
@@ -48,6 +46,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	if architecture == "lstm":
 		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 4)
+		linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
 		if num_lstm_layers == 1:
 			lstm_dropout = 0
 		else:
@@ -62,6 +61,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		kernel_size = kernel_size * 2 + 1
 		cnn_dropout = trial.suggest_float("cnn_dropout", 0, 0.8)
 		cnn_scale = trial.suggest_float("cnn_scale", 0, 0.8)
+		linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
 
 	batch_size_multiplier = trial.suggest_int("batch_size", 2, 10)
 	if architecture not in  ["transformers", "BERT"]:
@@ -177,7 +177,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										 linear_layers=linear_layers,
 										 linear_layers_hidden_size=linear_layers_hidden_size,
 										 use_bert_tokenizer=use_bert_tokenizer,
-										 keep_bert_dimensions=keep_bert_dimensions)
+										 keep_bert_dimensions=keep_bert_dimensions,
+										linear_dropout=linear_dropout)
 	elif architecture == "transformers":
 		model = models.TransformerModel(input_dim=input_dim,
 											 emb_dim=emb_dim,
@@ -231,7 +232,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 								  linear_layers=linear_layers,
 								  pretrained_weights=weights,
 								  cnn_scale=cnn_scale,
-								  keep_bert_dimensions=keep_bert_dimensions
+								  keep_bert_dimensions=keep_bert_dimensions,
+								  linear_dropout=linear_dropout
 								  )
 	elif architecture == "BERT":
 		from transformers import AutoModelForTokenClassification
@@ -333,7 +335,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 				f.write(f"Nombre de paramètres: {params_number_to_print}\n")
 	best_result = max(results)
 	print(f"Best epoch result: {best_result}")
-	if reduce:
+	if model_size:
 		return best_result, params_number
 	else:
 		return best_result
@@ -403,7 +405,7 @@ def evaluate(model,
 def print_trial_info(study, trial):
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 		f.write(f"Trial {trial.number} - Paramètres : {trial.params}\n")
-		if not reduce:
+		if not model_size:
 			f.write(f"Valeur de la métrique : {trial.value}\n")
 		f.write(f"---\n")
 
@@ -479,7 +481,7 @@ if __name__ == '__main__':
 											  tokenizer_name=base_model_name,
 												architecture=architecture)
 
-	if reduce:
+	if model_size:
 		study = optuna.create_study(directions=['maximize', 'minimize'])
 	else:
 		study = optuna.create_study(direction='maximize')
@@ -489,11 +491,11 @@ if __name__ == '__main__':
 						no_bert_train_dataloader=not_pretrained_train_dataloader,
 						no_bert_dev_dataloader=not_pretrained_dev_dataloader,
 						architecture=architecture,
-						reduce=reduce)
+						model_size=model_size)
 	study.optimize(objective, n_trials=50, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 		f.write((str(study.best_trial) + "\n"))
-		if reduce:
+		if model_size:
 			f.write((str(study.best_trials) + "\n"))
 		else:
 			f.write((str(study.best_trial) + "\n"))

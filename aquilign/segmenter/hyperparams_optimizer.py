@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import decimal
 import json
 import optuna
@@ -329,7 +330,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
 		# results.append(weighted_recall_precision)
 		results.append(f1[2])
-		with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
+		with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt", "a") as f:
 			f.write(f"Epoch {epoch_number}: weighted: {round(weighted_recall_precision, 4)}, F1: {round(f1[2], 4)} (recall: {round(recall[2], 4)}, precision: {round(precision[2], 4)})\n")
 			if epoch_number == epochs:
 				f.write(f"Nombre de paramètres: {params_number_to_print}\n")
@@ -403,7 +404,7 @@ def evaluate(model,
 
 
 def print_trial_info(study, trial):
-	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
+	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt", "a") as f:
 		f.write(f"Trial {trial.number} - Paramètres : {trial.params}\n")
 		if not model_size:
 			f.write(f"Valeur de la métrique : {trial.value}\n")
@@ -411,9 +412,9 @@ def print_trial_info(study, trial):
 
 if __name__ == '__main__':
 
-
-	if os.path.exists(f"../trash/segmenter_hyperparasearch_{architecture}.txt"):
-		os.remove(f"../trash/segmenter_hyperparasearch_{architecture}.txt")
+	date_hour = datetime.datetime.now().isoformat()
+	if os.path.exists(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt"):
+		os.remove(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt")
 
 	train_path = config_file["global"]["train"]
 	test_path = config_file["global"]["test"]
@@ -493,7 +494,7 @@ if __name__ == '__main__':
 						architecture=architecture,
 						model_size=model_size)
 	study.optimize(objective, n_trials=50, callbacks=[print_trial_info])
-	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
+	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt", "a") as f:
 		f.write((str(study.best_trial) + "\n"))
 		if model_size:
 			f.write((str(study.best_trials) + "\n"))

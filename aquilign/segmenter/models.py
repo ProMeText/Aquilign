@@ -242,14 +242,14 @@ class LSTM_Encoder(nn.Module):
 				 linear_layers:int,
 				 linear_layers_hidden_size:int,
 				 use_bert_tokenizer:bool,
-				 keep_bert_dimension:bool):
+				 keep_bert_dimensions:bool):
 		super().__init__()
 
 		# On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
 		if load_pretrained_embeddings or use_bert_tokenizer:
 			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
 			self.input_dim = 119547
-			if keep_bert_dimension:
+			if keep_bert_dimensions:
 				emb_dim = 768
 			# Ici on vérifiera le paramètre _freeze
 			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)

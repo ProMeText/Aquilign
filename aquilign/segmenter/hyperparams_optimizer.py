@@ -286,7 +286,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		results.append(f1[2])
 		with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 			f.write(f"Epoch {epoch_number}: weighted: {round(weighted_recall_precision, 4)}, F1: {round(f1[2], 4)} (recall: {round(recall[2], 4)}, precision: {round(precision[2], 4)})\n")
-			if epoch_number == len(epochs):
+			if epoch_number == epochs:
 				f.write(f"Nombre de paramètres: {sum(p.numel() for p in model.parameters())}")
 	best_result = max(results)
 	print(f"Best epoch result: {best_result}")

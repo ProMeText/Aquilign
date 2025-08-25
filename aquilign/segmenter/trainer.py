@@ -511,8 +511,7 @@ class Trainer:
 															  shuffle=False,
 															  num_workers=self.workers,
 															  pin_memory=False,
-															  drop_last=True,
-														  architecture=self.architecture)
+															  drop_last=True)
 
 
 

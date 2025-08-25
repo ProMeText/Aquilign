@@ -170,7 +170,7 @@ def convertSentenceToSubWordsAndLabels(sentence, tokenizer, delimiter="£",  max
     # tensorize the new labels
     label = torch.tensor(new_labels)
     if output_masks:
-        return example, toks['attention_mask'], toks['input_ids'], label
+        return example, toks['attention_mask'].squeeze(), toks['input_ids'], label
     else:
         return example, toks['input_ids'], label
 

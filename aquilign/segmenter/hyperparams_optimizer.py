@@ -297,19 +297,18 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			if architecture != "BERT":
 				output = model(examples, langs)
 				output = output.view(-1, output_dim)
+				tgt = targets.view(-1)
+				loss = criterion(output, tgt)
 			else:
-				output = model(examples, masks)
-				print(output.shape)
+				output = model(input_ids=examples, attention_mask=masks, labels=targets)
+				loss = output.loss
 			# output_dim = output.shape[-1]
 			# Shape [batch_size*max_length, output_dim]
 			# Shape [batch_size*max_length]
-			tgt = targets.view(-1)
-			print(tgt.shape)
-			exit(0)
 
 			# output = [batch size * tgt len - 1, output dim]
 			# tgt = [batch size * tgt len - 1]
-			loss = criterion(output, tgt)
+
 			loss.backward()
 			torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
 			optimizer.step()

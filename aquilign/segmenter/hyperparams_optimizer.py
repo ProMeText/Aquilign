@@ -39,7 +39,10 @@ import os
 
 def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, model_size):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
-	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
+	if architecture != "BERT":
+		lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
+	else:
+		lr = trial.suggest_float("learning_rate", 0.00004, 0.00005, log=False)
 	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 20)
 	hidden_size = hidden_size_multiplier * 8
 	linear_layers = trial.suggest_int("linear_layers", 1, 4)

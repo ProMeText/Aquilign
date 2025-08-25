@@ -42,7 +42,7 @@ class Trainer:
 		base_model_name = config_file["global"]["base_model_name"]
 		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
 		use_bert_tokenizer = config_file["global"]["use_bert_tokenizer"]
-		if use_pretrained_embeddings or use_bert_tokenizer:
+		if use_pretrained_embeddings or use_bert_tokenizer or architecture == "BERT":
 			os.environ["TOKENIZERS_PARALLELISM"] = "false"
 		data_augmentation = config_file["global"]["data_augmentation"]
 		self.freeze_embeddings = config_file["global"]["freeze_embeddings"]

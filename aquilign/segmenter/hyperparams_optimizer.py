@@ -15,11 +15,14 @@ parser.add_argument("-size", "--model_size", default=False,
 					help="Include parameters numbers in optimization")
 parser.add_argument("-d", "--debug", default=False,
 					help="Debug mode")
+parser.add_argument("-t", "--trials", default=50,
+					help="Debug mode")
 args = parser.parse_args()
 architecture = args.architecture
 debug = args.debug
 model_size = args.model_size
 parameters = args.parameters
+trials = args.trials
 
 with open(parameters, "r") as input_json:
 	config_file = json.load(input_json)
@@ -496,7 +499,7 @@ if __name__ == '__main__':
 						no_bert_dev_dataloader=not_pretrained_dev_dataloader,
 						architecture=architecture,
 						model_size=model_size)
-	study.optimize(objective, n_trials=50, callbacks=[print_trial_info])
+	study.optimize(objective, n_trials=trials, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt", "a") as f:
 		f.write((str(study.best_trial) + "\n"))
 		if model_size:

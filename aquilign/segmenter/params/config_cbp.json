@@ -20,6 +20,7 @@
     "use_pretrained_embeddings": false,
     "use_bert_tokenizer": false,
     "lr": 0.0002,
+    "workers": 16,
     "batch_size": 8
   },
   "architectures": {

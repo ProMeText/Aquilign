@@ -251,7 +251,7 @@ class Trainer:
 											 linear_layers=linear_layers,
 											 linear_layers_hidden_size=linear_layers_hidden_size,
 											 use_bert_tokenizer=use_bert_tokenizer,
-											 keep_bert_dimensions=keep_bert_dimension)
+											 keep_bert_dimensions=keep_bert_dimensions)
 		elif architecture == "gru":
 			self.model = models.GRU_Encoder(input_dim=self.input_dim,
 											 emb_dim=emb_dim,

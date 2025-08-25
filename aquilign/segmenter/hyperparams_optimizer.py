@@ -1,8 +1,26 @@
+import argparse
+import decimal
 import json
 import optuna
 import sys
 from functools import partial
-with open(sys.argv[1], "r") as input_json:
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-a", "--architecture", default="lstm",
+					help="Architecture to be tested")
+parser.add_argument("-p", "--parameters", default=None,
+					help="Path to parameters file")
+parser.add_argument("-r", "--reduce", default=False,
+					help="Force parameters numbers reduction")
+parser.add_argument("-d", "--debug", default=False,
+					help="Debug mode")
+args = parser.parse_args()
+architecture = args.architecture
+debug = args.debug
+reduce = args.reduce
+parameters = args.parameters
+
+with open(parameters, "r") as input_json:
 	config_file = json.load(input_json)
 if config_file["global"]["import"] != "":
 	sys.path.append(config_file["global"]["import"])
@@ -20,7 +38,7 @@ import sys
 
 
 
-def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, device):
+def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, reduce):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 20)
@@ -239,6 +257,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			for param in model.lang_embedding.parameters():
 				param.requires_grad = False
 	results = []
+	params_number = sum(p.numel() for p in model.parameters())
+	params_number_to_print = format(decimal.Decimal(params_number), '.4e')
 	for epoch in range(epochs):
 		model.train()
 		epoch_number = epoch + 1
@@ -287,10 +307,13 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 			f.write(f"Epoch {epoch_number}: weighted: {round(weighted_recall_precision, 4)}, F1: {round(f1[2], 4)} (recall: {round(recall[2], 4)}, precision: {round(precision[2], 4)})\n")
 			if epoch_number == epochs:
-				f.write(f"Nombre de paramètres: {sum(p.numel() for p in model.parameters())}")
+				f.write(f"Nombre de paramètres: {params_number_to_print}\n")
 	best_result = max(results)
 	print(f"Best epoch result: {best_result}")
-	return best_result
+	if reduce:
+		return best_result, params_number
+	else:
+		return best_result
 
 def evaluate(model,
 			 device,
@@ -348,18 +371,16 @@ def evaluate(model,
 def print_trial_info(study, trial):
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 		f.write(f"Trial {trial.number} - Paramètres : {trial.params}\n")
-		f.write(f"Valeur de la métrique : {trial.value}\n")
+		if not reduce:
+			f.write(f"Valeur de la métrique : {trial.value}\n")
 		f.write(f"---\n")
 
 if __name__ == '__main__':
-	architecture = sys.argv[2]
+
+
 	if os.path.exists(f"../trash/segmenter_hyperparasearch_{architecture}.txt"):
 		os.remove(f"../trash/segmenter_hyperparasearch_{architecture}.txt")
 
-	if len(sys.argv) == 4:
-		debug = True if sys.argv[3] == "True" else False
-	else:
-		debug = False
 	train_path = config_file["global"]["train"]
 	test_path = config_file["global"]["test"]
 	device = config_file["global"]["device"]
@@ -422,9 +443,17 @@ if __name__ == '__main__':
 											  data_augmentation=data_augmentation,
 											  tokenizer_name=base_model_name)
 
-
-	study = optuna.create_study(direction='maximize')
-	objective = partial(objective, bert_train_dataloader=pretrained_train_dataloader, bert_dev_dataloader=pretrained_dev_dataloader, no_bert_train_dataloader=not_pretrained_train_dataloader, no_bert_dev_dataloader=not_pretrained_dev_dataloader, architecture=architecture, device=device)
+	if reduce:
+		study = optuna.create_study(directions=['maximize', 'minimize'])
+	else:
+		study = optuna.create_study(direction='maximize')
+	objective = partial(objective,
+						bert_train_dataloader=pretrained_train_dataloader,
+						bert_dev_dataloader=pretrained_dev_dataloader,
+						no_bert_train_dataloader=not_pretrained_train_dataloader,
+						no_bert_dev_dataloader=not_pretrained_dev_dataloader,
+						architecture=architecture,
+						reduce=reduce)
 	study.optimize(objective, n_trials=50, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 		f.write((str(study.best_trial) + "\n"))

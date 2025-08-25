@@ -591,9 +591,9 @@ class Trainer:
 				masks = masks.to(self.device)
 			else:
 				examples, langs, targets = data
+				langs = langs.to(self.device)
 			examples = examples.to(self.device)
 			targets = targets.to(self.device)
-			langs = langs.to(self.device)
 			with torch.no_grad():
 				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
 				if self.architecture != "BERT":

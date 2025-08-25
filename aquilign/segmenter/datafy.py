@@ -72,7 +72,6 @@ class CustomTextDataset(Dataset):
                 examples = self.datafy.dev_padded_examples[idx]
                 masks = self.datafy.dev_attention_masks[idx]
                 labels = self.datafy.dev_padded_targets[idx]
-                langs = self.datafy.dev_langs[idx]
             return examples, masks, labels
         else:
             if self.mode == "train":

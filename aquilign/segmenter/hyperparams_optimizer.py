@@ -321,7 +321,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										 reverse_input_vocab=reverse_input_vocab,
 										 reverse_target_classes=reverse_target_classes,
 										 tgt_PAD_IDX=tgt_PAD_IDX,
-										 tokenizer=tokenizer)
+										 tokenizer=tokenizer,
+										 architecture=architecture)
 
 		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
 		# results.append(weighted_recall_precision)

@@ -9,6 +9,9 @@ import json
 import re
 import numpy as np
 
+from aquilign.segmenter.hyperparams_optimizer import architecture
+
+
 class SentenceBoundaryDataset(torch.utils.data.Dataset):
     def __init__(self, texts_and_labels, tokenizer):
         self.texts_and_labels = texts_and_labels
@@ -23,7 +26,7 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, dev_path, device, delimiter, output_dir, create_vocab, data_augmentation, tokenizer_name, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, debug=False, filter_by_lang=None, use_bert_tokenizer=False):
+    def __init__(self, mode, train_path, test_path, dev_path, device, delimiter, output_dir, create_vocab, data_augmentation, tokenizer_name, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, debug=False, filter_by_lang=None, use_bert_tokenizer=False, architecture="lstm"):
         self.datafy = Datafier(train_path,
                                test_path,
                                dev_path,
@@ -37,7 +40,9 @@ class CustomTextDataset(Dataset):
                                data_augmentation,
                                tokenizer_name=tokenizer_name,
                                filter_by_lang=filter_by_lang,
-                               use_bert_tokenizer=use_bert_tokenizer)
+                               use_bert_tokenizer=use_bert_tokenizer,
+                               architecture=architecture)
+        self.architecture = architecture
         self.mode = mode
         if mode == "train":
             self.datafy.create_train_corpus()
@@ -55,20 +60,37 @@ class CustomTextDataset(Dataset):
             return len(self.datafy.dev_padded_examples)
 
     def __getitem__(self, idx):
-        if self.mode == "train":
-            examples = self.datafy.train_padded_examples[idx]
-            labels = self.datafy.train_padded_targets[idx]
-            langs = self.datafy.train_langs[idx]
-        elif self.mode == "test":
-            examples = self.datafy.test_padded_examples[idx]
-            labels = self.datafy.test_padded_targets[idx]
-            langs = self.datafy.test_langs[idx]
+        if self.architecture == "BERT":
+            if self.mode == "train":
+                examples = self.datafy.train_padded_examples[idx]
+                masks = self.datafy.train_attention_masks[idx]
+                labels = self.datafy.train_padded_targets[idx]
+                langs = self.datafy.train_langs[idx]
+            elif self.mode == "test":
+                examples = self.datafy.test_padded_examples[idx]
+                masks = self.datafy.test_attention_masks[idx]
+                labels = self.datafy.test_padded_targets[idx]
+                langs = self.datafy.test_langs[idx]
+            else:
+                examples = self.datafy.dev_padded_examples[idx]
+                masks = self.datafy.dev_attention_masks[idx]
+                labels = self.datafy.dev_padded_targets[idx]
+                langs = self.datafy.dev_langs[idx]
+            return examples, masks, langs, labels
         else:
-            examples = self.datafy.dev_padded_examples[idx]
-            labels = self.datafy.dev_padded_targets[idx]
-            langs = self.datafy.dev_langs[idx]
-
-        return examples, langs, labels
+            if self.mode == "train":
+                examples = self.datafy.train_padded_examples[idx]
+                labels = self.datafy.train_padded_targets[idx]
+                langs = self.datafy.train_langs[idx]
+            elif self.mode == "test":
+                examples = self.datafy.test_padded_examples[idx]
+                labels = self.datafy.test_padded_targets[idx]
+                langs = self.datafy.test_langs[idx]
+            else:
+                examples = self.datafy.dev_padded_examples[idx]
+                labels = self.datafy.dev_padded_targets[idx]
+                langs = self.datafy.dev_langs[idx]
+            return examples, langs, labels
 
 
 class Datafier:
@@ -86,7 +108,8 @@ class Datafier:
                  data_augmentation,
                  tokenizer_name,
                  filter_by_lang=None,
-                 use_bert_tokenizer=False
+                 use_bert_tokenizer=False,
+                 architecture="lstm"
                  ):
         self.max_length_examples = 0
         self.frequency_dict = {}
@@ -124,6 +147,11 @@ class Datafier:
         self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
         full_corpus = self.train_data + self.test_data + self.dev_data
         assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
+        self.architecture = architecture
+        print(self.architecture)
+        if self.architecture == "BERT":
+            self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+
         if create_vocab:
             self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus)
             self.create_lang_vocab(full_corpus)
@@ -134,24 +162,6 @@ class Datafier:
             self.input_vocabulary = input_vocab
             self.lang_vocabulary = lang_vocab
 
-
-    def update_vocab(self, input_vocab):
-        """
-        This function updates the existing vocab with the new examples.
-        """
-        length_previous_vocab: int = len(input_vocab)
-        orig_list_of_characters: set = {char for char, _ in input_vocab.items()}
-        train_data_as_string: str = self.get_txt_as_str(self.train_path)
-        new_set_of_characters: set = utils.get_vocab(train_data_as_string)
-
-        # We want the new characters, no matter if some chars are not present in the new vocab.
-        unseen_chars = new_set_of_characters - orig_list_of_characters
-
-        # We compare the original vocab with the new one to create a merged vocab
-        # but we need to keep the order, i.e. to append new chars at the end of the dict
-        if len(unseen_chars) != 0:
-            for index, new_char in enumerate(list(unseen_chars)):
-                self.input_vocabulary[new_char] = (length_previous_vocab + index)
 
     def create_lang_vocab(self, data):
         langs = {item["lang"] for item in data}
@@ -220,7 +230,11 @@ class Datafier:
             full_corpus = self.train_data + self.remove_punctuation(self.train_data)
         else:
             full_corpus = self.train_data
-        train_padded_examples, train_langs, train_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
+        if self.architecture == "BERT":
+            train_padded_examples, train_attention_masks, train_langs, train_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
+            self.train_attention_masks = utils.tensorize(train_attention_masks)
+        else:
+            train_padded_examples, train_langs, train_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
         self.train_padded_examples = utils.tensorize(train_padded_examples)
         self.train_langs = utils.tensorize(train_langs)
         self.train_padded_targets = utils.tensorize(train_padded_targets)
@@ -235,7 +249,11 @@ class Datafier:
             full_corpus = self.test_data + self.remove_punctuation(self.test_data)
         else:
             full_corpus = self.test_data
-        test_padded_examples, test_langs, test_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
+        if self.architecture == "BERT":
+            test_padded_examples, test_attention_masks, test_langs, test_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
+            self.test_attention_masks = utils.tensorize(test_attention_masks)
+        else:
+            test_padded_examples, test_langs, test_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
         self.test_padded_examples = utils.tensorize(test_padded_examples)
         self.test_langs = utils.tensorize(test_langs)
         self.test_padded_targets = utils.tensorize(test_padded_targets)
@@ -249,7 +267,11 @@ class Datafier:
             full_corpus = self.dev_data + self.remove_punctuation(self.dev_data)
         else:
             full_corpus = self.dev_data
-        dev_padded_examples, dev_langs, dev_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
+        if self.architecture == "BERT":
+            dev_padded_examples, dev_attention_masks, dev_langs, dev_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
+            self.dev_attention_masks = utils.tensorize(dev_attention_masks)
+        else:
+            dev_padded_examples, dev_langs, dev_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
         self.dev_padded_examples = utils.tensorize(dev_padded_examples)
         self.dev_langs = utils.tensorize(dev_langs)
         self.dev_padded_targets = utils.tensorize(dev_padded_targets)
@@ -287,6 +309,7 @@ class Datafier:
         """
         assert data != [], "Error with the data when producing the corpus"
         examples = []
+        attention_masks = []
         targets = []
         langs = []
         ids = []
@@ -298,10 +321,14 @@ class Datafier:
             if self.filter_by_lang and lang != self.filter_by_lang:
                 continue
             # Si on veut utiliser des embeddings pré-entraînés, il faut tokéniser avec le tokéniseur maison
-            if self.use_pretrained_embeddings or self.use_bert_tokenizer:
+            if self.use_pretrained_embeddings or self.use_bert_tokenizer or self.architecture == "BERT":
                 try:
-                    example, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380)
+                    if self.architecture == "BERT":
+                        example, masks, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380, output_masks=True)
+                    else:
+                        example, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380)
                     ids.append(idents)
+                    attention_masks.append(masks.tolist())
                 except TypeError as e:
                     print("Passing.")
                     continue
@@ -334,7 +361,7 @@ class Datafier:
             print(max_length_targets)
             exit(0)
 
-        if self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
+        if architecture != "BERT" and self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
             pad_value = "[PAD]"
             padded_examples = []
             padded_targets = []
@@ -359,5 +386,8 @@ class Datafier:
             ids = np.concatenate(ids, axis=0)
             # targets = np.concatenate(targets, axis=0)
             targets = torch.stack(targets, dim=0)
+        if self.architecture == "BERT":
+            return ids, attention_masks, langs, targets
+        else:
             return ids, langs, targets
 

@@ -122,7 +122,7 @@ def get_token_max_length(train_texts, tokenizer):
     return max_length
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertSentenceToSubWordsAndLabels(sentence, tokenizer, delimiter="£",  max_length=380, verbose=False):
+def convertSentenceToSubWordsAndLabels(sentence, tokenizer, delimiter="£",  max_length=380, verbose=False, output_masks=False):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
     :param corpus: A list of dicts of the shape
@@ -169,7 +169,10 @@ def convertSentenceToSubWordsAndLabels(sentence, tokenizer, delimiter="£",  max
                                        f"new labels: {len(new_labels)}"
     # tensorize the new labels
     label = torch.tensor(new_labels)
-    return example, toks['input_ids'], label
+    if output_masks:
+        return example, toks['attention_mask'], toks['input_ids'], label
+    else:
+        return example, toks['input_ids'], label
 
 
 

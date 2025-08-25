@@ -64,40 +64,47 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		cnn_scale = trial.suggest_float("cnn_scale", 0, 0.8)
 
 	batch_size_multiplier = trial.suggest_int("batch_size", 2, 10)
-	if architecture != "transformers":
+	if architecture not in  ["transformers", "BERT"]:
 		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
 		batch_size = batch_size_multiplier * 8
 	else:
-		num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
+		if architecture == "transformers":
+			num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
 		batch_size = batch_size_multiplier * 4
-	# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
-	use_pretrained_embeddings = False
-	if use_pretrained_embeddings:
-		train_dataloader = bert_train_dataloader
-		dev_dataloader = bert_dev_dataloader
-		emb_dim = 100
-		use_bert_tokenizer = True
-	else:
-		use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
-		keep_bert_dimensions = False
-		emb_dim = trial.suggest_int("input_dim", 37, 50)
-		emb_dim *= 8
-		if use_bert_tokenizer:
+	if architecture != "BERT":
+		# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
+		use_pretrained_embeddings = False
+		if use_pretrained_embeddings:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
+			emb_dim = 100
+			use_bert_tokenizer = True
 		else:
-			train_dataloader = no_bert_train_dataloader
-			dev_dataloader = no_bert_dev_dataloader
-	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
-
-	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
-	if include_lang_metadata:
-		freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
-		lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
-		lang_emb_dim *=8
+			use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
+			keep_bert_dimensions = False
+			emb_dim = trial.suggest_int("input_dim", 37, 50)
+			emb_dim *= 8
+			if use_bert_tokenizer:
+				train_dataloader = bert_train_dataloader
+				dev_dataloader = bert_dev_dataloader
+			else:
+				train_dataloader = no_bert_train_dataloader
+				dev_dataloader = no_bert_dev_dataloader
+		freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
+		include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
+		if include_lang_metadata:
+			freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
+			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
+			lang_emb_dim *=8
+		else:
+			freeze_lang_embeddings = False
+			lang_emb_dim = 4
 	else:
-		freeze_lang_embeddings = False
-		lang_emb_dim = 4
+		train_dataloader = bert_train_dataloader
+		dev_dataloader = bert_dev_dataloader
+		use_pretrained_embeddings = False
+		include_lang_metadata = False
+
 
 	epochs = config_file["global"]["epochs"]
 	device = config_file["global"]["device"]
@@ -107,7 +114,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		device_name = torch.cuda.get_device_name(device)
 		print(f"Device name: {device_name}")
 
-	if use_pretrained_embeddings:
+	if architecture == "BERT" or use_pretrained_embeddings:
 		tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 	else:
 		tokenizer = None
@@ -226,6 +233,11 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 								  cnn_scale=cnn_scale,
 								  keep_bert_dimensions=keep_bert_dimensions
 								  )
+	elif architecture == "BERT":
+		from transformers import AutoModelForTokenClassification
+		model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
+
+
 
 	model.to(device)
 	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -263,7 +275,12 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		model.train()
 		epoch_number = epoch + 1
 		print(f"Epoch {str(epoch_number)}")
-		for examples, langs, targets in tqdm.tqdm(loaded_train_data, unit_scale=batch_size):
+		for data in tqdm.tqdm(loaded_train_data, unit_scale=batch_size):
+			if architecture == "BERT":
+				examples, masks, langs, targets = data
+				masks = masks.to(device)
+			else:
+				examples, langs, targets = data
 			examples = examples.to(device)
 			targets = targets.to(device)
 			langs = langs.to(device)
@@ -277,12 +294,18 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			# param.grad = None
 			optimizer.zero_grad()
 			# Shape [batch_size, max_length, output_dim]
-			output = model(examples, langs)
+			if architecture != "BERT":
+				output = model(examples, langs)
+				output = output.view(-1, output_dim)
+			else:
+				output = model(examples, masks)
+				print(output.shape)
 			# output_dim = output.shape[-1]
 			# Shape [batch_size*max_length, output_dim]
-			output = output.view(-1, output_dim)
 			# Shape [batch_size*max_length]
 			tgt = targets.view(-1)
+			print(tgt.shape)
+			exit(0)
 
 			# output = [batch size * tgt len - 1, output dim]
 			# tgt = [batch size * tgt len - 1]
@@ -399,7 +422,8 @@ if __name__ == '__main__':
 												use_pretrained_embeddings=True,
 												debug=debug,
 												data_augmentation=data_augmentation,
-												tokenizer_name=base_model_name)
+												tokenizer_name=base_model_name,
+												architecture=architecture)
 	pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
 											  train_path=train_path,
 											  test_path=test_path,
@@ -413,7 +437,8 @@ if __name__ == '__main__':
 											  use_pretrained_embeddings=True,
 											  debug=debug,
 											  data_augmentation=data_augmentation,
-											  tokenizer_name=base_model_name)
+											  tokenizer_name=base_model_name,
+												architecture=architecture)
 
 
 	not_pretrained_train_dataloader = datafy.CustomTextDataset("train",
@@ -427,7 +452,8 @@ if __name__ == '__main__':
 												use_pretrained_embeddings=False,
 												debug=debug,
 												data_augmentation=data_augmentation,
-												tokenizer_name=base_model_name)
+												tokenizer_name=base_model_name,
+												architecture=architecture)
 	not_pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
 											  train_path=train_path,
 											  test_path=test_path,
@@ -441,7 +467,8 @@ if __name__ == '__main__':
 											  use_pretrained_embeddings=False,
 											  debug=debug,
 											  data_augmentation=data_augmentation,
-											  tokenizer_name=base_model_name)
+											  tokenizer_name=base_model_name,
+												architecture=architecture)
 
 	if reduce:
 		study = optuna.create_study(directions=['maximize', 'minimize'])
@@ -457,5 +484,9 @@ if __name__ == '__main__':
 	study.optimize(objective, n_trials=50, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
 		f.write((str(study.best_trial) + "\n"))
+		if reduce:
+			f.write((str(study.best_trials) + "\n"))
+		else:
+			f.write((str(study.best_trial) + "\n"))
 		f.write(str(study.best_params))
 	print("Best Hyperparameters:", study.best_params)

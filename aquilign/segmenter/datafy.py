@@ -149,19 +149,17 @@ class Datafier:
         self.architecture = architecture
         if self.architecture == "BERT":
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-            if not create_vocab:
-                self.lang_vocabulary = lang_vocab
-            else:
-                self.create_lang_vocab(full_corpus)
-        if create_vocab:
-            self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus)
-            self.create_lang_vocab(full_corpus)
-        elif self.use_pretrained_embeddings or self.use_bert_tokenizer:
-            self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-            self.create_lang_vocab(full_corpus)
+            self.lang_vocabulary = None
         else:
-            self.input_vocabulary = input_vocab
-            self.lang_vocabulary = lang_vocab
+            if create_vocab:
+                self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus)
+                self.create_lang_vocab(full_corpus)
+            elif self.use_pretrained_embeddings or self.use_bert_tokenizer:
+                self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+                self.create_lang_vocab(full_corpus)
+            else:
+                self.input_vocabulary = input_vocab
+                self.lang_vocabulary = lang_vocab
 
 
     def create_lang_vocab(self, data):
@@ -351,7 +349,8 @@ class Datafier:
 
             examples.append(example)
             targets.append(target)
-            langs.append(self.lang_vocabulary[lang])
+            if not self.architecture == "BERT":
+                langs.append(self.lang_vocabulary[lang])
 
 
         self.max_length_examples = max([len(example) for example in examples])

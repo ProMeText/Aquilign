@@ -28,6 +28,7 @@
       "bidirectional": true,
       "lstm_dropout": null,
       "positional_embeddings": true,
+      "keep_bert_dimensions": true,
       "lstm_hidden_size": 64,
       "num_lstm_layers": 2,
       "add_attention_layer": false
@@ -52,6 +53,7 @@
       "add_attention_layer": true,
       "num_heads": 8,
       "kernel_size": 5,
+      "keep_bert_dimensions": true,
       "dropout": 0.5,
       "cnn_scale": 0.5,
       "num_cnn_layers": 10

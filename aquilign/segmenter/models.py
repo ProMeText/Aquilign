@@ -241,14 +241,16 @@ class LSTM_Encoder(nn.Module):
 				 pretrained_weights:np.ndarray,
 				 linear_layers:int,
 				 linear_layers_hidden_size:int,
-				 use_bert_tokenizer:bool):
+				 use_bert_tokenizer:bool,
+				 keep_bert_dimension:bool):
 		super().__init__()
 
 		# On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
 		if load_pretrained_embeddings or use_bert_tokenizer:
 			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
 			self.input_dim = 119547
-			emb_dim = 768
+			if keep_bert_dimension:
+				emb_dim = 768
 			# Ici on vérifiera le paramètre _freeze
 			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
 			# Censé initialiser les paramètres avec les poids pré-entraînés
@@ -386,7 +388,8 @@ class CnnEncoder(nn.Module):
 				 load_pretrained_embeddings,
 				 use_bert_tokenizer,
 				 pretrained_weights,
-				 cnn_scale):
+				 cnn_scale,
+				 keep_bert_dimensions):
 		super().__init__()
 
 		assert kernel_size % 2 == 1, "Kernel size must be odd!"
@@ -405,8 +408,8 @@ class CnnEncoder(nn.Module):
 		if load_pretrained_embeddings or use_bert_tokenizer:
 			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
 			self.input_dim = 119547
-			emb_dim = 768
-			# Ici on vérifiera le paramètre _freeze
+			if keep_bert_dimensions:
+				emb_dim = 768
 			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
 			# Censé initialiser les paramètres avec les poids pré-entraînés
 			self.embedding.weight.data = torch.tensor(pretrained_weights)

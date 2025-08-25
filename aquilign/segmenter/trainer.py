@@ -20,7 +20,10 @@ import sys
 class Trainer:
 	def  __init__(self,
 				  config_file):
-
+		"""
+		Main Class trainer
+		TODO: add the possibility to have bert tokenization, but with smaller embeddings dimension (300?)
+		"""
 		architecture = sys.argv[2]
 		if len(sys.argv) == 4:
 			self.debug = True if sys.argv[3] == "True" else False
@@ -57,6 +60,7 @@ class Trainer:
 			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
 			lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
 			bidirectional = config_file["architectures"][architecture]["bidirectional"]
+			keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
 		elif architecture == "gru":
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
 			hidden_size = config_file["architectures"][architecture]["hidden_size"]
@@ -246,7 +250,8 @@ class Trainer:
 											 pretrained_weights=weights,
 											 linear_layers=linear_layers,
 											 linear_layers_hidden_size=linear_layers_hidden_size,
-											 use_bert_tokenizer=use_bert_tokenizer)
+											 use_bert_tokenizer=use_bert_tokenizer,
+											 keep_bert_dimensions=keep_bert_dimension)
 		elif architecture == "gru":
 			self.model = models.GRU_Encoder(input_dim=self.input_dim,
 											 emb_dim=emb_dim,
@@ -284,7 +289,8 @@ class Trainer:
 										linear_layers_hidden_size=linear_layers_hidden_size,
 										linear_layers=linear_layers,
 									   pretrained_weights=weights,
-										cnn_scale=cnn_scale
+										cnn_scale=cnn_scale,
+										   keep_bert_dimensions=keep_bert_dimensions
 									   )
 		self.architecture = architecture
 		self.model.to(self.device)

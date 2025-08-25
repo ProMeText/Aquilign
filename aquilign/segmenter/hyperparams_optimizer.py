@@ -60,8 +60,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		emb_dim = 100
 		use_bert_tokenizer = True
 	else:
-		# use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
-		use_bert_tokenizer = False
+		use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
 		if architecture == "transformers" or add_attention_layer:
 			emb_dim = trial.suggest_int("input_dim", 25, 37)
 		else:
@@ -70,6 +69,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		if use_bert_tokenizer:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
+			keep_bert_dimensions = trial.suggest_categorical("keep_bert_dimensions", [False, True])
 		else:
 			train_dataloader = no_bert_train_dataloader
 			dev_dataloader = no_bert_dev_dataloader
@@ -154,7 +154,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										 pretrained_weights=weights,
 										 linear_layers=linear_layers,
 										 linear_layers_hidden_size=linear_layers_hidden_size,
-										 use_bert_tokenizer=use_bert_tokenizer)
+										 use_bert_tokenizer=use_bert_tokenizer,
+										 keep_bert_dimensions=keep_bert_dimensions)
 	elif architecture == "transformers":
 		model = models.TransformerModel(input_dim=input_dim,
 											 emb_dim=emb_dim,
@@ -207,7 +208,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 								  linear_layers_hidden_size=linear_layers_hidden_size,
 								  linear_layers=linear_layers,
 								  pretrained_weights=weights,
-								  cnn_scale=cnn_scale
+								  cnn_scale=cnn_scale,
+								  keep_bert_dimensions=keep_bert_dimensions
 								  )
 
 	model.to(device)

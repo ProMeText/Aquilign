@@ -42,75 +42,75 @@ import os
 
 def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, model_size):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
-	if architecture != "BERT":
-		lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
-	else:
+	if architecture == "BERT":
 		lr = trial.suggest_float("learning_rate", 0.00004, 0.00005, log=False)
-	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 20)
-	hidden_size = hidden_size_multiplier * 8
-	linear_layers = trial.suggest_int("linear_layers", 1, 4)
-	linear_layers_hidden_size = trial.suggest_categorical("linear_layers_hidden_size", [32, 64, 128, 256])
-	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
-	if architecture == "lstm":
-		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 4)
-		linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
-		if num_lstm_layers == 1:
-			lstm_dropout = 0
-		else:
-			lstm_dropout = trial.suggest_float("lstm_dropout", 0, 0.8)
-	elif architecture == "gru":
-		num_gru_layers = trial.suggest_int("num_gru_layers", 1, 2)
-		gru_dropout = trial.suggest_float("gru_dropout", 0, 0.5)
-	elif architecture == "cnn":
-		num_cnn_layers = trial.suggest_int("num_cnn_layers", 1, 15)
-		positional_embeddings = trial.suggest_categorical("positional_embeddings", [False, True])
-		kernel_size = trial.suggest_int("kernel_size", 1, 7)
-		kernel_size = kernel_size * 2 + 1
-		cnn_dropout = trial.suggest_float("cnn_dropout", 0, 0.8)
-		cnn_scale = trial.suggest_float("cnn_scale", 0, 0.8)
-		linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
-
-	batch_size_multiplier = trial.suggest_int("batch_size", 2, 10)
-	if architecture not in  ["transformers", "BERT"]:
-		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
-		batch_size = batch_size_multiplier * 8
 	else:
-		if architecture == "transformers":
-			num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
-		batch_size = batch_size_multiplier * 4
-	if architecture != "BERT":
-		# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
-		use_pretrained_embeddings = False
-		if use_pretrained_embeddings:
-			train_dataloader = bert_train_dataloader
-			dev_dataloader = bert_dev_dataloader
-			emb_dim = 100
-			use_bert_tokenizer = True
+		lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
+		hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 20)
+		hidden_size = hidden_size_multiplier * 8
+		linear_layers = trial.suggest_int("linear_layers", 1, 4)
+		linear_layers_hidden_size = trial.suggest_categorical("linear_layers_hidden_size", [32, 64, 128, 256])
+		balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
+		if architecture == "lstm":
+			num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 4)
+			linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
+			if num_lstm_layers == 1:
+				lstm_dropout = 0
+			else:
+				lstm_dropout = trial.suggest_float("lstm_dropout", 0, 0.8)
+		elif architecture == "gru":
+			num_gru_layers = trial.suggest_int("num_gru_layers", 1, 2)
+			gru_dropout = trial.suggest_float("gru_dropout", 0, 0.5)
+		elif architecture == "cnn":
+			num_cnn_layers = trial.suggest_int("num_cnn_layers", 1, 15)
+			positional_embeddings = trial.suggest_categorical("positional_embeddings", [False, True])
+			kernel_size = trial.suggest_int("kernel_size", 1, 7)
+			kernel_size = kernel_size * 2 + 1
+			cnn_dropout = trial.suggest_float("cnn_dropout", 0, 0.8)
+			cnn_scale = trial.suggest_float("cnn_scale", 0, 0.8)
+			linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
+
+		batch_size_multiplier = trial.suggest_int("batch_size", 2, 10)
+		if architecture not in  ["transformers", "BERT"]:
+			add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
+			batch_size = batch_size_multiplier * 8
 		else:
-			use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
-			keep_bert_dimensions = False
-			emb_dim = trial.suggest_int("input_dim", 37, 50)
-			emb_dim *= 8
-			if use_bert_tokenizer:
+			if architecture == "transformers":
+				num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
+			batch_size = batch_size_multiplier * 4
+		if architecture != "BERT":
+			# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
+			use_pretrained_embeddings = False
+			if use_pretrained_embeddings:
 				train_dataloader = bert_train_dataloader
 				dev_dataloader = bert_dev_dataloader
+				emb_dim = 100
+				use_bert_tokenizer = True
 			else:
-				train_dataloader = no_bert_train_dataloader
-				dev_dataloader = no_bert_dev_dataloader
-		freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
-		include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
-		if include_lang_metadata:
-			freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
-			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
-			lang_emb_dim *=8
+				use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
+				keep_bert_dimensions = False
+				emb_dim = trial.suggest_int("input_dim", 37, 50)
+				emb_dim *= 8
+				if use_bert_tokenizer:
+					train_dataloader = bert_train_dataloader
+					dev_dataloader = bert_dev_dataloader
+				else:
+					train_dataloader = no_bert_train_dataloader
+					dev_dataloader = no_bert_dev_dataloader
+			freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
+			include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
+			if include_lang_metadata:
+				freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
+				lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
+				lang_emb_dim *=8
+			else:
+				freeze_lang_embeddings = False
+				lang_emb_dim = 4
 		else:
-			freeze_lang_embeddings = False
-			lang_emb_dim = 4
-	else:
-		train_dataloader = bert_train_dataloader
-		dev_dataloader = bert_dev_dataloader
-		use_pretrained_embeddings = False
-		include_lang_metadata = False
+			train_dataloader = bert_train_dataloader
+			dev_dataloader = bert_dev_dataloader
+			use_pretrained_embeddings = False
+			include_lang_metadata = False
 
 
 	epochs = config_file["global"]["epochs"]

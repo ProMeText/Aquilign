@@ -375,7 +375,7 @@ def evaluate(model,
 			if architecture != "BERT":
 				preds = model(examples, langs)
 			else:
-				preds = model(input_ids=examples, attention_mask=masks, labels=targets)
+				preds = model(input_ids=examples, attention_mask=masks, labels=targets).logits
 			all_preds.append(preds)
 			all_targets.append(targets)
 			all_examples.append(examples)

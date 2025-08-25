@@ -149,7 +149,10 @@ class Datafier:
         self.architecture = architecture
         if self.architecture == "BERT":
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-            self.create_lang_vocab(full_corpus)
+            if not create_vocab:
+                self.lang_vocabulary = lang_vocab
+            else:
+                self.create_lang_vocab(full_corpus)
         if create_vocab:
             self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus)
             self.create_lang_vocab(full_corpus)

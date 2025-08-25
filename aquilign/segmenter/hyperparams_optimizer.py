@@ -344,28 +344,37 @@ def evaluate(model,
 			 reverse_input_vocab,
 			 reverse_target_classes,
 			 tgt_PAD_IDX,
-			 tokenizer):
+			 tokenizer,
+			 architecture):
 	"""
 	Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
 	"""
 	print("Evaluating model on dev data")
 	debug = False
-	epoch_accuracy = []
-	epoch_loss = []
-	# Timer = utils.Timer()
 	all_preds = []
 	all_targets = []
 	all_examples = []
 	model.eval()
-	for examples, langs, targets in tqdm.tqdm(loaded_dev_data, unit_scale=batch_size):
+	for data in tqdm.tqdm(loaded_dev_data, unit_scale=batch_size):
+		if architecture == "BERT":
+			examples, masks, langs, targets = data
+			masks = masks.to(device)
+		else:
+			examples, langs, targets = data
+		examples = examples.to(device)
+		targets = targets.to(device)
+		langs = langs.to(device)
+
 		# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
 		# Timer.start_timer("preds")
 		tensor_examples = examples.to(device)
 		tensor_langs = langs.to(device)
-		tensor_target = targets.to(device)
 		with torch.no_grad():
 			# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-			preds = model(tensor_examples, tensor_langs)
+			if architecture != "BERT":
+				preds = model(examples, langs)
+			else:
+				preds = model(input_ids=examples, attention_mask=masks, labels=targets)
 			all_preds.append(preds)
 			all_targets.append(targets)
 			all_examples.append(examples)

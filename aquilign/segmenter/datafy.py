@@ -325,10 +325,10 @@ class Datafier:
                 try:
                     if self.architecture == "BERT":
                         example, masks, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380, output_masks=True)
+                        attention_masks.append(masks.tolist())
                     else:
                         example, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380)
                     ids.append(idents)
-                    attention_masks.append(masks.tolist())
                 except TypeError as e:
                     print("Passing.")
                     continue

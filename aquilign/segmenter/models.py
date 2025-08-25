@@ -254,8 +254,9 @@ class LSTM_Encoder(nn.Module):
 			# Ici on vérifiera le paramètre _freeze
 			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
 			# Censé initialiser les paramètres avec les poids pré-entraînés
-			self.embedding.weight.data = torch.tensor(pretrained_weights)
-			print(f"Pretrained embeddings loaded dtype: {pretrained_weights.dtype}")
+			if load_pretrained_embeddings:
+				self.embedding.weight.data = torch.tensor(pretrained_weights)
+				print(f"Pretrained embeddings loaded dtype: {pretrained_weights.dtype}")
 		else:
 			# Sinon on utilise l'initialisation normale
 			self.embedding = nn.Embedding(input_dim, emb_dim)
@@ -272,11 +273,11 @@ class LSTM_Encoder(nn.Module):
 			lstm_input_size = emb_dim + lang_emb_dim
 		else:
 			lstm_input_size = emb_dim
-
 		self.bidi = bidirectional
 		# self.dropout = nn.Dropout(dropout)
 		if not lstm_dropout:
 			lstm_dropout = 0
+		print(lstm_input_size)
 		self.lstm = nn.LSTM(input_size=lstm_input_size,
 							hidden_size=lstm_hidden_size,
 							num_layers=num_lstm_layers,
@@ -343,7 +344,6 @@ class LSTM_Encoder(nn.Module):
 			embedded = torch.cat((embedded, projected_lang), 2)
 		else:
 			embedded = self.embedding(src)
-
 		if self.positional_embeddings:
 			embedded = self.pos1Dsum(embedded)  #
 		if self.bidi:

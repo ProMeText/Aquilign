@@ -459,7 +459,8 @@ class Trainer:
 												   predictions=cat_preds,
 												   id_to_word=self.reverse_input_vocab,
 												   word_to_id=self.input_vocab,
-												   output_dir = self.output_dir)
+												   output_dir = self.output_dir,
+												   name="global")
 		results = eval.compute_metrics(predictions=cat_preds,
 									   labels=cat_targets,
 									   examples=cat_examples,

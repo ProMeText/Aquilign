@@ -18,7 +18,7 @@ def compute_ambiguity_metrics(tokens,
                               id_to_word,
                               word_to_id,
                               output_dir,
-                              name:None):
+                              name=None):
     """
     This function produces a confusion matrix for the ambiguous tokens.
     """

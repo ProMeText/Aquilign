@@ -22,7 +22,7 @@ architecture = args.architecture
 debug = args.debug
 model_size = args.model_size
 parameters = args.parameters
-trials = args.trials
+trials = int(args.trials)
 
 with open(parameters, "r") as input_json:
 	config_file = json.load(input_json)

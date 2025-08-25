@@ -64,18 +64,16 @@ class CustomTextDataset(Dataset):
                 examples = self.datafy.train_padded_examples[idx]
                 masks = self.datafy.train_attention_masks[idx]
                 labels = self.datafy.train_padded_targets[idx]
-                langs = self.datafy.train_langs[idx]
             elif self.mode == "test":
                 examples = self.datafy.test_padded_examples[idx]
                 masks = self.datafy.test_attention_masks[idx]
                 labels = self.datafy.test_padded_targets[idx]
-                langs = self.datafy.test_langs[idx]
             else:
                 examples = self.datafy.dev_padded_examples[idx]
                 masks = self.datafy.dev_attention_masks[idx]
                 labels = self.datafy.dev_padded_targets[idx]
                 langs = self.datafy.dev_langs[idx]
-            return examples, masks, langs, labels
+            return examples, masks, labels
         else:
             if self.mode == "train":
                 examples = self.datafy.train_padded_examples[idx]

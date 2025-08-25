@@ -377,7 +377,7 @@ class Trainer:
 			print(f"Epoch {str(epoch_number)}")
 			for data in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
 				if self.architecture == "BERT":
-					examples, masks, langs, targets = data
+					examples, masks, targets = data
 					masks = masks.to(self.device)
 				else:
 					examples, langs, targets = data
@@ -433,7 +433,7 @@ class Trainer:
 		self.model.eval()
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			if self.architecture == "BERT":
-				examples, masks, langs, targets = data
+				examples, masks, targets = data
 				masks = masks.to(self.device)
 			else:
 				examples, langs, targets = data
@@ -523,7 +523,7 @@ class Trainer:
 			all_examples = []
 			for data in tqdm.tqdm(loaded_test_data_per_lang[lang], unit_scale=self.batch_size):
 				if self.architecture == "BERT":
-					examples, masks, langs, targets = data
+					examples, masks, targets = data
 					masks = masks.to(self.device)
 				else:
 					examples, langs, targets = data
@@ -587,7 +587,7 @@ class Trainer:
 		self.model.eval()
 		for data in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):
 			if self.architecture == "BERT":
-				examples, masks, langs, targets = data
+				examples, masks, targets = data
 				masks = masks.to(self.device)
 			else:
 				examples, langs, targets = data

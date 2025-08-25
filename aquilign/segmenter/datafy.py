@@ -9,7 +9,6 @@ import json
 import re
 import numpy as np
 
-from aquilign.segmenter.hyperparams_optimizer import architecture
 
 
 class SentenceBoundaryDataset(torch.utils.data.Dataset):
@@ -360,7 +359,7 @@ class Datafier:
             print(max_length_targets)
             exit(0)
 
-        if architecture != "BERT" and self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
+        if self.architecture != "BERT" and self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
             pad_value = "[PAD]"
             padded_examples = []
             padded_targets = []

@@ -1,8 +1,6 @@
 import re
 from platform import architecture
-
 from transformers import AutoTokenizer
-
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
 import aquilign.segmenter.eval as eval
@@ -17,6 +15,8 @@ import os
 import glob
 import shutil
 import sys
+
+
 class Trainer:
 	def  __init__(self,
 				  config_file):

@@ -1,6 +1,4 @@
 import random
-import re
-import torch
 import sys
 import json
 with open(sys.argv[1], "r") as input_json:

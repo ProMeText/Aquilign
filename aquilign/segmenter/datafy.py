@@ -146,7 +146,7 @@ class Datafier:
         self.architecture = architecture
         if self.architecture == "BERT":
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-            self.lang_vocabulary = None
+            self.create_lang_vocab(full_corpus)
             self.input_vocabulary = self.tokenizer.get_vocab()
         else:
             if create_vocab:

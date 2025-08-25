@@ -210,6 +210,7 @@ class Trainer:
 		self.include_lang_metadata = include_lang_metadata
 		self.best_model = ""
 		self.input_dim = len(self.input_vocab)
+		self.architecture = architecture
 
 
 		# Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
@@ -292,6 +293,10 @@ class Trainer:
 										cnn_scale=cnn_scale,
 										   keep_bert_dimensions=keep_bert_dimensions
 									   )
+		elif architecture == "BERT":
+			from transformers import AutoModelForTokenClassification
+			self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
+
 		self.architecture = architecture
 		self.model.to(self.device)
 		self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
@@ -368,33 +373,42 @@ class Trainer:
 			epoch_number = epoch + 1
 			last_epoch = epoch == range(self.epochs)[-1]
 			print(f"Epoch {str(epoch_number)}")
-			for examples, langs, targets in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
+			for data in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
+				if architecture == "BERT":
+					examples, masks, langs, targets = data
+					masks = masks.to(self.device)
+				else:
+					examples, langs, targets = data
+				examples = examples.to(self.device)
+				targets = targets.to(self.device)
+				langs = langs.to(self.device)
 				# Shape [batch_size, max_length]
-				# tensor_examples = examples.to(self.device)
+				# tensor_examples = examples.to(device)
 				# Shape [batch_size, max_length]
-				# tensor_targets = targets.to(self.device)
-				if not self.all_dataset_on_device:
-					examples = examples.to(self.device)
-					targets = targets.to(self.device)
-					langs = langs.to(self.device)
+				# tensor_targets = targets.to(device)
 
 				# https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
-				# for param in self.model.parameters():
-					# param.grad = None
+				# for param in model.parameters():
+				# param.grad = None
 				self.optimizer.zero_grad()
 				# Shape [batch_size, max_length, output_dim]
-				output = self.model(examples, langs)
+				if architecture != "BERT":
+					output = self.model(examples, langs)
+					output = output.view(-1, self.output_dim)
+					tgt = targets.view(-1)
+					loss = self.criterion(output, tgt)
+				else:
+					output = self.model(input_ids=examples, attention_mask=masks, labels=targets)
+					loss = output.loss
 				# output_dim = output.shape[-1]
 				# Shape [batch_size*max_length, output_dim]
-				output = output.view(-1, self.output_dim)
 				# Shape [batch_size*max_length]
-				tgt = targets.view(-1)
 
 				# output = [batch size * tgt len - 1, output dim]
 				# tgt = [batch size * tgt len - 1]
-				loss = self.criterion(output, tgt)
+
 				loss.backward()
-				torch.nn.utils.clip_grad_norm_(self.model.parameters(), clip)
+				torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.1)
 				self.optimizer.step()
 
 			# self.model.eval()
@@ -555,25 +569,24 @@ class Trainer:
 		all_targets = []
 		all_examples = []
 		self.model.eval()
-		for examples, langs, targets in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):
-			# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
-			# Timer.start_timer("preds")
-			if not self.all_dataset_on_device:
-				tensor_examples = examples.to(self.device)
-				tensor_langs = langs.to(self.device)
-				tensor_target = targets.to(self.device)
+		for data in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):
+			if architecture == "BERT":
+				examples, masks, langs, targets = data
+				masks = masks.to(self.device)
+			else:
+				examples, langs, targets = data
+			examples = examples.to(self.device)
+			targets = targets.to(self.device)
+			langs = langs.to(self.device)
 			with torch.no_grad():
 				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-				preds = self.model(tensor_examples, tensor_langs)
+				if architecture != "BERT":
+					preds = self.model(examples, langs)
+				else:
+					preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
 				all_preds.append(preds)
 				all_targets.append(targets)
 				all_examples.append(examples)
-
-				if loss_calculation:
-					output_dim = preds.shape[-1]
-					output = preds.contiguous().view(-1, output_dim)
-					tgt = tensor_target.contiguous().view(-1)
-					loss = self.criterion(output, tgt)
 
 		# On supprime les batchs:
 		cat_preds = torch.cat(all_preds, dim=0) # [num_examples, max_dim, num_classes]

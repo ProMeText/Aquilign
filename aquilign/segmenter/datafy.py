@@ -148,7 +148,6 @@ class Datafier:
         full_corpus = self.train_data + self.test_data + self.dev_data
         assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
         self.architecture = architecture
-        print(self.architecture)
         if self.architecture == "BERT":
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 

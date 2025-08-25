@@ -504,13 +504,15 @@ class Trainer:
 														  debug=self.debug,
 														  data_augmentation=self.data_augmentation,
 														  filter_by_lang=lang,
-														 tokenizer_name=self.base_model_name)
+														 tokenizer_name=self.base_model_name,
+														  architecture=self.architecture)
 			loaded_test_data_per_lang[lang] = DataLoader(current_dataloader,
 															  batch_size=batch_size,
 															  shuffle=False,
 															  num_workers=self.workers,
 															  pin_memory=False,
-															  drop_last=True)
+															  drop_last=True,
+														  architecture=self.architecture)
 
 
 

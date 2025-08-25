@@ -91,7 +91,7 @@ class Trainer:
 		self.timestamp = now.strftime("%d-%m-%Y_%H:%M:%S")
 		self.all_dataset_on_device = False
 		print("Loading data")
-		if use_pretrained_embeddings:
+		if use_pretrained_embeddings or architecture == "BERT":
 			create_vocab = False
 			self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 		else:

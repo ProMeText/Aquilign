@@ -1,5 +1,4 @@
 import re
-from platform import architecture
 from transformers import AutoTokenizer
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
@@ -374,7 +373,7 @@ class Trainer:
 			last_epoch = epoch == range(self.epochs)[-1]
 			print(f"Epoch {str(epoch_number)}")
 			for data in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
-				if architecture == "BERT":
+				if self.architecture == "BERT":
 					examples, masks, langs, targets = data
 					masks = masks.to(self.device)
 				else:
@@ -392,7 +391,7 @@ class Trainer:
 				# param.grad = None
 				self.optimizer.zero_grad()
 				# Shape [batch_size, max_length, output_dim]
-				if architecture != "BERT":
+				if self.architecture != "BERT":
 					output = self.model(examples, langs)
 					output = output.view(-1, self.output_dim)
 					tgt = targets.view(-1)
@@ -429,14 +428,21 @@ class Trainer:
 		all_examples = []
 		self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
 		self.model.eval()
-		for examples, langs, targets in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
-			if not self.all_dataset_on_device:
-				tensor_examples = examples.to(self.device)
-				tensor_langs = langs.to(self.device)
-				tensor_target = targets.to(self.device)
+		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
+			if self.architecture == "BERT":
+				examples, masks, langs, targets = data
+				masks = masks.to(self.device)
+			else:
+				examples, langs, targets = data
+			examples = examples.to(self.device)
+			targets = targets.to(self.device)
+			langs = langs.to(self.device)
 			with torch.no_grad():
 				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-				preds = self.model(tensor_examples, tensor_langs)
+				if self.architecture != "BERT":
+					preds = self.model(examples, langs)
+				else:
+					preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
 				all_preds.append(preds)
 				all_targets.append(targets)
 				all_examples.append(examples)
@@ -512,14 +518,21 @@ class Trainer:
 			all_preds = []
 			all_targets = []
 			all_examples = []
-			for examples, langs, targets in tqdm.tqdm(loaded_test_data_per_lang[lang], unit_scale=batch_size):
-				if not self.all_dataset_on_device:
-					tensor_examples = examples.to(self.device)
-					tensor_langs = langs.to(self.device)
-					tensor_target = targets.to(self.device)
+			for data in tqdm.tqdm(loaded_test_data_per_lang[lang], unit_scale=self.batch_size):
+				if self.architecture == "BERT":
+					examples, masks, langs, targets = data
+					masks = masks.to(self.device)
+				else:
+					examples, langs, targets = data
+				examples = examples.to(self.device)
+				targets = targets.to(self.device)
+				langs = langs.to(self.device)
 				with torch.no_grad():
 					# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-					preds = self.model(tensor_examples, tensor_langs)
+					if self.architecture != "BERT":
+						preds = self.model(examples, langs)
+					else:
+						preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
 					all_preds.append(preds)
 					all_targets.append(targets)
 					all_examples.append(examples)
@@ -570,7 +583,7 @@ class Trainer:
 		all_examples = []
 		self.model.eval()
 		for data in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):
-			if architecture == "BERT":
+			if self.architecture == "BERT":
 				examples, masks, langs, targets = data
 				masks = masks.to(self.device)
 			else:
@@ -580,7 +593,7 @@ class Trainer:
 			langs = langs.to(self.device)
 			with torch.no_grad():
 				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-				if architecture != "BERT":
+				if self.architecture != "BERT":
 					preds = self.model(examples, langs)
 				else:
 					preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits

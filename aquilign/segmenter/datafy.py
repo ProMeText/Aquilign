@@ -358,26 +358,26 @@ class Datafier:
             print(np.mean([len(target) for target in targets]))
             print(max_length_targets)
             exit(0)
+        if self.architecture != "BERT":
+            if self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
+                pad_value = "[PAD]"
+                padded_examples = []
+                padded_targets = []
+                for example in examples:
+                    example_length = len(example)
+                    example = example + [pad_value for _ in range(self.max_length_examples - example_length)]
+                    example = ["[PAD]"] + example
+                    example = [self.input_vocabulary[token] for token in example]
+                    padded_examples.append(example)
 
-        if self.architecture != "BERT" or (self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False):
-            pad_value = "[PAD]"
-            padded_examples = []
-            padded_targets = []
-            for example in examples:
-                example_length = len(example)
-                example = example + [pad_value for _ in range(self.max_length_examples - example_length)]
-                example = ["[PAD]"] + example
-                example = [self.input_vocabulary[token] for token in example]
-                padded_examples.append(example)
 
-
-            for target in targets:
-                target_length = len(target)
-                target = target + [pad_value for _ in range(max_length_targets - target_length)]
-                target = ["[PAD]"] + target
-                target = [self.target_classes[token] for token in target]
-                padded_targets.append(target)
-            return padded_examples, langs, padded_targets
+                for target in targets:
+                    target_length = len(target)
+                    target = target + [pad_value for _ in range(max_length_targets - target_length)]
+                    target = ["[PAD]"] + target
+                    target = [self.target_classes[token] for token in target]
+                    padded_targets.append(target)
+                return padded_examples, langs, padded_targets
 
         else:
             # On doit convertir la liste d'arrays vers un arrays, on concatène sur la dimension 0 (lignes)

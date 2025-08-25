@@ -23,13 +23,13 @@ import sys
 def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, device):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
-	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 16)
+	hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 20)
 	hidden_size = hidden_size_multiplier * 8
 	linear_layers = trial.suggest_int("linear_layers", 1, 4)
 	linear_layers_hidden_size = trial.suggest_categorical("linear_layers_hidden_size", [32, 64, 128, 256])
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	if architecture == "lstm":
-		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 2)
+		num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 4)
 		if num_lstm_layers == 1:
 			lstm_dropout = 0
 		else:
@@ -61,19 +61,15 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		use_bert_tokenizer = True
 	else:
 		use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
-		if architecture == "transformers" or add_attention_layer:
-			emb_dim = trial.suggest_int("input_dim", 25, 37)
-		else:
-			emb_dim = trial.suggest_int("input_dim", 25, 50)
+		keep_bert_dimensions = False
+		emb_dim = trial.suggest_int("input_dim", 37, 50)
 		emb_dim *= 8
 		if use_bert_tokenizer:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
-			keep_bert_dimensions = trial.suggest_categorical("keep_bert_dimensions", [False, True])
 		else:
 			train_dataloader = no_bert_train_dataloader
 			dev_dataloader = no_bert_dev_dataloader
-			keep_bert_dimensions = False
 	freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
 
 	include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
@@ -289,7 +285,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		# results.append(weighted_recall_precision)
 		results.append(f1[2])
 		with open(f"../trash/segmenter_hyperparasearch_{architecture}.txt", "a") as f:
-			f.write(f"Epoch {epoch_number}: {weighted_recall_precision} (recall: {recall[2]}, precision: {precision[2]})\n")
+			f.write(f"Epoch {epoch_number}: weighted: {weighted_recall_precision}, F1: {f1[2]} (recall: {recall[2]}, precision: {precision[2]})\n")
 	best_result = max(results)
 	print(f"Best epoch result: {best_result}")
 	return best_result

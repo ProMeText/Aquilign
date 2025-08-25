@@ -124,7 +124,8 @@ class Trainer:
 													debug=self.debug,
 													data_augmentation=self.data_augmentation,
 													tokenizer_name=base_model_name,
-													use_bert_tokenizer=use_bert_tokenizer)
+													use_bert_tokenizer=use_bert_tokenizer,
+													   architecture=architecture)
 		self.test_dataloader = datafy.CustomTextDataset(mode="test",
 												   train_path=train_path,
 												   test_path=test_path,
@@ -139,7 +140,8 @@ class Trainer:
 													debug=self.debug,
 													data_augmentation=self.data_augmentation,
 													tokenizer_name=base_model_name,
-													use_bert_tokenizer=use_bert_tokenizer)
+													use_bert_tokenizer=use_bert_tokenizer,
+													   architecture=architecture)
 
 		self.dev_dataloader = datafy.CustomTextDataset(mode="dev",
 												   train_path=train_path,
@@ -155,7 +157,8 @@ class Trainer:
 													debug=self.debug,
 													data_augmentation=self.data_augmentation,
 													tokenizer_name=base_model_name,
-													use_bert_tokenizer=use_bert_tokenizer)
+													use_bert_tokenizer=use_bert_tokenizer,
+													   architecture=architecture)
 
 		self.loaded_test_data = DataLoader(self.test_dataloader,
 										   batch_size=batch_size,

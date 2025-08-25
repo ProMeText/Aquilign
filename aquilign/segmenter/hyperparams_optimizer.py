@@ -78,39 +78,39 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			if architecture == "transformers":
 				num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
 			batch_size = batch_size_multiplier * 4
-		if architecture != "BERT":
-			# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
-			use_pretrained_embeddings = False
-			if use_pretrained_embeddings:
-				train_dataloader = bert_train_dataloader
-				dev_dataloader = bert_dev_dataloader
-				emb_dim = 100
-				use_bert_tokenizer = True
-			else:
-				use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
-				keep_bert_dimensions = False
-				emb_dim = trial.suggest_int("input_dim", 37, 50)
-				emb_dim *= 8
-				if use_bert_tokenizer:
-					train_dataloader = bert_train_dataloader
-					dev_dataloader = bert_dev_dataloader
-				else:
-					train_dataloader = no_bert_train_dataloader
-					dev_dataloader = no_bert_dev_dataloader
-			freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
-			include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
-			if include_lang_metadata:
-				freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
-				lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
-				lang_emb_dim *=8
-			else:
-				freeze_lang_embeddings = False
-				lang_emb_dim = 4
-		else:
+	if architecture != "BERT":
+		# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
+		use_pretrained_embeddings = False
+		if use_pretrained_embeddings:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
-			use_pretrained_embeddings = False
-			include_lang_metadata = False
+			emb_dim = 100
+			use_bert_tokenizer = True
+		else:
+			use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
+			keep_bert_dimensions = False
+			emb_dim = trial.suggest_int("input_dim", 37, 50)
+			emb_dim *= 8
+			if use_bert_tokenizer:
+				train_dataloader = bert_train_dataloader
+				dev_dataloader = bert_dev_dataloader
+			else:
+				train_dataloader = no_bert_train_dataloader
+				dev_dataloader = no_bert_dev_dataloader
+		freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
+		include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
+		if include_lang_metadata:
+			freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
+			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
+			lang_emb_dim *=8
+		else:
+			freeze_lang_embeddings = False
+			lang_emb_dim = 4
+	else:
+		train_dataloader = bert_train_dataloader
+		dev_dataloader = bert_dev_dataloader
+		use_pretrained_embeddings = False
+		include_lang_metadata = False
 
 
 	epochs = config_file["global"]["epochs"]

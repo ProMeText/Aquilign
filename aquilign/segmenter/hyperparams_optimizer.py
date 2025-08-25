@@ -44,6 +44,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	if architecture == "BERT":
 		lr = trial.suggest_float("learning_rate", 0.00004, 0.00005, log=False)
+		balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
+		batch_size = 32
 	else:
 		lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 		hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 20)

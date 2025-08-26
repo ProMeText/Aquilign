@@ -73,8 +73,10 @@ class Trainer:
 			dropout = config_file["architectures"][architecture]["dropout"]
 			cnn_scale = config_file["architectures"][architecture]["cnn_scale"]
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+			keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
 			hidden_size = config_file["architectures"][architecture]["hidden_size"]
 			kernel_size = config_file['architectures'][architecture]["kernel_size"]
+			linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
 			positional_embeddings = config_file['architectures'][architecture]["positional_embeddings"]
 			num_heads = config_file["architectures"][architecture]["num_heads"]
 			num_cnn_layers = config_file["architectures"][architecture]["num_cnn_layers"]
@@ -302,8 +304,9 @@ class Trainer:
 										linear_layers_hidden_size=linear_layers_hidden_size,
 										linear_layers=linear_layers,
 									   pretrained_weights=weights,
-										cnn_scale=cnn_scale,
-										   keep_bert_dimensions=keep_bert_dimensions
+									   cnn_scale=cnn_scale,
+									   keep_bert_dimensions=keep_bert_dimensions,
+									   linear_dropout=linear_dropout
 									   )
 		elif architecture == "BERT":
 			from transformers import AutoModelForTokenClassification
@@ -348,6 +351,7 @@ class Trainer:
 		utils.append_to_file(message, self.final_results_file)
 		print(message)
 		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
+		print(models)
 		try:
 			os.mkdir(f"{self.output_dir}/models/best")
 		except OSError:
@@ -587,12 +591,12 @@ class Trainer:
 				continue
 			cat_targets = torch.cat(all_targets, dim=0)
 			cat_examples = torch.cat(all_examples, dim=0)
-			ambiguity = eval.compute_ambiguity_metrics(tokens=cat_examples,
+			eval.compute_ambiguity_metrics(tokens=cat_examples,
 													   labels=cat_targets,
 													   predictions=cat_preds,
 													   id_to_word=self.reverse_input_vocab,
 													   word_to_id=self.input_vocab,
-													   output_dir=self.output_dir,
+													   output_dir=self.logs_dir,
 													   name=lang)
 			results = eval.compute_metrics(predictions=cat_preds,
 										   labels=cat_targets,

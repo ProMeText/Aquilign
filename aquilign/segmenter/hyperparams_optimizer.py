@@ -428,7 +428,7 @@ if __name__ == '__main__':
 	test_path = config_file["global"]["test"]
 	device = config_file["global"]["device"]
 	dev_path = config_file["global"]["dev"]
-	output_dir = config_file["global"]["out_dir"]
+	output_dir = config_file["global"]["out_dir"] + f"/{date_hour}"
 	base_model_name = config_file["global"]["base_model_name"]
 	data_augmentation = config_file["global"]["data_augmentation"]
 	pretrained_train_dataloader = datafy.CustomTextDataset("train",

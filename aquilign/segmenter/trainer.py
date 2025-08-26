@@ -198,6 +198,7 @@ class Trainer:
 			self.input_vocab = self.tokenizer.get_vocab()
 		else:
 			self.input_vocab = self.train_dataloader.datafy.input_vocabulary
+		assert self.input_vocab != {}, "Error with input vocabulary"
 		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
 
 		self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary

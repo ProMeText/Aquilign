@@ -94,12 +94,17 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			emb_dim = trial.suggest_int("input_dim", 37, 50)
 			emb_dim *= 8
 			if use_bert_tokenizer:
+				print("Using Bert tokenized data")
 				train_dataloader = bert_train_dataloader
 				dev_dataloader = bert_dev_dataloader
 			else:
+				print("Using homemade tokenization")
 				train_dataloader = no_bert_train_dataloader
 				dev_dataloader = no_bert_dev_dataloader
-		freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
+		if use_bert_tokenizer and not use_pretrained_embeddings:
+			freeze_embeddings = False
+		else:
+			freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
 		include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
 		if include_lang_metadata:
 			freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
@@ -128,6 +133,8 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	else:
 		tokenizer = None
 	workers = 8
+	params = trial.params
+	print(f"Current params: {params}")
 	print("Loading data")
 
 

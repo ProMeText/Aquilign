@@ -18,7 +18,7 @@
     "lang_emb_dim": 32,
     "epochs": 5,
     "use_pretrained_embeddings": false,
-    "use_bert_tokenizer": false,
+    "use_bert_tokenizer": true,
     "lr": 0.0002,
     "workers": 16,
     "batch_size": 8

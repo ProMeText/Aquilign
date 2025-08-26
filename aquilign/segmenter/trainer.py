@@ -194,7 +194,7 @@ class Trainer:
 		print(f"Number of test examples: {len(self.test_dataloader.datafy.test_padded_examples)}")
 		print(f"Total length of examples (with padding): {self.train_dataloader.datafy.max_length_examples}")
 
-		if architecture == "BERT" or self.use_pretrained_embeddings:
+		if architecture == "BERT" or self.use_pretrained_embeddings or self.use_bert_tokenizer:
 			self.input_vocab = self.tokenizer.get_vocab()
 		else:
 			self.input_vocab = self.train_dataloader.datafy.input_vocabulary
@@ -494,7 +494,7 @@ class Trainer:
 												   predictions=cat_preds,
 												   id_to_word=self.reverse_input_vocab,
 												   word_to_id=self.input_vocab,
-												   output_dir = self.output_dir,
+												   log_dir = self.log_dir,
 												   name="global")
 		results = eval.compute_metrics(predictions=cat_preds,
 									   labels=cat_targets,
@@ -597,7 +597,7 @@ class Trainer:
 													   predictions=cat_preds,
 													   id_to_word=self.reverse_input_vocab,
 													   word_to_id=self.input_vocab,
-													   output_dir=self.logs_dir,
+													   log_dir=self.logs_dir,
 													   name=lang)
 			results = eval.compute_metrics(predictions=cat_preds,
 										   labels=cat_targets,

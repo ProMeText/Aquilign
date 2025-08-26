@@ -1,8 +1,8 @@
 {
   "global": {
-    "train": "../multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json",
-    "test": "../multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json",
-    "dev": "../multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/dev.json",
+    "train": "../multilingual-segmentation-dataset/data/segmented/split/multilingual/train.json",
+    "test": "../multilingual-segmentation-dataset/data/segmented/split/multilingual/test.json",
+    "dev": "../multilingual-segmentation-dataset/data/segmented/split/multilingual/dev.json",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
     "out_dir": "/home/mgl/Documents/test_working",
     "import": "",

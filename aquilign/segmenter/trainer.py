@@ -8,8 +8,6 @@ import torch
 import datetime
 from torch.utils.data import DataLoader
 import tqdm
-from statistics import mean
-import numpy as np
 import os
 import glob
 import shutil
@@ -22,6 +20,7 @@ class Trainer:
 		"""
 		Main Class trainer
 		"""
+		self.date_hour = datetime.datetime.now().isoformat()
 		architecture = sys.argv[2]
 		if len(sys.argv) == 4:
 			self.debug = True if sys.argv[3] == "True" else False
@@ -90,22 +89,23 @@ class Trainer:
 		self.timestamp = now.strftime("%d-%m-%Y_%H:%M:%S")
 		self.all_dataset_on_device = False
 		print("Loading data")
-		if use_pretrained_embeddings or architecture == "BERT":
+		self.use_bert_tokenizer = use_bert_tokenizer
+		if use_pretrained_embeddings or architecture == "BERT" or self.use_bert_tokenizer:
 			create_vocab = False
 			self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 		else:
-			if use_bert_tokenizer:
-				create_vocab = False
-				self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
-			else:
-				create_vocab = True
-				self.tokenizer = None
+			create_vocab = True
+			self.tokenizer = None
 
 		self.train_path = train_path
 		self.test_path = test_path
 		self.dev_path = dev_path
 		self.fine_tune = fine_tune
-		self.output_dir = output_dir
+		self.output_dir = output_dir + f"/{self.date_hour}"
+		self.logs_dir = f"{self.output_dir}/logs"
+		self.vocab_dir = f"{self.output_dir}/vocab"
+		os.makedirs(self.logs_dir, exist_ok=True)
+		os.makedirs(self.vocab_dir, exist_ok=True)
 		self.use_pretrained_embeddings = use_pretrained_embeddings
 		self.base_model_name = base_model_name
 
@@ -188,15 +188,14 @@ class Trainer:
 		print(f"Number of train examples: {len(self.train_dataloader.datafy.train_padded_examples)}")
 		print(f"Number of test examples: {len(self.test_dataloader.datafy.test_padded_examples)}")
 		print(f"Total length of examples (with padding): {self.train_dataloader.datafy.max_length_examples}")
-		self.input_vocab = self.train_dataloader.datafy.input_vocabulary
+
+		if self.architecture == "BERT" or self.use_pretrained_embeddings:
+			self.input_vocab = self.tokenizer.get_vocab()
+		else:
+			self.input_vocab = self.train_dataloader.datafy.input_vocabulary
 		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
 
 		self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary
-
-
-
-
-
 		self.target_classes = self.train_dataloader.datafy.target_classes
 		self.reverse_target_classes = self.train_dataloader.datafy.reverse_target_classes
 

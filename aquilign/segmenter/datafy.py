@@ -379,11 +379,10 @@ class Datafier:
                     padded_targets.append(target)
                 return padded_examples, langs, padded_targets
 
-        else:
-            # On doit convertir la liste d'arrays vers un arrays, on concatène sur la dimension 0 (lignes)
-            ids = np.concatenate(ids, axis=0)
-            # targets = np.concatenate(targets, axis=0)
-            targets = torch.stack(targets, dim=0)
+        # On doit convertir la liste d'arrays vers un arrays, on concatène sur la dimension 0 (lignes)
+        ids = np.concatenate(ids, axis=0)
+        # targets = np.concatenate(targets, axis=0)
+        targets = torch.stack(targets, dim=0)
         if self.architecture == "BERT":
             return ids, attention_masks, langs, targets
         else:

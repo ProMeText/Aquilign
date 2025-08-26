@@ -510,7 +510,8 @@ class Trainer:
 
 		# On crée un dernier dataloader: un dictionnaire avec division des langues pour avoir des résultats par langue.
 		loaded_test_data_per_lang = {}
-		batch_size = self.batch_size
+		# We change the batch size for really small sub-corpuses (ex. english for now)
+		batch_size = 8
 		for lang in self.lang_vocab:
 			current_dataloader = datafy.CustomTextDataset(mode="test",
 														  train_path=self.train_path,

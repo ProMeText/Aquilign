@@ -25,7 +25,7 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, dev_path, device, delimiter, output_dir, create_vocab, data_augmentation, tokenizer_name, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, debug=False, filter_by_lang=None, use_bert_tokenizer=False, architecture="lstm"):
+    def __init__(self, mode, train_path, test_path, dev_path, device, delimiter, output_dir, create_vocab, data_augmentation, tokenizer_name, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, debug=False, filter_by_lang=None, use_bert_tokenizer=False, architecture="lstm", tuning_mode=False):
         self.datafy = Datafier(train_path,
                                test_path,
                                dev_path,
@@ -40,7 +40,8 @@ class CustomTextDataset(Dataset):
                                tokenizer_name=tokenizer_name,
                                filter_by_lang=filter_by_lang,
                                use_bert_tokenizer=use_bert_tokenizer,
-                               architecture=architecture)
+                               architecture=architecture,
+                               tuning_mode=tuning_mode)
         self.architecture = architecture
         self.mode = mode
         if mode == "train":
@@ -105,7 +106,8 @@ class Datafier:
                  tokenizer_name,
                  filter_by_lang=None,
                  use_bert_tokenizer=False,
-                 architecture="lstm"
+                 architecture="lstm",
+                 tuning_mode=False
                  ):
         self.max_length_examples = 0
         self.frequency_dict = {}
@@ -139,8 +141,9 @@ class Datafier:
                                }
         self.filter_by_lang = filter_by_lang
         self.reverse_target_classes = {idx:token for token, idx in self.target_classes.items()}
-        utils.serialize_dict(self.target_classes, f"{self.vocab_dir}/target_classes.json")
-        utils.serialize_dict(self.reverse_target_classes, f"{self.vocab_dir}/reverse_target_classes.json")
+        if not tuning_mode:
+            utils.serialize_dict(self.target_classes, f"{self.vocab_dir}/target_classes.json")
+            utils.serialize_dict(self.reverse_target_classes, f"{self.vocab_dir}/reverse_target_classes.json")
         self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
         full_corpus = self.train_data + self.test_data + self.dev_data
         assert len(self.train_data) != len(self.test_data) != 0, "Some error here."

@@ -443,7 +443,8 @@ if __name__ == '__main__':
 												debug=debug,
 												data_augmentation=data_augmentation,
 												tokenizer_name=base_model_name,
-												architecture=architecture)
+												architecture=architecture,
+														   tuning_mode=True)
 	pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
 											  train_path=train_path,
 											  test_path=test_path,
@@ -458,7 +459,8 @@ if __name__ == '__main__':
 											  debug=debug,
 											  data_augmentation=data_augmentation,
 											  tokenizer_name=base_model_name,
-												architecture=architecture)
+												architecture=architecture,
+														   tuning_mode=True)
 
 
 	not_pretrained_train_dataloader = datafy.CustomTextDataset("train",
@@ -473,7 +475,8 @@ if __name__ == '__main__':
 												debug=debug,
 												data_augmentation=data_augmentation,
 												tokenizer_name=base_model_name,
-												architecture=architecture)
+												architecture=architecture,
+														   tuning_mode=True)
 	not_pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
 											  train_path=train_path,
 											  test_path=test_path,
@@ -488,7 +491,8 @@ if __name__ == '__main__':
 											  debug=debug,
 											  data_augmentation=data_augmentation,
 											  tokenizer_name=base_model_name,
-												architecture=architecture)
+												architecture=architecture,
+														   tuning_mode=True)
 
 	if model_size:
 		study = optuna.create_study(directions=['maximize', 'minimize'])

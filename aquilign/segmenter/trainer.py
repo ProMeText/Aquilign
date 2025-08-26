@@ -21,7 +21,6 @@ class Trainer:
 				  config_file):
 		"""
 		Main Class trainer
-		TODO: add the possibility to have bert tokenization, but with smaller embeddings dimension (300?)
 		"""
 		architecture = sys.argv[2]
 		if len(sys.argv) == 4:
@@ -214,6 +213,12 @@ class Trainer:
 		self.input_dim = len(self.input_vocab)
 		self.architecture = architecture
 
+		self.epochs_log_file = f"{output_dir}/train_logs.txt"
+		self.final_results_file = f"{output_dir}/best_model.txt"
+		utils.remove_files(
+			[self.epochs_log_file, self.final_results_file]
+		)
+
 
 		# Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
 
@@ -334,7 +339,9 @@ class Trainer:
 
 		max_average = max(weighted_averages)
 		best_epoch = weighted_averages.index(max_average)
-		print(f"Best model: {best_epoch} with {max_average} weighted precision and recall.")
+		message = f"Best model: {best_epoch} with {max_average} weighted precision and recall on dev data."
+		utils.append_to_file(message, self.final_results_file)
+		print(message)
 		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
 		try:
 			os.mkdir(f"{self.output_dir}/models/best/{self.architecture}")
@@ -345,7 +352,6 @@ class Trainer:
 				shutil.copy(model, f"{self.output_dir}/models/best/{self.architecture}/best.pt")
 				print(f"Saving best model to {self.output_dir}/models/best/{self.architecture}/best.pt")
 			else:
-				continue
 				os.remove(model)
 		self.best_model = f"{self.output_dir}/models/best/{self.architecture}/best.pt"
 
@@ -415,7 +421,14 @@ class Trainer:
 
 			# self.model.eval()
 			self.scheduler.step()
-			self.evaluate(last_epoch=last_epoch)
+			recall, precision, f1 = self.evaluate(last_epoch=last_epoch)
+			utils.append_to_file(
+				f"Epoch: {str(epoch_number)}\n" +
+				utils.format_results(
+				results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"]
+				),
+				self.epochs_log_file
+			)
 			self.save_model(epoch_number)
 		self.get_best_model()
 		self.evaluate_best_model()
@@ -429,6 +442,9 @@ class Trainer:
 		all_preds = []
 		all_targets = []
 		all_examples = []
+
+		# TODO: choix du meilleur modèle !
+
 		self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
 		self.model.eval()
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
@@ -454,7 +470,7 @@ class Trainer:
 		cat_preds = torch.cat(all_preds, dim=0)
 		cat_targets = torch.cat(all_targets, dim=0)
 		cat_examples = torch.cat(all_examples, dim=0)
-		ambiguity = eval.compute_ambiguity_metrics(tokens=cat_examples,
+		eval.compute_ambiguity_metrics(tokens=cat_examples,
 												   labels=cat_targets,
 												   predictions=cat_preds,
 												   id_to_word=self.reverse_input_vocab,
@@ -479,6 +495,12 @@ class Trainer:
 		header = ["", "Segment Content", "Segment Boundary"]
 		print(f"Results for all langs:")
 		utils.format_results(results=[precision, recall, f1], header=header)
+		utils.append_to_file(
+			"Best model on test data\n" +
+			utils.format_results(
+				results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"]
+			),
+		self.final_results)
 
 	def evaluate_best_model_per_lang(self):
 		"""
@@ -570,6 +592,12 @@ class Trainer:
 			header = ["", "Segment Content", "Segment Boundary"]
 			print(f"Results for {lang}:")
 			utils.format_results(results=[precision, recall, f1], header=header)
+			utils.append_to_file(
+				f"Best model on test data for {lang}:\n" +
+				utils.format_results(
+					results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"]
+				),
+				self.final_results.replace(".txt", f".{lang}.txt"))
 
 
 
@@ -624,7 +652,6 @@ class Trainer:
 		recall = ["Recall", results["recall"][0], results["recall"][1]]
 		precision = ["Precision", results["precision"][0], results["precision"][1]]
 		f1 = ["F1", results["f1"][0], results["f1"][1]]
-		header = ["", "Segment Content", "Segment Boundary"]
 		print(f"Results for all langs:")
-		utils.format_results(results=[precision, recall, f1], header=header)
+		utils.format_results(results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"])
 		return (recall, precision, f1)

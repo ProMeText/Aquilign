@@ -12,6 +12,16 @@ def write_accuracy(message, path):
         output_file.write(message)
 
 
+def remove_file(path):
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        pass
+
+def append_to_file(content, path):
+    with open(path, "a") as output_file:
+        output_file.write(content + "\n")
+
 class Timer:
     def __init__(self):
         self.start = time.time()
@@ -29,8 +39,12 @@ class Timer:
         lapse = time.time()
         print(lapse - self.start)
 
-def remove_files(path):
-    for file in glob.glob(path):
+def remove_files(path:list|str):
+    if isinstance(path, list):
+        pass
+    else:
+        path = glob.glob(path)
+    for file in path:
         try:
             os.remove(file)
         except OSError:

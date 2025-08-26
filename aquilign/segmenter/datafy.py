@@ -141,7 +141,8 @@ class Datafier:
                                }
         self.filter_by_lang = filter_by_lang
         self.reverse_target_classes = {idx:token for token, idx in self.target_classes.items()}
-        if not tuning_mode:
+        self.tuning_mode = tuning_mode
+        if not self.tuning_mode:
             utils.serialize_dict(self.target_classes, f"{self.vocab_dir}/target_classes.json")
             utils.serialize_dict(self.reverse_target_classes, f"{self.vocab_dir}/reverse_target_classes.json")
         self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
@@ -167,7 +168,8 @@ class Datafier:
     def create_lang_vocab(self, data):
         langs = {item["lang"] for item in data}
         self.lang_vocabulary = {lang:idx for idx, lang in enumerate(langs)}
-        utils.serialize_dict(self.lang_vocabulary, f"{self.vocab_dir}/lang_vocabulary.json")
+        if not self.tuning_mode:
+            utils.serialize_dict(self.lang_vocabulary, f"{self.vocab_dir}/lang_vocabulary.json")
 
 
     def create_vocab(self, data:list[dict]):
@@ -188,9 +190,9 @@ class Datafier:
 
         self.input_vocabulary = input_vocabulary
         self.reverse_input_vocabulary = reverse_input_vocabulary
-
-        utils.serialize_dict(self.reverse_input_vocabulary, f"{self.vocab_dir}/reverse_input_vocabulary.json")
-        utils.serialize_dict(self.input_vocabulary, f"{self.vocab_dir}/input_vocabulary.json")
+        if not self.tuning_mode:
+            utils.serialize_dict(self.reverse_input_vocabulary, f"{self.vocab_dir}/reverse_input_vocabulary.json")
+            utils.serialize_dict(self.input_vocabulary, f"{self.vocab_dir}/input_vocabulary.json")
 
     def remove_punctuation(self, data) -> list[dict]:
         data_no_punct = []

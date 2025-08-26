@@ -11,7 +11,9 @@ def write_accuracy(message, path):
     with open(f"{path}accuracies.txt", "a") as output_file:
         output_file.write(message)
 
-
+def write_to_file(message, path):
+    with open(path, "a") as output_file:
+        output_file.write(message + "\n")
 def remove_file(path):
     try:
         os.remove(path)

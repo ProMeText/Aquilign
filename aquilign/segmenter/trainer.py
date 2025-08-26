@@ -1,3 +1,4 @@
+import copy
 import re
 from transformers import AutoTokenizer
 import aquilign.segmenter.utils as utils
@@ -56,6 +57,7 @@ class Trainer:
 			lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
 			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
 			lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
+			linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
 			bidirectional = config_file["architectures"][architecture]["bidirectional"]
 			keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
 		elif architecture == "gru":
@@ -80,13 +82,11 @@ class Trainer:
 
 
 		# First we prepare the corpus
-		now = datetime.datetime.now()
 		self.device = device
 		if self.device != "cpu":
 			device_name = torch.cuda.get_device_name(self.device)
 			print(f"Device name: {device_name}")
 		self.workers = workers
-		self.timestamp = now.strftime("%d-%m-%Y_%H:%M:%S")
 		self.all_dataset_on_device = False
 		print("Loading data")
 		self.use_bert_tokenizer = use_bert_tokenizer
@@ -104,6 +104,12 @@ class Trainer:
 		self.output_dir = output_dir + f"/{self.date_hour}"
 		self.logs_dir = f"{self.output_dir}/logs"
 		self.vocab_dir = f"{self.output_dir}/vocab"
+		self.config_dir = f"{self.output_dir}/config"
+		os.makedirs(self.config_dir, exist_ok=True)
+		out_conf_dict = copy.deepcopy(config_file)
+		out_conf_dict["architectures"] = out_conf_dict["architectures"][architecture]
+		out_conf_dict["architectures"]["name"] = architecture
+		utils.serialize_dict(out_conf_dict, f"{self.config_dir}/config.json")
 		os.makedirs(self.logs_dir, exist_ok=True)
 		os.makedirs(self.vocab_dir, exist_ok=True)
 		self.use_pretrained_embeddings = use_pretrained_embeddings
@@ -117,7 +123,7 @@ class Trainer:
 													dev_path=dev_path,
 													device=self.device,
 													delimiter="£",
-													output_dir=output_dir,
+													output_dir=self.output_dir,
 													create_vocab=create_vocab,
 													use_pretrained_embeddings=use_pretrained_embeddings,
 													debug=self.debug,
@@ -131,7 +137,7 @@ class Trainer:
 													dev_path=dev_path,
 												   device=self.device,
 												   delimiter="£",
-												   output_dir=output_dir,
+												   output_dir=self.output_dir,
 												   create_vocab=False,
 												   input_vocab=self.train_dataloader.datafy.input_vocabulary,
 												   lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
@@ -148,7 +154,7 @@ class Trainer:
 													dev_path=dev_path,
 												   device=self.device,
 												   delimiter="£",
-												   output_dir=output_dir,
+												   output_dir=self.output_dir,
 												   create_vocab=False,
 												   input_vocab=self.train_dataloader.datafy.input_vocabulary,
 												   lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
@@ -180,16 +186,13 @@ class Trainer:
 
 
 
-		self.output_dir = output_dir
-		# On crée l'output dir:
 		os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
-		os.makedirs(f"{self.output_dir}/best", exist_ok=True)
 
 		print(f"Number of train examples: {len(self.train_dataloader.datafy.train_padded_examples)}")
 		print(f"Number of test examples: {len(self.test_dataloader.datafy.test_padded_examples)}")
 		print(f"Total length of examples (with padding): {self.train_dataloader.datafy.max_length_examples}")
 
-		if self.architecture == "BERT" or self.use_pretrained_embeddings:
+		if architecture == "BERT" or self.use_pretrained_embeddings:
 			self.input_vocab = self.tokenizer.get_vocab()
 		else:
 			self.input_vocab = self.train_dataloader.datafy.input_vocabulary
@@ -208,20 +211,22 @@ class Trainer:
 		self.batch_size = batch_size
 		self.output_dim = len(self.target_classes)
 		self.include_lang_metadata = include_lang_metadata
-		self.best_model = ""
+		self.best_model = None
 		self.input_dim = len(self.input_vocab)
 		self.architecture = architecture
 
-		self.epochs_log_file = f"{output_dir}/train_logs.txt"
-		self.final_results_file = f"{output_dir}/best_model.txt"
+		self.epochs_log_file = f"{self.logs_dir}/train_logs.txt"
+		self.final_results_file = f"{self.logs_dir}/best_model.txt"
 		utils.remove_files(
 			[self.epochs_log_file, self.final_results_file]
 		)
 
 
 		# Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
-
-		weights = torch.load("aquilign/segmenter/embeddings.npy")
+		if self.use_pretrained_embeddings:
+			weights = torch.load("aquilign/segmenter/embeddings.npy")
+		else:
+			weights = None
 
 		if architecture == "transformer":
 			self.model = models.TransformerModel(input_dim=self.input_dim,
@@ -258,7 +263,8 @@ class Trainer:
 											 linear_layers=linear_layers,
 											 linear_layers_hidden_size=linear_layers_hidden_size,
 											 use_bert_tokenizer=use_bert_tokenizer,
-											 keep_bert_dimensions=keep_bert_dimensions)
+											 keep_bert_dimensions=keep_bert_dimensions,
+											 linear_dropout=linear_dropout)
 		elif architecture == "gru":
 			self.model = models.GRU_Encoder(input_dim=self.input_dim,
 											 emb_dim=emb_dim,
@@ -343,16 +349,16 @@ class Trainer:
 		print(message)
 		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
 		try:
-			os.mkdir(f"{self.output_dir}/models/best/{self.architecture}")
+			os.mkdir(f"{self.output_dir}/models/best")
 		except OSError:
 			pass
 		for model in models:
 			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch}.pt":
-				shutil.copy(model, f"{self.output_dir}/models/best/{self.architecture}/best.pt")
-				print(f"Saving best model to {self.output_dir}/models/best/{self.architecture}/best.pt")
+				shutil.copy(model, f"{self.output_dir}/models/best/best.pt")
+				print(f"Saving best model to {self.output_dir}/models/best/best.pt")
 			else:
 				os.remove(model)
-		self.best_model = f"{self.output_dir}/models/best/{self.architecture}/best.pt"
+		self.best_model = f"{self.output_dir}/models/best/best.pt"
 
 	def train(self, clip=0.1):
 		# Ici on va faire en sorte que les plongements de mots ne soient pas entraînables, si c'est des plongements pré-entraînés
@@ -373,7 +379,15 @@ class Trainer:
 		os.makedirs(f"{self.output_dir}/models/best", exist_ok=True)
 		torch.save(self.input_vocab, f"{self.output_dir}/models/best/vocab.voc")
 		print("Evaluating randomly initiated model")
-		self.evaluate()
+		recall, precision, f1 = self.evaluate()
+		utils.append_to_file(
+			f"Randomly initiated model:\n" +
+			utils.format_results(
+				results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"], print_to_term=False
+			),
+			self.epochs_log_file
+		)
+		utils.append_to_file("---", self.epochs_log_file)
 		torch.save(self.model, f"{self.output_dir}/models/model_orig.pt")
 		for epoch in range(self.epochs):
 			self.model.train()
@@ -424,10 +438,11 @@ class Trainer:
 			utils.append_to_file(
 				f"Epoch: {str(epoch_number)}\n" +
 				utils.format_results(
-				results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"]
+				results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"], print_to_term=False
 				),
 				self.epochs_log_file
 			)
+			utils.append_to_file("---", self.epochs_log_file)
 			self.save_model(epoch_number)
 		self.get_best_model()
 		self.evaluate_best_model()
@@ -497,9 +512,9 @@ class Trainer:
 		utils.append_to_file(
 			"Best model on test data\n" +
 			utils.format_results(
-				results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"]
+				results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"], print_to_term=False
 			),
-		self.final_results)
+		self.final_results_file)
 
 	def evaluate_best_model_per_lang(self):
 		"""
@@ -565,7 +580,11 @@ class Trainer:
 					all_examples.append(examples)
 
 			# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
-			cat_preds = torch.cat(all_preds, dim=0)
+			try:
+				cat_preds = torch.cat(all_preds, dim=0)
+			except RuntimeError:
+				print(f"Not enough data for lang {lang}")
+				continue
 			cat_targets = torch.cat(all_targets, dim=0)
 			cat_examples = torch.cat(all_examples, dim=0)
 			ambiguity = eval.compute_ambiguity_metrics(tokens=cat_examples,
@@ -595,9 +614,9 @@ class Trainer:
 			utils.append_to_file(
 				f"Best model on test data for {lang}:\n" +
 				utils.format_results(
-					results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"]
+					results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"], print_to_term=False
 				),
-				self.final_results.replace(".txt", f".{lang}.txt"))
+				self.final_results_file.replace(".txt", f".{lang}.txt"))
 
 
 

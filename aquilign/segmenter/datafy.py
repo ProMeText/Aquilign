@@ -110,6 +110,7 @@ class Datafier:
         self.max_length_examples = 0
         self.frequency_dict = {}
         self.output_dir = output_dir
+        self.vocab_dir = f"{self.output_dir}/vocab"
         self.unknown_threshold = 14  # Under this frequency the tokens will be tagged as [UNK]
         self.input_vocabulary = {}
         self.target_weights = None
@@ -138,8 +139,8 @@ class Datafier:
                                }
         self.filter_by_lang = filter_by_lang
         self.reverse_target_classes = {idx:token for token, idx in self.target_classes.items()}
-        utils.serialize_dict(self.target_classes, f"{self.output_dir}/target_classes.json")
-        utils.serialize_dict(self.reverse_target_classes, f"{self.output_dir}/reverse_target_classes.json")
+        utils.serialize_dict(self.target_classes, f"{self.vocab_dir}/target_classes.json")
+        utils.serialize_dict(self.reverse_target_classes, f"{self.vocab_dir}/reverse_target_classes.json")
         self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
         full_corpus = self.train_data + self.test_data + self.dev_data
         assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
@@ -163,7 +164,7 @@ class Datafier:
     def create_lang_vocab(self, data):
         langs = {item["lang"] for item in data}
         self.lang_vocabulary = {lang:idx for idx, lang in enumerate(langs)}
-        utils.serialize_dict(self.lang_vocabulary, f"{self.output_dir}/lang_vocabulary.json")
+        utils.serialize_dict(self.lang_vocabulary, f"{self.vocab_dir}/lang_vocabulary.json")
 
 
     def create_vocab(self, data:list[dict]):
@@ -185,8 +186,8 @@ class Datafier:
         self.input_vocabulary = input_vocabulary
         self.reverse_input_vocabulary = reverse_input_vocabulary
 
-        utils.serialize_dict(self.reverse_input_vocabulary, f"{self.output_dir}/reverse_input_vocabulary.json")
-        utils.serialize_dict(self.input_vocabulary, f"{self.output_dir}/input_vocabulary.json")
+        utils.serialize_dict(self.reverse_input_vocabulary, f"{self.vocab_dir}/reverse_input_vocabulary.json")
+        utils.serialize_dict(self.input_vocabulary, f"{self.vocab_dir}/input_vocabulary.json")
 
     def remove_punctuation(self, data) -> list[dict]:
         data_no_punct = []

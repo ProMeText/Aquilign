@@ -58,9 +58,9 @@ def compute_ambiguity_metrics(tokens,
                                                              "f1": [current_f1_sc, current_f1_sb]}))
     mean_accuracy = statistics.mean([float(item[1]["accuracy"]) for item in results_per_token])
     if name:
-        out_file = f"{output_dir}/resultats_ambiguite_{name}.txt"
+        out_file = f"{output_dir}/logs/resultats_ambiguite_{name}.txt"
     else:
-        out_file = f"{output_dir}/resultats_ambiguite.txt"
+        out_file = f"{output_dir}/logs/resultats_ambiguite.txt"
     with open(out_file, "w") as output_ambiguity:
         output_ambiguity.write(f"Mean accuracy: {mean_accuracy}.\n\n")
         for results in results_per_token:
@@ -98,8 +98,8 @@ def compute_metrics(predictions,
     labels = labels.cpu()
     predictions_as_probs = copy.deepcopy(predictions)
     predictions = np.argmax(predictions, axis=2)
+
     # On teste un exemple pour voir si tout est OK.
-    # TODO: il faut le faire sur le meilleur modèle, pas le dernier
     if last_epoch:
         if tokenizer:
             id_to_word = {ident: value for value, ident in tokenizer.get_vocab().items()}

@@ -260,6 +260,10 @@ def get_correspondence(sent, tokenizer, verbose=False):
     return human_split_to_bert, bert_split_to_human_split
 
 
+def apply_labels(text:list, labels:list):
+    tokenized_sentence = " ".join([element if labels[index] != 1 else f"\n{element}" for index, element in enumerate(text)]).split("\n")
+    return tokenized_sentence
+
 def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False):
     predicted_labels = predicted_labels[1:-1]
     if verbose:
@@ -296,7 +300,7 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False
     assert len(final_prediction) == len(splitted_text), "List mismatch"
 
     tokenized_sentence = " ".join(
-        [element if final_prediction[index] != 1 else f"\n{element}" for index, element in enumerate(splitted_text)])
+        [element if final_prediction[index] != 1 else f"\n{element}" for index, element in enumerate(splitted_text)]).split("\n")
     if verbose:
         print(f'final prediction {final_prediction}')
         print(tokenized_sentence)

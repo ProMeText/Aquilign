@@ -11,13 +11,13 @@ import os
 
 class Tagger:
 	def  __init__(self,
-				  config_file,
+				  model_dir,
 				  batch_size):
 		"""
 		Main Class trainer
 		"""
-		config_file = utils.read_to_dict(config_file)
-		self.tokenizer = AutoTokenizer.from_pretrained(config_file["global"]["base_model_name"])
+		config_file = utils.read_to_dict(f"{model_dir}/config/config.json")
+		self.saved_model = f"{model_dir}/models/best/best.pt"
 		architecture = config_file["architecture"]["name"]
 		device = config_file["global"]["device"]
 		workers = config_file["global"]["workers"]
@@ -26,11 +26,12 @@ class Tagger:
 		use_bert_tokenizer = config_file["global"]["use_bert_tokenizer"]
 		os.environ["TOKENIZERS_PARALLELISM"] = "false"
 		include_lang_metadata = config_file["global"]["include_lang_metadata"]
-		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
 		lang_emb_dim = config_file["global"]["lang_emb_dim"]
 		linear_layers = config_file["global"]["linear_layers"]
 		linear_layers_hidden_size = config_file["global"]["linear_layers_hidden_size"]
 		emb_dim = config_file["global"]["emb_dim"]
+		if use_bert_tokenizer or architecture in ["BERT", "DISTILBERT"]:
+			self.tokenizer = AutoTokenizer.from_pretrained(config_file["global"]["base_model_name"])
 		if architecture == "lstm":
 			add_attention_layer = config_file["architecture"]["add_attention_layer"]
 			lstm_hidden_size = config_file["architecture"]["lstm_hidden_size"]
@@ -71,11 +72,8 @@ class Tagger:
 		self.all_dataset_on_device = False
 		print("Loading data")
 		self.use_bert_tokenizer = use_bert_tokenizer
-		if use_pretrained_embeddings or architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer:
+		if architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer:
 			self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
-		else:
-			create_vocab = True
-			self.tokenizer = None
 		self.tokens_regexp = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
 		self.base_model_name = base_model_name
 
@@ -93,18 +91,13 @@ class Tagger:
 
 
 		self.tgt_PAD_IDX = self.target_classes["[PAD]"]
-		self.batch_size = batch_size
+		self.batch_size = int(batch_size)
 		self.output_dim = len(self.target_classes)
 		self.include_lang_metadata = include_lang_metadata
 		self.best_model = None
 		self.input_dim = len(self.input_vocab)
 		self.architecture = architecture
 
-		self.epochs_log_file = f"{self.logs_dir}/train_logs.txt"
-		self.final_results_file = f"{self.logs_dir}/best_model.txt"
-		utils.remove_files(
-			[self.epochs_log_file, self.final_results_file]
-		)
 
 
 		# Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
@@ -191,32 +184,41 @@ class Tagger:
 			from transformers import AutoModelForTokenClassification
 			self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
 
+		self.model.load_state_dict(torch.load(self.saved_model))
 		self.model.to(self.device)
 
 
-	def tag(self, data):
+	def tag(self, data, lang):
 		segmented = []
 		new_labels = []
-		data = utils.get_batches(text=data,
-								 tokens_per_example=150,
-								 regexp=self.tokens_regexp)
-		for batch in tqdm.tqdm(data, unit_scale=self.batch_size):
+		data = utils.format_examples(text=data,
+								 tokens_per_example=100,
+								 regexp=self.tokens_regexp,
+								 lang=lang)
+		for formatted_example in tqdm.tqdm(data):
 			if self.architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer:
-				examples, _ = batch
-				tokenized = self.tokenizer.encode(examples, truncation=True, padding=True, return_tensors="pt")
-				tokenized_inputs = tokenized['input_ids'].to(self.device)
-				masks = tokenized['attention_mask'].to(self.device)
-				preds = self.model(input_ids=tokenized_inputs, attention_mask=masks).tolist()
-				for pred in preds:
-					splitted_pred = re.split(self.tokens_regexp, pred)
-					bert_labels = utils.get_labels_from_preds(preds)
-					human_to_bert, bert_to_human = utils.get_correspondence(splitted_pred, self.tokenizer)
-					labels = utils.unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels,
-													  splitted_text=splitted_pred)
-					new_labels.append(labels)
+				example, lang = formatted_example
+				tokenized = self.tokenizer.encode(example, truncation=True, padding=True, return_tensors="pt", max_length=380)
+				if self.architecture in ["BERT", "DISTILBERT"]:
+					tokenized_inputs = tokenized['input_ids'].to(self.device)
+					masks = tokenized['attention_mask'].to(self.device)
+					preds = self.model(input_ids=tokenized_inputs, attention_mask=masks).tolist()
+				else:
+					lang = torch.tensor([self.lang_vocab[lang]]).to(self.device)
+					preds = self.model(src=tokenized, lang=lang).tolist()
+
+
+				splitted_pred = [item for item in re.split(self.tokens_regexp, example) if item]
+				bert_labels = utils.get_labels_from_preds(preds)
+				human_to_bert, bert_to_human = utils.get_correspondence(splitted_pred, self.tokenizer)
+				labels = utils.unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels,
+												  splitted_text=splitted_pred)
+				new_labels.append(labels)
+				print(new_labels)
+				exit(0)
 
 			else:
-				examples, langs = batch
+				examples, langs = formatted_example
 				tokenized = self.tokenize(examples).to(self.device)
 				langs = langs.to(self.device)
 				preds = self.model(tokenized, langs)[0]
@@ -327,7 +329,11 @@ class Tagger:
 
 
 if __name__ == '__main__':
-	conf_file = sys.argv[1]
-	batch_size = sys.argv[2]
-	Tagger = Tagger(config_file=conf_file,
+	model_dir = sys.argv[1]
+	batch_size = int(sys.argv[2])
+	with open("data/DeRegiminePrincipum/cat_3_3_11.txt", "r") as input_txt:
+		text_as_string = input_txt.read()
+	lang = "ca"
+	Tagger = Tagger(model_dir=model_dir,
 					batch_size=batch_size)
+	Tagger.tag(text_as_string, lang)

@@ -16,7 +16,7 @@
     "balance_class_weights": true,
     "include_lang_metadata": true,
     "lang_emb_dim": 32,
-    "epochs": 3,
+    "epochs": 6,
     "use_pretrained_embeddings": false,
     "use_bert_tokenizer": true,
     "lr": 0.0002,

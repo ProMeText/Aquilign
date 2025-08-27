@@ -346,6 +346,8 @@ class LSTM_Encoder(nn.Module):
 			# On concatène chaque token avec le vecteur de langue, c'est-à-dire qu'on augmente la
 			# dimensionnalité de chaque vecteur de mot dont la dimension sera la somme des deux dimensions:
 			# [batch_size, max_length, lang_metadata_dimensions + word_embedding_dimension]
+			print(projected_lang.shape)
+			print(embedded.shape)
 			embedded = torch.cat((embedded, projected_lang), 2)
 		else:
 			embedded = self.embedding(src)

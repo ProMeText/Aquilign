@@ -302,10 +302,12 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False
         print(tokenized_sentence)
     return tokenized_sentence
 
-def get_batches(text, tokens_per_example, regexp, batch_size):
+def format_examples(text, tokens_per_example, regexp, lang):
     regexp = re.compile(regexp)
-    words = re.split(regexp, text)
-    splitted = [' '.join(words[i:i + tokens_per_example]) for i in range(0, len(words), tokens_per_example)]
-    batched = [splitted[n:n+batch_size] for n in range(round(len(splitted)/batch_size))]
-    return batched
+    words = [item for item in re.split(regexp, text) if item]
+    splitted = [words[i:i + tokens_per_example] for i in range(0, len(words), tokens_per_example)]
+    examples = [" ".join(example) for example in splitted]
+    langs = [lang for _ in range(len(splitted))]
+    as_zip = zip(examples, langs)
+    return as_zip
 

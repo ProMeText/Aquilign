@@ -110,10 +110,10 @@ class Trainer:
 		os.makedirs(self.config_dir, exist_ok=True)
 		out_conf_dict = copy.deepcopy(config_file)
 		if architecture not in ["BERT", "DISTILBERT"]:
-			out_conf_dict["architectures"] = out_conf_dict["architectures"][architecture]
-			out_conf_dict["architectures"]["name"] = architecture
+			out_conf_dict["architecture"] = out_conf_dict["architectures"][architecture]
+			out_conf_dict["architecture"]["name"] = architecture
 		else:
-			out_conf_dict["architectures"] = {"name": architecture}
+			out_conf_dict["architecture"] = {"name": architecture}
 		out_conf_dict["global"]["vocab_dir"] = self.vocab_dir
 		utils.serialize_dict(out_conf_dict, f"{self.config_dir}/config.json")
 		os.makedirs(self.logs_dir, exist_ok=True)
@@ -346,7 +346,7 @@ class Trainer:
 		We choose the best model based on a weighted average of precision and recall.
 		"""
 		weighted_averages = []
-		for epoch, result in enumerate(self.results):
+		for result in self.results:
 			recall = result["recall"][1]
 			precision = result["precision"][1]
 			weighted = (precision + (recall*2) ) / 3
@@ -457,7 +457,7 @@ class Trainer:
 			self.save_model(epoch_number)
 		self.get_best_model()
 		self.evaluate_best_model()
-		self.evaluate_best_model_per_lang()
+		# self.evaluate_best_model_per_lang()
 
 	def evaluate_best_model(self):
 		"""
@@ -471,7 +471,9 @@ class Trainer:
 		# TODO: choix du meilleur modèle !
 
 		self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
+		print("Model loaded.")
 		self.model.eval()
+		print("Starting evaluation")
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			if self.architecture == "BERT":
 				examples, masks, targets = data
@@ -536,7 +538,6 @@ class Trainer:
 		# On crée un dernier dataloader: un dictionnaire avec division des langues pour avoir des résultats par langue.
 		loaded_test_data_per_lang = {}
 		# We change the batch size for really small sub-corpuses (ex. english for now)
-		batch_size = 8
 		for lang in self.lang_vocab:
 			current_dataloader = datafy.CustomTextDataset(mode="test",
 														  train_path=self.train_path,
@@ -553,9 +554,10 @@ class Trainer:
 														  data_augmentation=self.data_augmentation,
 														  filter_by_lang=lang,
 														 tokenizer_name=self.base_model_name,
-														  architecture=self.architecture)
+														  architecture=self.architecture,
+														  use_bert_tokenizer=self.use_bert_tokenizer)
 			loaded_test_data_per_lang[lang] = DataLoader(current_dataloader,
-															  batch_size=batch_size,
+															  batch_size=self.batch_size,
 															  shuffle=False,
 															  num_workers=self.workers,
 															  pin_memory=False,

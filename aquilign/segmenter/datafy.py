@@ -142,9 +142,8 @@ class Datafier:
         self.filter_by_lang = filter_by_lang
         self.reverse_target_classes = {idx:token for token, idx in self.target_classes.items()}
         self.tuning_mode = tuning_mode
-        if not self.tuning_mode:
+        if self.tuning_mode is False:
             utils.serialize_dict(self.target_classes, f"{self.vocab_dir}/target_classes.json")
-            utils.serialize_dict(self.reverse_target_classes, f"{self.vocab_dir}/reverse_target_classes.json")
         self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
         full_corpus = self.train_data + self.test_data + self.dev_data
         assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
@@ -160,6 +159,7 @@ class Datafier:
             elif self.use_pretrained_embeddings or self.use_bert_tokenizer:
                 self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
                 self.create_lang_vocab(full_corpus)
+                self.input_vocabulary = self.tokenizer.get_vocab()
             else:
                 self.input_vocabulary = input_vocab
                 self.lang_vocabulary = lang_vocab
@@ -168,8 +168,8 @@ class Datafier:
     def create_lang_vocab(self, data):
         langs = {item["lang"] for item in data}
         self.lang_vocabulary = {lang:idx for idx, lang in enumerate(langs)}
-        if not self.tuning_mode:
-            utils.serialize_dict(self.lang_vocabulary, f"{self.vocab_dir}/lang_vocabulary.json")
+        if self.tuning_mode is False:
+            utils.serialize_dict(self.lang_vocabulary, f"{self.vocab_dir}/lang_vocab.json")
 
 
     def create_vocab(self, data:list[dict]):
@@ -190,9 +190,8 @@ class Datafier:
 
         self.input_vocabulary = input_vocabulary
         self.reverse_input_vocabulary = reverse_input_vocabulary
-        if not self.tuning_mode:
-            utils.serialize_dict(self.reverse_input_vocabulary, f"{self.vocab_dir}/reverse_input_vocabulary.json")
-            utils.serialize_dict(self.input_vocabulary, f"{self.vocab_dir}/input_vocabulary.json")
+        if self.tuning_mode is False:
+            utils.serialize_dict(self.input_vocabulary, f"{self.vocab_dir}/input_vocab.json")
 
     def remove_punctuation(self, data) -> list[dict]:
         data_no_punct = []
@@ -369,6 +368,7 @@ class Datafier:
                 pad_value = "[PAD]"
                 padded_examples = []
                 padded_targets = []
+                assert self.input_vocabulary != {}, "Error with input vocabulary"
                 for example in examples:
                     example_length = len(example)
                     example = example + [pad_value for _ in range(self.max_length_examples - example_length)]

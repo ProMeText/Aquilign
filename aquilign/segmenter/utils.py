@@ -197,6 +197,9 @@ def tensorize(array):
     tensorized_array = torch.tensor(array)
     return tensorized_array
 
+def read_to_dict(path):
+    with open(path, "r") as f:
+        return json.load(f)
 
 def serialize_dict(dictionnary, path):
     with open(path, "w") as f:
@@ -231,3 +234,78 @@ def taux_ambiguite(label):
     values = label.values()
     pstdev = statistics.pstdev(values)
     return  statistics.mean(values)**2 / (pstdev + 1)
+
+
+
+def get_labels_from_preds(preds):
+    bert_labels = []
+    for pred in preds[-1]:
+        label = [idx for idx, value in enumerate(pred) if value == max(pred)][0]
+        bert_labels.append(label)
+    return bert_labels
+
+
+def get_correspondence(sent, tokenizer, verbose=False):
+    out = {}
+    tokenized_index = 0
+    for index, word in enumerate(sent):
+        # print(tokenizer.tokenize(word))
+        tokenized_word = tokenizer.tokenize(word)
+        if verbose:
+            print(tokenized_word)
+        out[index] = tuple(item for item in range(tokenized_index, tokenized_index + len(tokenized_word)))
+        tokenized_index += len(tokenized_word)
+    human_split_to_bert = out
+    bert_split_to_human_split = {value: key for key, value in human_split_to_bert.items()}
+    return human_split_to_bert, bert_split_to_human_split
+
+
+def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False):
+    predicted_labels = predicted_labels[1:-1]
+    if verbose:
+        print(f"Prediction: {predicted_labels}")
+        print(human_to_bert)
+        print(splitted_text)
+    realigned_list = []
+
+    # itering on original text
+    final_prediction = []
+    for index, value in enumerate(splitted_text):
+        predicted = human_to_bert[index]
+        # if no mismatch, copy the label
+        if len(predicted) == 1:
+            correct_label = predicted_labels[predicted[0]]
+            if verbose:
+                print(f"Position {index}")
+                print(predicted_labels)
+                print(predicted[0])
+                print(correct_label)
+        # mismatch
+        else:
+            correct_label = [predicted_labels[predicted[n]] for n in range(len(predicted))]
+            if verbose:
+                print(f"predicted labels mismatch :{predicted_labels}")
+                print(f"len predicted mismatch {len(predicted)}")
+                print(f"Corresponding labels in prediction: {correct_label}")
+            # Dans ce cas on regarde s'il y a 1 dans n'importe quelle position des rangs correspondants:
+            # on considère que BERT ne propose qu'une tokénisation plus importante que nous
+            if any([n == 1 for n in correct_label]):
+                correct_label = 1
+        final_prediction.append(correct_label)
+
+    assert len(final_prediction) == len(splitted_text), "List mismatch"
+
+    tokenized_sentence = " ".join(
+        [element if final_prediction[index] != 1 else f"\n{element}" for index, element in enumerate(splitted_text)])
+    if verbose:
+        print(f'final prediction {final_prediction}')
+        print(tokenized_sentence)
+    return tokenized_sentence
+
+def get_batches(text, tokens_per_example, regexp, batch_size):
+    regexp = re.compile(regexp)
+    words = re.split(regexp, text)
+    splitted = [' '.join(words[i:i + tokens_per_example]) for i in range(0, len(words), tokens_per_example)]
+    batched = [splitted[n:n+batch_size] for n in range(round(len(splitted)/batch_size))]
+    return batched
+

@@ -109,8 +109,12 @@ class Trainer:
 		self.config_dir = f"{self.output_dir}/config"
 		os.makedirs(self.config_dir, exist_ok=True)
 		out_conf_dict = copy.deepcopy(config_file)
-		out_conf_dict["architectures"] = out_conf_dict["architectures"][architecture]
-		out_conf_dict["architectures"]["name"] = architecture
+		if self.architecture not in ["BERT", "DISTILBERT"]:
+			out_conf_dict["architectures"] = out_conf_dict["architectures"][architecture]
+			out_conf_dict["architectures"]["name"] = architecture
+		else:
+			out_conf_dict["architectures"] = {"name": self.architecture}
+		out_conf_dict["global"]["vocab_dir"] = self.vocab_dir
 		utils.serialize_dict(out_conf_dict, f"{self.config_dir}/config.json")
 		os.makedirs(self.logs_dir, exist_ok=True)
 		os.makedirs(self.vocab_dir, exist_ok=True)
@@ -119,6 +123,7 @@ class Trainer:
 
 
 		self.data_augmentation = data_augmentation
+		print(f"Creating vocab is {create_vocab}")
 		self.train_dataloader = datafy.CustomTextDataset("train",
 													train_path=train_path,
 													test_path=test_path,
@@ -199,6 +204,7 @@ class Trainer:
 		else:
 			self.input_vocab = self.train_dataloader.datafy.input_vocabulary
 		assert self.input_vocab != {}, "Error with input vocabulary"
+		utils.serialize_dict(self.input_vocab, f"{self.vocab_dir}/input_vocab.json")
 		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
 
 		self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary

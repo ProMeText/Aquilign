@@ -54,8 +54,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		base_model_name = "distilbert/distilbert-base-multilingual-cased"
 	else:
 		lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
-		hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 20)
-		hidden_size = hidden_size_multiplier * 8
+		hidden_size = trial.suggest_int("hidden_size", 8, 160, step=8)
 		linear_layers = trial.suggest_int("linear_layers", 1, 4)
 		linear_layers_hidden_size = trial.suggest_categorical("linear_layers_hidden_size", [32, 64, 128, 256])
 		if architecture == "lstm":
@@ -71,20 +70,18 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		elif architecture == "cnn":
 			num_cnn_layers = trial.suggest_int("num_cnn_layers", 1, 15)
 			positional_embeddings = trial.suggest_categorical("positional_embeddings", [False, True])
-			kernel_size = trial.suggest_int("kernel_size", 1, 7)
-			kernel_size = kernel_size * 2 + 1
+			kernel_size = trial.suggest_int("kernel_size", 1, 15, step=2)
 			cnn_dropout = trial.suggest_float("cnn_dropout", 0, 0.8)
 			cnn_scale = trial.suggest_float("cnn_scale", 0, 0.8)
 			linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
 
-		batch_size_multiplier = trial.suggest_int("batch_size", 2, 10)
 		if architecture not in  ["transformers", "BERT", "DISTILBERT"]:
 			add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
-			batch_size = batch_size_multiplier * 8
+			batch_size = trial.suggest_int("batch_size", 16, 128, step=16)
 		else:
 			if architecture == "transformers":
 				num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
-			batch_size = batch_size_multiplier * 4
+			batch_size = trial.suggest_int("batch_size", 16, 64, step=16)
 	if architecture not in ["BERT", "DISTILBERT"]:
 		# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
 		use_pretrained_embeddings = False
@@ -96,8 +93,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		else:
 			use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
 			keep_bert_dimensions = False
-			emb_dim = trial.suggest_int("input_dim", 37, 50)
-			emb_dim *= 8
+			emb_dim = trial.suggest_int("input_dim", 300, 400, step=8)
 			if use_bert_tokenizer:
 				print("Using Bert tokenized data")
 				train_dataloader = bert_train_dataloader
@@ -113,8 +109,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
 		if include_lang_metadata:
 			freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
-			lang_emb_dim = trial.suggest_int("lang_emb_dim", 1, 8)
-			lang_emb_dim *=8
+			lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64, step=8)
 		else:
 			freeze_lang_embeddings = False
 			lang_emb_dim = 4

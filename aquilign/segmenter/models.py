@@ -302,8 +302,10 @@ class LSTM_Encoder(nn.Module):
 		if self.attention:
 			if self.bidi:
 				# La sortie du LSTM est doublée en taille si c'est bidirectionnel (lr et rl)
+				self.norm = nn.LayerNorm(self.hidden_dim * 2)
 				self.multihead_attn = nn.MultiheadAttention(self.hidden_dim * 2, 8)
 			else:
+				self.norm = nn.LayerNorm(self.hidden_dim)
 				self.multihead_attn = nn.MultiheadAttention(self.hidden_dim, 8)
 
 		layers = []
@@ -361,6 +363,7 @@ class LSTM_Encoder(nn.Module):
 
 		# Attention et classification
 		if self.attention:
+			lstm_out = self.norm(lstm_out)
 			attn_output, _ = self.multihead_attn(lstm_out, lstm_out, lstm_out)
 			outs = self.layers(attn_output + lstm_out)
 		else:
@@ -457,6 +460,7 @@ class CnnEncoder(nn.Module):
 
 		# Une couche d'attention multitête
 		if self.attention:
+			self.norm = nn.LayerNorm(cnn_emb_dim)
 			self.multihead_attn = nn.MultiheadAttention(cnn_emb_dim, 8)
 
 
@@ -558,6 +562,7 @@ class CnnEncoder(nn.Module):
 		# transformed = self.transformerEncoder(conved)
 		# Attention et classification
 		if self.attention:
+			conved = self.norm(conved)
 			attn_output, _ = self.multihead_attn(conved, conved, conved)
 			outs = self.decoder(attn_output + conved)
 		else:

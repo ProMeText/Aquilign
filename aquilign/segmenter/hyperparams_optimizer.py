@@ -388,14 +388,12 @@ def evaluate(model,
 			masks = masks.to(device)
 		else:
 			examples, langs, targets = data
-			langs = langs.to(device)
-		examples = examples.to(device)
+			tensor_langs = langs.to(device)
+		tensor_examples = examples.to(device)
 		targets = targets.to(device)
 
 		# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
 		# Timer.start_timer("preds")
-		tensor_examples = examples.to(device)
-		tensor_langs = langs.to(device)
 		with torch.no_grad():
 			# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
 			if architecture not in ["BERT", "DISTILBERT"]:

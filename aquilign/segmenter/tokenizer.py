@@ -1,6 +1,7 @@
 import re
 import sys
 
+import numpy as np
 from transformers import AutoTokenizer
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
@@ -83,9 +84,9 @@ class Tagger:
 
 
 		self.input_vocab = utils.read_to_dict(f"{vocab_dir}/input_vocab.json")
+		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
 		self.lang_vocab = utils.read_to_dict(f"{vocab_dir}/lang_vocab.json")
 		assert self.input_vocab != {}, "Error with input vocabulary"
-		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
 
 		self.target_classes = utils.read_to_dict(f"{vocab_dir}/target_classes.json")
 		self.reverse_target_classes = {value:key for key, value in self.target_classes.items()}
@@ -194,44 +195,46 @@ class Tagger:
 		The main tagging function. Takes a text as string, returns a list of segments.
 		"""
 		segmented = []
-		new_labels = []
 		data = utils.format_examples(text=data,
 								 tokens_per_example=100,
 								 regexp=self.tokens_regexp,
 								 lang=lang)
 		for formatted_example in tqdm.tqdm(data):
 			example, lang = formatted_example
+			example_as_words = [item for item in re.split(self.tokens_regexp, example) if item]
 			if self.architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer or self.use_pretrained_embeddings:
+				# In the case we use a BERT subword tokenizer
 				tokenized = self.tokenizer.encode(example, truncation=True, padding=True, return_tensors="pt", max_length=380)
 				if self.architecture in ["BERT", "DISTILBERT"]:
 					tokenized_inputs = tokenized['input_ids'].to(self.device)
 					masks = tokenized['attention_mask'].to(self.device)
-					preds = self.model(input_ids=tokenized_inputs, attention_mask=masks).tolist()
+					with torch.no_grad():
+						preds = self.model(input_ids=tokenized_inputs, attention_mask=masks).tolist()
 				else:
 					lang = torch.tensor([self.lang_vocab[lang]]).to(self.device)
-					preds = self.model(src=tokenized, lang=lang).tolist()
+					with torch.no_grad():
+						preds = self.model(src=tokenized, lang=lang).tolist()
 
 				# On convertit les tokens
-				splitted_pred = [item for item in re.split(self.tokens_regexp, example) if item]
 				bert_labels = utils.get_labels_from_preds(preds)
-				human_to_bert, bert_to_human = utils.get_correspondence(splitted_pred, self.tokenizer)
-				labels = utils.unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels,
-											  splitted_text=splitted_pred)
-				tokenized = labels.split("\n")
+				human_to_bert, bert_to_human = utils.get_correspondence(example_as_words, self.tokenizer)
+				tokenized = utils.unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels,
+											  splitted_text=example_as_words)
 				segmented.extend(tokenized)
 
 
 
 
 			else:
-				tokenized = self.tokenize(example).to(self.device)
-				lang = lang.to(self.device)
-				preds = self.model(tokenized, lang)[0]
-				preds = preds.view(-1, self.output_dim)
-				print(preds.shape)
-
-
-
+				# In the case we use a homemade tokenizer
+				tokenized, lang = self.tokenize(example, lang)
+				tokenized = torch.tensor(tokenized).to(self.device)
+				lang = torch.tensor(lang).to(self.device)
+				with torch.no_grad():
+					preds = self.model(tokenized, lang)
+				as_labels = utils.get_labels_from_preds(preds)
+				segmented_text = utils.apply_labels(example_as_words, as_labels)
+				segmented.extend(segmented_text)
 
 		return segmented
 
@@ -239,28 +242,16 @@ class Tagger:
 		"""
 		This function takes the targets and creates the examples.
 		"""
-		assert data != [], "Error with the data when producing the corpus"
-		examples = []
-		attention_masks = []
-		targets = []
-		langs = []
-		ids = []
-		text = example['example']
-		lang = example['lang']
-		as_tokens = [item for item in re.split(self.delimiters_regex, text) if item]
-		as_tokens_ids = [self.input_vocab[token] for token in as_tokens]
-		lang = self.lang_vocabulary[lang]
-
-
-
-		# On doit convertir la liste d'arrays vers un arrays, on concatène sur la dimension 0 (lignes)
-		ids = np.concatenate(ids, axis=0)
-		# targets = np.concatenate(targets, axis=0)
-		targets = torch.stack(targets, dim=0)
-		if self.architecture in ["BERT", "DISTILBERT"]:
-			return ids, attention_masks, langs, targets
-		else:
-			return ids, langs, targets
+		as_tokens = [item for item in re.split(self.tokens_regexp, example) if item]
+		as_tokens_ids = []
+		for token in as_tokens:
+			try:
+				as_tokens_ids.append(self.input_vocab[token.lower()])
+			except KeyError:
+				as_tokens_ids.append(self.input_vocab["[UNK]"])
+		lang = [self.lang_vocab[lang]]
+		ids = np.asarray([as_tokens_ids])
+		return ids, lang
 
 
 

@@ -513,9 +513,7 @@ class CnnEncoder(nn.Module):
 			embedded = self.pos1Dsum(embedded)
 		# tok_embedded = pos_embedded = [batch size, src len, emb dim]
 
-		# combine embeddings by elementwise summing
 		embedded = self.dropout(embedded)
-		# embedded = self.dropout(tok_embedded + pos_embedded)
 
 		# embedded = [batch size, src len, emb dim]
 

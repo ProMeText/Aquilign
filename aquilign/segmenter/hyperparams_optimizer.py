@@ -42,17 +42,22 @@ import os
 
 def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, model_size):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
+	base_model_name = config_file["global"]["base_model_name"]
+	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 	if architecture == "BERT":
 		lr = trial.suggest_float("learning_rate", 0.00004, 0.00005, log=False)
-		balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 		batch_size = 32
+		base_model_name = "google-bert/bert-base-multilingual-cased"
+	elif architecture == "DISTILBERT":
+		lr = trial.suggest_float("learning_rate", 0.00004, 0.00005, log=False)
+		batch_size = 32
+		base_model_name = "distilbert/distilbert-base-multilingual-cased"
 	else:
 		lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 		hidden_size_multiplier = trial.suggest_int("hidden_size_multiplier", 1, 20)
 		hidden_size = hidden_size_multiplier * 8
 		linear_layers = trial.suggest_int("linear_layers", 1, 4)
 		linear_layers_hidden_size = trial.suggest_categorical("linear_layers_hidden_size", [32, 64, 128, 256])
-		balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
 		if architecture == "lstm":
 			num_lstm_layers = trial.suggest_int("num_lstm_layers", 1, 4)
 			linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
@@ -73,14 +78,14 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
 
 		batch_size_multiplier = trial.suggest_int("batch_size", 2, 10)
-		if architecture not in  ["transformers", "BERT"]:
+		if architecture not in  ["transformers", "BERT", "DISTILBERT"]:
 			add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
 			batch_size = batch_size_multiplier * 8
 		else:
 			if architecture == "transformers":
 				num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
 			batch_size = batch_size_multiplier * 4
-	if architecture != "BERT":
+	if architecture not in ["BERT", "DISTILBERT"]:
 		# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
 		use_pretrained_embeddings = False
 		if use_pretrained_embeddings:
@@ -118,17 +123,16 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		dev_dataloader = bert_dev_dataloader
 		use_pretrained_embeddings = False
 		include_lang_metadata = False
+		use_bert_tokenizer = False
 
 
 	epochs = config_file["global"]["epochs"]
 	device = config_file["global"]["device"]
 	output_dir = config_file["global"]["out_dir"]
-	base_model_name = config_file["global"]["base_model_name"]
 	if device != "cpu":
 		device_name = torch.cuda.get_device_name(device)
 		print(f"Device name: {device_name}")
-
-	if architecture == "BERT" or use_pretrained_embeddings:
+	if architecture in ["BERT", "DISTILBERT"] or use_pretrained_embeddings:
 		tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 	else:
 		tokenizer = None
@@ -254,6 +258,9 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 	elif architecture == "BERT":
 		from transformers import AutoModelForTokenClassification
 		model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
+	elif architecture == "DISTILBERT":
+		from transformers import DistilBertForTokenClassification
+		model = DistilBertForTokenClassification.from_pretrained(base_model_name, num_labels=3)
 
 
 
@@ -294,14 +301,14 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		epoch_number = epoch + 1
 		print(f"Epoch {str(epoch_number)}")
 		for data in tqdm.tqdm(loaded_train_data, unit_scale=batch_size):
-			if architecture == "BERT":
-				examples, masks, langs, targets = data
+			if architecture in ["BERT", "DISTILBERT"]:
+				examples, masks, targets = data
 				masks = masks.to(device)
 			else:
 				examples, langs, targets = data
+				langs = langs.to(device)
 			examples = examples.to(device)
 			targets = targets.to(device)
-			langs = langs.to(device)
 			# Shape [batch_size, max_length]
 			# tensor_examples = examples.to(device)
 			# Shape [batch_size, max_length]
@@ -312,7 +319,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			# param.grad = None
 			optimizer.zero_grad()
 			# Shape [batch_size, max_length, output_dim]
-			if architecture != "BERT":
+			if architecture not in  ["BERT", "DISTILBERT"]:
 				output = model(examples, langs)
 				output = output.view(-1, output_dim)
 				tgt = targets.view(-1)
@@ -342,9 +349,10 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										 tokenizer=tokenizer,
 										 architecture=architecture)
 
-		weighted_recall_precision = (recall[2]*2 + precision[2]) / 3
+		weighted_recall_precision = (recall[2]*1.3 + precision[2]) / 2.3
+		f1_score = f1[2]
 		# results.append(weighted_recall_precision)
-		results.append(f1[2])
+		results.append(weighted_recall_precision)
 		with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt", "a") as f:
 			f.write(f"Epoch {epoch_number}: weighted: {round(weighted_recall_precision, 4)}, F1: {round(f1[2], 4)} (recall: {round(recall[2], 4)}, precision: {round(precision[2], 4)})\n")
 			if epoch_number == epochs:
@@ -375,14 +383,14 @@ def evaluate(model,
 	all_examples = []
 	model.eval()
 	for data in tqdm.tqdm(loaded_dev_data, unit_scale=batch_size):
-		if architecture == "BERT":
-			examples, masks, langs, targets = data
+		if architecture in ["BERT", "DISTILBERT"]:
+			examples, masks, targets = data
 			masks = masks.to(device)
 		else:
 			examples, langs, targets = data
+			langs = langs.to(device)
 		examples = examples.to(device)
 		targets = targets.to(device)
-		langs = langs.to(device)
 
 		# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3
 		# Timer.start_timer("preds")
@@ -390,7 +398,7 @@ def evaluate(model,
 		tensor_langs = langs.to(device)
 		with torch.no_grad():
 			# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-			if architecture != "BERT":
+			if architecture not in ["BERT", "DISTILBERT"]:
 				preds = model(examples, langs)
 			else:
 				preds = model(input_ids=examples, attention_mask=masks, labels=targets).logits

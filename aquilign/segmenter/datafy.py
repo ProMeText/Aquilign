@@ -60,7 +60,7 @@ class CustomTextDataset(Dataset):
             return len(self.datafy.dev_padded_examples)
 
     def __getitem__(self, idx):
-        if self.architecture == "BERT":
+        if self.architecture in ["BERT", "DISTILBERT"]:
             if self.mode == "train":
                 examples = self.datafy.train_padded_examples[idx]
                 masks = self.datafy.train_attention_masks[idx]
@@ -149,7 +149,7 @@ class Datafier:
         full_corpus = self.train_data + self.test_data + self.dev_data
         assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
         self.architecture = architecture
-        if self.architecture == "BERT":
+        if self.architecture in ["BERT", "DISTILBERT"]:
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
             self.create_lang_vocab(full_corpus)
             self.input_vocabulary = self.tokenizer.get_vocab()
@@ -233,7 +233,7 @@ class Datafier:
             full_corpus = self.train_data + self.remove_punctuation(self.train_data)
         else:
             full_corpus = self.train_data
-        if self.architecture == "BERT":
+        if self.architecture in ["BERT", "DISTILBERT"]:
             train_padded_examples, train_attention_masks, train_langs, train_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
             self.train_attention_masks = utils.tensorize(train_attention_masks)
         else:
@@ -252,7 +252,7 @@ class Datafier:
             full_corpus = self.test_data + self.remove_punctuation(self.test_data)
         else:
             full_corpus = self.test_data
-        if self.architecture == "BERT":
+        if self.architecture in ["BERT", "DISTILBERT"]:
             test_padded_examples, test_attention_masks, test_langs, test_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
             self.test_attention_masks = utils.tensorize(test_attention_masks)
         else:
@@ -270,7 +270,7 @@ class Datafier:
             full_corpus = self.dev_data + self.remove_punctuation(self.dev_data)
         else:
             full_corpus = self.dev_data
-        if self.architecture == "BERT":
+        if self.architecture in ["BERT", "DISTILBERT"]:
             dev_padded_examples, dev_attention_masks, dev_langs, dev_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
             self.dev_attention_masks = utils.tensorize(dev_attention_masks)
         else:
@@ -324,9 +324,9 @@ class Datafier:
             if self.filter_by_lang and lang != self.filter_by_lang:
                 continue
             # Si on veut utiliser des embeddings pré-entraînés, il faut tokéniser avec le tokéniseur maison
-            if self.use_pretrained_embeddings or self.use_bert_tokenizer or self.architecture == "BERT":
+            if self.use_pretrained_embeddings or self.use_bert_tokenizer or self.architecture in ["BERT", "DISTILBERT"]:
                 try:
-                    if self.architecture == "BERT":
+                    if self.architecture in ["BERT", "DISTILBERT"]:
                         example, masks, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380, output_masks=True)
                         attention_masks.append(masks.tolist())
                     else:
@@ -353,7 +353,7 @@ class Datafier:
 
             examples.append(example)
             targets.append(target)
-            if not self.architecture == "BERT":
+            if not self.architecture in ["BERT", "DISTILBERT"]:
                 langs.append(self.lang_vocabulary[lang])
 
 
@@ -364,7 +364,7 @@ class Datafier:
             print(np.mean([len(target) for target in targets]))
             print(max_length_targets)
             exit(0)
-        if self.architecture != "BERT":
+        if self.architecture not in ["BERT", "DISTILBERT"]:
             if self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
                 pad_value = "[PAD]"
                 padded_examples = []
@@ -389,7 +389,7 @@ class Datafier:
         ids = np.concatenate(ids, axis=0)
         # targets = np.concatenate(targets, axis=0)
         targets = torch.stack(targets, dim=0)
-        if self.architecture == "BERT":
+        if self.architecture in ["BERT", "DISTILBERT"]:
             return ids, attention_masks, langs, targets
         else:
             return ids, langs, targets

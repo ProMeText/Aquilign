@@ -18,11 +18,15 @@ class Tagger:
 		Main Class trainer
 		"""
 		config_file = utils.read_to_dict(f"{model_dir}/config/config.json")
-		self.saved_model = f"{model_dir}/models/best/best.pt"
+		vocab_path = f"{model_dir}/vocab"
+		self.saved_model = f"{model_dir}/{config_file['global']['model_path']}"
+		if ".safetensors" in self.saved_model:
+			use_safetensors = True
+		else:
+			use_safetensors = False
 		architecture = config_file["architecture"]["name"]
 		device = config_file["global"]["device"]
 		workers = config_file["global"]["workers"]
-		vocab_dir = config_file["global"]["vocab_dir"]
 		base_model_name = config_file["global"]["base_model_name"]
 		use_bert_tokenizer = config_file["global"]["use_bert_tokenizer"]
 		os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -83,12 +87,12 @@ class Tagger:
 
 
 
-		self.input_vocab = utils.read_to_dict(f"{vocab_dir}/input_vocab.json")
+		self.input_vocab = utils.read_to_dict(f"{vocab_path}/input_vocab.json")
 		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
-		self.lang_vocab = utils.read_to_dict(f"{vocab_dir}/lang_vocab.json")
+		self.lang_vocab = utils.read_to_dict(f"{vocab_path}/lang_vocab.json")
 		assert self.input_vocab != {}, "Error with input vocabulary"
 
-		self.target_classes = utils.read_to_dict(f"{vocab_dir}/target_classes.json")
+		self.target_classes = utils.read_to_dict(f"{vocab_path}/target_classes.json")
 		self.reverse_target_classes = {value:key for key, value in self.target_classes.items()}
 
 
@@ -185,8 +189,15 @@ class Tagger:
 		elif architecture in ["BERT", "DISTILBERT"]:
 			from transformers import AutoModelForTokenClassification
 			self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
-
-		self.model.load_state_dict(torch.load(self.saved_model, map_location=torch.device(self.device)))
+		if not use_safetensors:
+			self.model.load_state_dict(torch.load(self.saved_model, map_location=torch.device(self.device)))
+		else:
+			from safetensors import safe_open
+			params = {}
+			with safe_open(self.saved_model, framework="pt", device=self.device) as f:
+				for k in f.keys():
+					params[k] = f.get_tensor(k)
+			self.model.load_state_dict(params)
 		self.model.to(self.device)
 
 

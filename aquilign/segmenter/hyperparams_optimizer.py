@@ -388,8 +388,8 @@ def evaluate(model,
 			masks = masks.to(device)
 		else:
 			examples, langs, targets = data
-			tensor_langs = langs.to(device)
-		tensor_examples = examples.to(device)
+			langs = langs.to(device)
+		examples = examples.to(device)
 		targets = targets.to(device)
 
 		# https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3

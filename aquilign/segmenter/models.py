@@ -417,8 +417,9 @@ class CnnEncoder(nn.Module):
 				emb_dim = 768
 			self.embedding = torch.nn.Embedding(num_embeddings=self.input_dim, embedding_dim=emb_dim)
 			# Censé initialiser les paramètres avec les poids pré-entraînés
-			self.embedding.weight.data = torch.tensor(pretrained_weights)
-			print(f"Pretrained embeddings loaded dtype: {pretrained_weights.dtype}")
+			if load_pretrained_embeddings:
+				self.embedding.weight.data = torch.tensor(pretrained_weights)
+				print(f"Pretrained embeddings loaded dtype: {pretrained_weights.dtype}")
 		else:
 			# Sinon on utilise l'initialisation normale
 			self.embedding = nn.Embedding(input_dim, emb_dim)
@@ -431,7 +432,7 @@ class CnnEncoder(nn.Module):
 		else:
 			cnn_emb_dim = emb_dim
 
-		if positional_embeddings:
+		if self.positional_embeddings:
 			self.pos1Dsum = Summer(PositionalEncoding1D(cnn_emb_dim))
 
 		if include_lang_metadata:
@@ -503,17 +504,17 @@ class CnnEncoder(nn.Module):
 			# On concatène chaque token avec le vecteur de langue, c'est-à-dire qu'on augmente la
 			# dimensionnalité de chaque vecteur de mot dont la dimension sera la somme des deux dimensions:
 			# [batch_size, max_length, lang_metadata_dimensions + word_embedding_dimension]
-			tok_embedded = torch.cat((embedded, projected_lang), 2)
+			embedded = torch.cat((embedded, projected_lang), 2)
 		else:
-			tok_embedded = self.embedding(src)
+			embedded = self.embedding(src)
 		# pos_embedded = torch.zeros(tok_embedded.shape)
 
 		if self.positional_embeddings:
-			embedded = self.pos1Dsum(tok_embedded)
+			embedded = self.pos1Dsum(embedded)
 		# tok_embedded = pos_embedded = [batch size, src len, emb dim]
 
 		# combine embeddings by elementwise summing
-		embedded = self.dropout(tok_embedded)
+		embedded = self.dropout(embedded)
 		# embedded = self.dropout(tok_embedded + pos_embedded)
 
 		# embedded = [batch size, src len, emb dim]

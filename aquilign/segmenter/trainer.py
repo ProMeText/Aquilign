@@ -109,11 +109,11 @@ class Trainer:
 		self.config_dir = f"{self.output_dir}/config"
 		os.makedirs(self.config_dir, exist_ok=True)
 		out_conf_dict = copy.deepcopy(config_file)
-		if self.architecture not in ["BERT", "DISTILBERT"]:
+		if architecture not in ["BERT", "DISTILBERT"]:
 			out_conf_dict["architectures"] = out_conf_dict["architectures"][architecture]
 			out_conf_dict["architectures"]["name"] = architecture
 		else:
-			out_conf_dict["architectures"] = {"name": self.architecture}
+			out_conf_dict["architectures"] = {"name": architecture}
 		out_conf_dict["global"]["vocab_dir"] = self.vocab_dir
 		utils.serialize_dict(out_conf_dict, f"{self.config_dir}/config.json")
 		os.makedirs(self.logs_dir, exist_ok=True)

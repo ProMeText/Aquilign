@@ -345,14 +345,18 @@ class Trainer:
 		"""
 		We choose the best model based on a weighted average of precision and recall.
 		"""
+		f1_averages = []
 		weighted_averages = []
 		for result in self.results:
 			recall = result["recall"][1]
 			precision = result["precision"][1]
+			f1 = result["f1"][1]
 			weighted = (precision + (recall*2) ) / 3
 			weighted_averages.append(weighted.item())
+			f1_averages.append(f1.item())
 
 		max_average = max(weighted_averages)
+		max_average = max(f1_averages)
 		best_epoch = weighted_averages.index(max_average)
 		message = f"Best model: {best_epoch} with {max_average} weighted precision and recall on dev data."
 		utils.append_to_file(message, self.final_results_file)
@@ -367,8 +371,7 @@ class Trainer:
 			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch}.pt":
 				shutil.copy(model, f"{self.output_dir}/models/best/best.pt")
 				print(f"Saving best model to {self.output_dir}/models/best/best.pt")
-			else:
-				os.remove(model)
+			os.remove(model)
 		self.best_model = f"{self.output_dir}/models/best/best.pt"
 
 	def train(self, clip=0.1):
@@ -399,7 +402,6 @@ class Trainer:
 			self.epochs_log_file
 		)
 		utils.append_to_file("---", self.epochs_log_file)
-		torch.save(self.model, f"{self.output_dir}/models/model_orig.pt")
 		for epoch in range(self.epochs):
 			self.model.train()
 			epoch_number = epoch + 1
@@ -468,7 +470,6 @@ class Trainer:
 		all_targets = []
 		all_examples = []
 
-		# TODO: choix du meilleur modèle !
 
 		self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
 		print("Model loaded.")
@@ -497,13 +498,13 @@ class Trainer:
 		cat_preds = torch.cat(all_preds, dim=0)
 		cat_targets = torch.cat(all_targets, dim=0)
 		cat_examples = torch.cat(all_examples, dim=0)
-		eval.compute_ambiguity_metrics(tokens=cat_examples,
-												   labels=cat_targets,
-												   predictions=cat_preds,
-												   id_to_word=self.reverse_input_vocab,
-												   word_to_id=self.input_vocab,
-												   log_dir = self.logs_dir,
-												   name="global")
+		# eval.compute_ambiguity_metrics(tokens=cat_examples,
+		# 										   labels=cat_targets,
+		# 										   predictions=cat_preds,
+		# 										   id_to_word=self.reverse_input_vocab,
+		# 										   word_to_id=self.input_vocab,
+		# 										   log_dir = self.logs_dir,
+		# 										   name="global")
 		results = eval.compute_metrics(predictions=cat_preds,
 									   labels=cat_targets,
 									   examples=cat_examples,
@@ -600,13 +601,13 @@ class Trainer:
 				continue
 			cat_targets = torch.cat(all_targets, dim=0)
 			cat_examples = torch.cat(all_examples, dim=0)
-			eval.compute_ambiguity_metrics(tokens=cat_examples,
-													   labels=cat_targets,
-													   predictions=cat_preds,
-													   id_to_word=self.reverse_input_vocab,
-													   word_to_id=self.input_vocab,
-													   log_dir=self.logs_dir,
-													   name=lang)
+			# eval.compute_ambiguity_metrics(tokens=cat_examples,
+			# 										   labels=cat_targets,
+			# 										   predictions=cat_preds,
+			# 										   id_to_word=self.reverse_input_vocab,
+			# 										   word_to_id=self.input_vocab,
+			# 										   log_dir=self.logs_dir,
+			# 										   name=lang)
 			results = eval.compute_metrics(predictions=cat_preds,
 										   labels=cat_targets,
 										   examples=cat_examples,

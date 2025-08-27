@@ -28,6 +28,7 @@ class Tagger:
 		include_lang_metadata = config_file["global"]["include_lang_metadata"]
 		lang_emb_dim = config_file["global"]["lang_emb_dim"]
 		linear_layers = config_file["global"]["linear_layers"]
+		self.use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
 		linear_layers_hidden_size = config_file["global"]["linear_layers_hidden_size"]
 		emb_dim = config_file["global"]["emb_dim"]
 		if use_bert_tokenizer or architecture in ["BERT", "DISTILBERT"]:
@@ -72,7 +73,7 @@ class Tagger:
 		self.all_dataset_on_device = False
 		print("Loading data")
 		self.use_bert_tokenizer = use_bert_tokenizer
-		if architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer:
+		if architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer or self.use_pretrained_embeddings:
 			self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 		self.tokens_regexp = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
 		self.base_model_name = base_model_name
@@ -184,11 +185,14 @@ class Tagger:
 			from transformers import AutoModelForTokenClassification
 			self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
 
-		self.model.load_state_dict(torch.load(self.saved_model))
+		self.model.load_state_dict(torch.load(self.saved_model, map_location=torch.device(self.device)))
 		self.model.to(self.device)
 
 
-	def tag(self, data, lang):
+	def tag(self, data:str, lang:str) -> list[str]:
+		"""
+		The main tagging function. Takes a text as string, returns a list of segments.
+		"""
 		segmented = []
 		new_labels = []
 		data = utils.format_examples(text=data,
@@ -196,8 +200,8 @@ class Tagger:
 								 regexp=self.tokens_regexp,
 								 lang=lang)
 		for formatted_example in tqdm.tqdm(data):
-			if self.architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer:
-				example, lang = formatted_example
+			example, lang = formatted_example
+			if self.architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer or self.use_pretrained_embeddings:
 				tokenized = self.tokenizer.encode(example, truncation=True, padding=True, return_tensors="pt", max_length=380)
 				if self.architecture in ["BERT", "DISTILBERT"]:
 					tokenized_inputs = tokenized['input_ids'].to(self.device)
@@ -207,34 +211,31 @@ class Tagger:
 					lang = torch.tensor([self.lang_vocab[lang]]).to(self.device)
 					preds = self.model(src=tokenized, lang=lang).tolist()
 
-
+				# On convertit les tokens
 				splitted_pred = [item for item in re.split(self.tokens_regexp, example) if item]
 				bert_labels = utils.get_labels_from_preds(preds)
 				human_to_bert, bert_to_human = utils.get_correspondence(splitted_pred, self.tokenizer)
 				labels = utils.unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels,
-												  splitted_text=splitted_pred)
-				new_labels.append(labels)
-				print(new_labels)
-				exit(0)
+											  splitted_text=splitted_pred)
+				tokenized = labels.split("\n")
+				segmented.extend(tokenized)
+
+
+
 
 			else:
-				examples, langs = formatted_example
-				tokenized = self.tokenize(examples).to(self.device)
-				langs = langs.to(self.device)
-				preds = self.model(tokenized, langs)[0]
-				#preds = preds.view(-1, self.output_dim)
+				tokenized = self.tokenize(example).to(self.device)
+				lang = lang.to(self.device)
+				preds = self.model(tokenized, lang)[0]
+				preds = preds.view(-1, self.output_dim)
 				print(preds.shape)
-			exit(0)
 
 
 
-			tokenized_batch = new_labels.split("\n")
-			segmented.extend(tokenized_batch)
 
-			return segmented
+		return segmented
 
-
-	def tokenize(self, data: list, debug=True) -> tuple:
+	def tokenize(self, example, lang, debug=True) -> tuple:
 		"""
 		This function takes the targets and creates the examples.
 		"""
@@ -244,78 +245,13 @@ class Tagger:
 		targets = []
 		langs = []
 		ids = []
-		if debug:
-			data = data[:100]
-		for example in data:
-			text = example['example']
-			lang = example['lang']
-			if self.filter_by_lang and lang != self.filter_by_lang:
-				continue
-			# Si on veut utiliser des embeddings pré-entraînés, il faut tokéniser avec le tokéniseur maison
-			if self.use_pretrained_embeddings or self.use_bert_tokenizer or self.architecture in ["BERT", "DISTILBERT"]:
-				try:
-					if self.architecture in ["BERT", "DISTILBERT"]:
-						example, masks, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer,
-																								  self.delimiter,
-																								  max_length=380,
-																								  output_masks=True)
-						attention_masks.append(masks.tolist())
-					else:
-						example, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer,
-																						   self.delimiter,
-																						   max_length=380)
-					ids.append(idents)
-				except TypeError as e:
-					print("Passing.")
-					continue
-			else:
-				target = []
-				example = []
-				text = text.replace(self.delimiter, " " + self.delimiter)
-				as_tokens = re.split(self.delimiters_regex, text)
-				for idx, token in enumerate(as_tokens):
-					if not token:
-						continue
-					if self.delimiter in token:
-						target.append("[SB]")
-						example.append(token.replace(self.delimiter, "").lower())
-					else:
-						target.append("[SC]")
-						example.append(token.lower())
-				assert len(example) == len(target), "Length inconsistency"
+		text = example['example']
+		lang = example['lang']
+		as_tokens = [item for item in re.split(self.delimiters_regex, text) if item]
+		as_tokens_ids = [self.input_vocab[token] for token in as_tokens]
+		lang = self.lang_vocabulary[lang]
 
-			examples.append(example)
-			targets.append(target)
-			if not self.architecture in ["BERT", "DISTILBERT"]:
-				langs.append(self.lang_vocabulary[lang])
 
-		self.max_length_examples = max([len(example) for example in examples])
-		max_length_targets = max([len(target) for target in targets])
-		if max_length_targets > 500:
-			print("There is a problem with some line way too long. Please check the datasets.")
-			print(np.mean([len(target) for target in targets]))
-			print(max_length_targets)
-			exit(0)
-		if self.architecture not in ["BERT", "DISTILBERT"]:
-			if self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
-				pad_value = "[PAD]"
-				padded_examples = []
-				padded_targets = []
-				assert self.input_vocabulary != {}, "Error with input vocabulary"
-				for example in examples:
-					example_length = len(example)
-					example = example + [pad_value for _ in range(self.max_length_examples - example_length)]
-					example = ["[PAD]"] + example
-					example = [self.input_vocabulary[token] for token in example]
-					padded_examples.append(example)
-
-				for target in targets:
-					target_length = len(target)
-					target = target + [pad_value for _ in range(max_length_targets - target_length)]
-					target = ["[PAD]"] + target
-					target = [self.target_classes[token] for token in target]
-					padded_targets.append(target)
-				return padded_examples, langs, padded_targets
 
 		# On doit convertir la liste d'arrays vers un arrays, on concatène sur la dimension 0 (lignes)
 		ids = np.concatenate(ids, axis=0)

@@ -5,11 +5,14 @@ import aquilign.align.graph_merge as graph_merge
 import aquilign.align.utils as utils
 import aquilign.preproc.tok_apply as bert_tokenize
 import aquilign.preproc.regex_tokenization as regex_tokenization
+import aquilign.segmenter.tokenizer as new_tokenizer
 from aquilign.align.encoder import Encoder
 from aquilign.align.aligner import Bertalign, Bertalign_Embbed
 import pandas as pd
 import argparse
 import glob
+
+from aquilign.segmenter.tokenizer import Tagger
 
 
 def create_pairs(full_list: list, main_wit_index: int) -> list[tuple]:
@@ -41,7 +44,8 @@ class Aligner:
                  device="cpu",
                  tokenizer="regexp",
                  tok_models=None,
-                 multilingual=True
+                 multilingual=True,
+                 model_dir=None,
                  ):
         self.model = model
         self.alignment_dict = dict()
@@ -49,6 +53,7 @@ class Aligner:
         self.files_path = glob.glob(f"{input_dir}/*/*.txt")
         self.files_path.sort()
         self.device = device
+        self.model_dir = model_dir
         self.multilingual_segmentation_model = multilingual
         assert any([main_wit in path for path in
                     self.files_path]), "Main wit doesn't match witnesses paths, please check arguments. " \
@@ -81,6 +86,7 @@ class Aligner:
         """
         This function procedes to the alignments two by two and then merges the alignments into a single alignement
         """
+        Tokenizer = new_tokenizer.Tagger(model_dir=self.model_dir)
         pivot_text = self.wit_pairs[0][0]
         if self.multilingual_segmentation_model and self.tokenizer == "bert-based":
             pivot_text_lang = "ml"
@@ -96,13 +102,15 @@ class Aligner:
                                                       use_punctuation=True,
                                                       lang=pivot_text_lang))
         else:
-            first_tokenized_text = bert_tokenize.tokenize_text(input_file=pivot_text,
-                                                               corpus_limit=self.corpus_limit,
-                                                               remove_punct=False,
-                                                               tok_models=self.tok_models,
-                                                               output_dir=self.out_dir,
-                                                               device=self.device,
-                                                               lang=pivot_text_lang)
+
+            first_tokenized_text = Tokenizer.tag(data=pivot_text,lang=pivot_text_lang, read_file=True)
+            # first_tokenized_text = bert_tokenize.tokenize_text(input_file=pivot_text,
+            #                                                    corpus_limit=self.corpus_limit,
+            #                                                    remove_punct=False,
+            #                                                    tok_models=self.tok_models,
+            #                                                    output_dir=self.out_dir,
+            #                                                    device=self.device,
+            #                                                    lang=pivot_text_lang)
 
         sentence_embeddings = Bertalign_Embbed(model=self.model,
                                                max_align=self.max_align,
@@ -136,13 +144,14 @@ class Aligner:
                                                           use_punctuation=True,
                                                           lang=current_wit_lang))
             else:
-                second_tokenized_text = bert_tokenize.tokenize_text(input_file=wit_to_compare,
-                                                                    corpus_limit=self.corpus_limit,
-                                                                    remove_punct=False,
-                                                                    tok_models=self.tok_models,
-                                                                    output_dir=self.out_dir,
-                                                                    device=self.device,
-                                                                    lang=current_wit_lang)
+                second_tokenized_text = Tokenizer.tag(data=wit_to_compare, lang=current_wit_lang, read_file=True)
+                # second_tokenized_text = bert_tokenize.tokenize_text(input_file=wit_to_compare,
+                #                                                     corpus_limit=self.corpus_limit,
+                #                                                     remove_punct=False,
+                #                                                     tok_models=self.tok_models,
+                #                                                     output_dir=self.out_dir,
+                #                                                     device=self.device,
+                #                                                     lang=current_wit_lang)
             assert second_tokenized_text != [], f"Erreur avec le texte tokénisé du témoin comparé {wit_to_compare_name}"
             utils.write_json(f"result_dir/{self.out_dir}/tokenized_{wit_to_compare_name}.json", second_tokenized_text)
             utils.write_tokenized_text(f"result_dir/{self.out_dir}/tokenized_{wit_to_compare_name}.txt",
@@ -243,7 +252,7 @@ class Aligner:
 
 
 def run_alignments(out_dir, input_dir, main_wit, prefix, device, use_punctuation, tokenizer, tok_models, multilingual,
-                   corpus_limit=None, model_name_or_path="LaBSE"):
+                   corpus_limit=None, model_name_or_path="LaBSE", model_dir=None):
     # TODO: augmenter la sensibilité à la différence sémantique pour apporter plus d'omissions dans le texte. La fin
     # Est beaucoup trop mal alignée, alors que ça irait bien avec + d'absence. Ça doit être possible vu que des omissions sont créés.
 
@@ -262,7 +271,8 @@ def run_alignments(out_dir, input_dir, main_wit, prefix, device, use_punctuation
                         device=device,
                         tokenizer=tokenizer,
                         tok_models=tok_models,
-                        multilingual=multilingual)
+                        multilingual=multilingual,
+                        model_dir=model_dir)
     MyAligner.parallel_align()
     utils.write_json(f"result_dir/{out_dir}/alignment_dict.json", MyAligner.alignment_dict)
     align_dict = utils.read_json(f"result_dir/{out_dir}/alignment_dict.json")
@@ -297,6 +307,8 @@ if __name__ == '__main__':
                         help="Use multilingual segmentation model.")
     parser.add_argument("-m", "--model", default=True,
                         help="Name or path to model.")
+    parser.add_argument("-md", "--model_dir", default=True,
+                        help="Name or path to model dir.")
     parser.add_argument("-mw", "--main_wit",
                         help="Path to pivot witness.")
     parser.add_argument("-p", "--prefix", default=None,
@@ -317,6 +329,7 @@ if __name__ == '__main__':
     prefix = args.prefix
     model = args.model
     device = args.device
+    model_dir = args.model_dir
     corpus_limit = args.corpus_limit
     if corpus_limit:
         corpus_limit = float(corpus_limit)
@@ -356,4 +369,5 @@ if __name__ == '__main__':
                    tok_models,
                    multilingual,
                    corpus_limit,
-                   model)
+                   model,
+                   model_dir)

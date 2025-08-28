@@ -2,7 +2,7 @@ import re
 import sys
 
 import numpy as np
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, BertConfig
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
 import torch
@@ -188,9 +188,12 @@ class Tagger:
 									   )
 		elif architecture in ["BERT", "DISTILBERT"]:
 			from transformers import AutoModelForTokenClassification
-			self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
+			with torch.no_grad():
+				print("Warning, BERT tokenizer not fully implemented yet")
+				self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
 		if not use_safetensors:
-			self.model.load_state_dict(torch.load(self.saved_model, map_location=torch.device(self.device)))
+			with torch.no_grad():
+				self.model.load_state_dict(torch.load(self.saved_model, map_location=torch.device(self.device)))
 		else:
 			from safetensors import safe_open
 			params = {}
@@ -215,16 +218,14 @@ class Tagger:
 			example_as_words = [item for item in re.split(self.tokens_regexp, example) if item]
 			if self.architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer or self.use_pretrained_embeddings:
 				# In the case we use a BERT subword tokenizer
-				tokenized = self.tokenizer.encode(example, truncation=True, padding=True, return_tensors="pt", max_length=380)
+				tokenized = self.tokenizer(example, truncation=True, padding="max_length", return_tensors="pt", max_length=380)
 				if self.architecture in ["BERT", "DISTILBERT"]:
 					tokenized_inputs = tokenized['input_ids'].to(self.device)
 					masks = tokenized['attention_mask'].to(self.device)
-					with torch.no_grad():
-						preds = self.model(input_ids=tokenized_inputs, attention_mask=masks).tolist()
+					preds = self.model(input_ids=tokenized_inputs, attention_mask=masks).logits.tolist()
 				else:
 					lang = torch.tensor([self.lang_vocab[lang]]).to(self.device)
-					with torch.no_grad():
-						preds = self.model(src=tokenized, lang=lang).tolist()
+					preds = self.model(src=tokenized, lang=lang).tolist()
 
 				# On convertit les tokens
 				bert_labels = utils.get_labels_from_preds(preds)
@@ -246,7 +247,6 @@ class Tagger:
 				as_labels = utils.get_labels_from_preds(preds)
 				segmented_text = utils.apply_labels(example_as_words, as_labels)
 				segmented.extend(segmented_text)
-
 		return segmented
 
 	def tokenize(self, example, lang, debug=True) -> tuple:
@@ -274,4 +274,7 @@ if __name__ == '__main__':
 	lang = "ca"
 	Tagger = Tagger(model_dir=model_dir,
 					batch_size=batch_size)
-	Tagger.tag(text_as_string, lang)
+	segmented_text = Tagger.tag(text_as_string, lang)
+
+	with open(f"/home/mgl/Documents/output.txt", "w") as output:
+		output.write("\n".join(segmented_text))

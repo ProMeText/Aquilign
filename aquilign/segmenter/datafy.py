@@ -167,7 +167,10 @@ class Datafier:
 
     def create_lang_vocab(self, data):
         langs = {item["lang"] for item in data}
-        self.lang_vocabulary = {lang:idx for idx, lang in enumerate(langs)}
+        lang_vocab = {"[UNK]": 0}
+        self.lang_vocabulary = {
+            **lang_vocab, **{lang:idx + 1 for idx, lang in enumerate(langs)}
+        }
         if self.tuning_mode is False:
             utils.serialize_dict(self.lang_vocabulary, f"{self.vocab_dir}/lang_vocab.json")
 

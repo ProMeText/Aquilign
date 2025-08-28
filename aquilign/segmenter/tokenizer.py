@@ -12,8 +12,7 @@ import os
 
 class Tagger:
 	def  __init__(self,
-				  model_dir,
-				  batch_size):
+				  model_dir):
 		"""
 		Main Class trainer
 		"""
@@ -97,7 +96,6 @@ class Tagger:
 
 
 		self.tgt_PAD_IDX = self.target_classes["[PAD]"]
-		self.batch_size = int(batch_size)
 		self.output_dim = len(self.target_classes)
 		self.include_lang_metadata = include_lang_metadata
 		self.best_model = None
@@ -131,7 +129,7 @@ class Tagger:
 											 positional_embeddings=False,
 											 device=self.device,
 											 lstm_hidden_size=lstm_hidden_size,
-											 batch_size=batch_size,
+											 batch_size=1,
 											 num_langs=len(self.lang_vocab),
 											 num_lstm_layers=num_lstm_layers,
 											 include_lang_metadata=include_lang_metadata,
@@ -204,10 +202,21 @@ class Tagger:
 		self.model.to(self.device)
 
 
-	def tag(self, data:str, lang:str) -> list[str]:
+	def tag(self, data:str, lang:str, read_file:bool=False) -> list[str]:
 		"""
-		The main tagging function. Takes a text as string, returns a list of segments.
+		The main tagging function. Takes a text as string and the lang, returns a list of segments.
+		Parameters:
+			data: str: the text to be tagged, as a path or a string.
+			lang: str: the language code of the text.
+			read_file: whether to read the file to a string or to process a string directly
 		"""
+		if read_file:
+			with open(data, "r") as f:
+				data = f.read()
+		if lang not in self.lang_vocab:
+			print("Lang should be represented as in the lang vocabulary json file. Please check its encoding")
+			print("Representing lang as [UNK]. Results might be unsatisfactory.")
+			lang = "[UNK]"
 		segmented = []
 		data = utils.format_examples(text=data,
 								 tokens_per_example=100,
@@ -225,7 +234,7 @@ class Tagger:
 					preds = self.model(input_ids=tokenized_inputs, attention_mask=masks).logits.tolist()
 				else:
 					lang = torch.tensor([self.lang_vocab[lang]]).to(self.device)
-					preds = self.model(src=tokenized, lang=lang).tolist()
+					preds = self.model(src=tokenized['input_ids'], lang=lang).tolist()
 
 				# On convertit les tokens
 				bert_labels = utils.get_labels_from_preds(preds)
@@ -233,9 +242,6 @@ class Tagger:
 				tokenized = utils.unalign_labels(human_to_bert=human_to_bert, predicted_labels=bert_labels,
 											  splitted_text=example_as_words)
 				segmented.extend(tokenized)
-
-
-
 
 			else:
 				# In the case we use a homemade tokenizer
@@ -268,13 +274,11 @@ class Tagger:
 
 if __name__ == '__main__':
 	model_dir = sys.argv[1]
-	batch_size = int(sys.argv[2])
 	with open("data/DeRegiminePrincipum/cat_3_3_11.txt", "r") as input_txt:
 		text_as_string = input_txt.read()
 	lang = "ca"
-	Tagger = Tagger(model_dir=model_dir,
-					batch_size=batch_size)
-	segmented_text = Tagger.tag(text_as_string, lang)
+	tagger = Tagger(model_dir=model_dir)
+	segmented_text = tagger.tag(text_as_string, lang)
 
 	with open(f"/home/mgl/Documents/output.txt", "w") as output:
 		output.write("\n".join(segmented_text))

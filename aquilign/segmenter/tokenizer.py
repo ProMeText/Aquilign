@@ -216,6 +216,7 @@ class Tagger:
 		if lang not in self.lang_vocab:
 			print("Lang should be represented as in the lang vocabulary json file. Please check its encoding")
 			print("Representing lang as [UNK]. Results might be unsatisfactory.")
+			# TO BE CHANGED !!!
 			lang = "la"
 		segmented = []
 		data = utils.format_examples(text=data,
@@ -233,8 +234,9 @@ class Tagger:
 					masks = tokenized['attention_mask'].to(self.device)
 					preds = self.model(input_ids=tokenized_inputs, attention_mask=masks).logits.tolist()
 				else:
+					tokenized_inputs = tokenized['input_ids'].to(self.device)
 					lang = torch.tensor([self.lang_vocab[lang]]).to(self.device)
-					preds = self.model(src=tokenized['input_ids'], lang=lang).tolist()
+					preds = self.model(src=tokenized_inputs, lang=lang).tolist()
 
 				# On convertit les tokens
 				bert_labels = utils.get_labels_from_preds(preds)

@@ -216,7 +216,7 @@ class Tagger:
 		if lang not in self.lang_vocab:
 			print("Lang should be represented as in the lang vocabulary json file. Please check its encoding")
 			print("Representing lang as [UNK]. Results might be unsatisfactory.")
-			lang = "[UNK]"
+			lang = "la"
 		segmented = []
 		data = utils.format_examples(text=data,
 								 tokens_per_example=100,

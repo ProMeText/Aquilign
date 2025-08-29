@@ -1,5 +1,30 @@
 import copy
-import re
+import random
+import sys
+import json
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-a", "--architecture", default="lstm",
+					help="Architecture to be tested")
+parser.add_argument("-p", "--parameters", default=None,
+					help="Path to parameters file")
+parser.add_argument("-d", "--debug", default=False,
+					help="Debug mode")
+parser.add_argument("-n", "--out_name", default="",
+					help="Debug mode")
+args = parser.parse_args()
+architecture = args.architecture
+parameters = args.parameters
+debug = args.debug
+out_dir_suffix = args.out_name
+with open(parameters, "r") as input_json:
+	config_file = json.load(input_json)
+
+# Gestion des imports
+if config_file["global"]["import"] != "":
+	sys.path.append(config_file["global"]["import"])
+	
 from transformers import AutoTokenizer
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
@@ -12,22 +37,17 @@ import tqdm
 import os
 import glob
 import shutil
-import sys
 
 
 class Trainer:
 	def  __init__(self,
-				  config_file):
+				  config_file,
+				  out_dir_suffix):
 		"""
 		Main Class trainer
 		"""
 		self.date_hour = datetime.datetime.now().isoformat()
-		architecture = sys.argv[2]
-		if len(sys.argv) == 4:
-			self.debug = True if sys.argv[3] == "True" else False
-		else:
-			self.debug = False
-
+		self.debug = debug
 		fine_tune = False
 		epochs = config_file["global"]["epochs"]
 		batch_size = config_file["global"]["batch_size"]
@@ -103,7 +123,9 @@ class Trainer:
 		self.test_path = test_path
 		self.dev_path = dev_path
 		self.fine_tune = fine_tune
-		self.output_dir = output_dir + f"/{self.date_hour}"
+		if out_dir_suffix != "":
+			out_dir_suffix = f"_{out_dir_suffix}"
+		self.output_dir = output_dir + f"/{self.date_hour}" + out_dir_suffix
 		self.logs_dir = f"{self.output_dir}/logs"
 		self.vocab_dir = f"{self.output_dir}/vocab"
 		self.config_dir = f"{self.output_dir}/config"
@@ -613,7 +635,7 @@ class Trainer:
 										   id_to_word=self.reverse_input_vocab,
 										   idx_to_class=self.reverse_target_classes,
 										   padding_idx=self.tgt_PAD_IDX,
-										   batch_size=batch_size,
+										   batch_size=self.batch_size,
 										   last_epoch=False,
 										   tokenizer=self.tokenizer)
 			results_per_lang[lang] = results
@@ -687,3 +709,11 @@ class Trainer:
 		print(f"Results for all langs:")
 		utils.format_results(results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"])
 		return (recall, precision, f1)
+
+
+
+if __name__ == '__main__':
+	random.seed(1234)
+	trainer = Trainer(config_file=config_file,
+					  out_dir_suffix=out_dir_suffix)
+	trainer.train()

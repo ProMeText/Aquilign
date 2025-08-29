@@ -114,7 +114,7 @@ class Trainer:
 			out_conf_dict["architecture"]["name"] = architecture
 		else:
 			out_conf_dict["architecture"] = {"name": architecture}
-		out_conf_dict["global"]["vocab_dir"] = self.vocab_dir
+		out_conf_dict["global"]["model_path"] = "models/best/best.pt"
 		utils.serialize_dict(out_conf_dict, f"{self.config_dir}/config.json")
 		os.makedirs(self.logs_dir, exist_ok=True)
 		os.makedirs(self.vocab_dir, exist_ok=True)

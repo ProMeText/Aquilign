@@ -91,8 +91,8 @@ def tokenize_words(sentence:str, delimiter) -> list:
         except IndexError:
             print(f"Index error on sentence:\n '{sentence}'")
             if sentence[-1] == delimiter:
-                print("Last char of the sentence should not be the delimiter. Exiting")
-            exit(0)
+                print("Last char of the sentence should not be the delimiter.")
+                sentenceAsList = sentenceAsList[:-1]
         sentenceAsList[alone_delim_index] = delimiter + to_merge
     return sentenceAsList
 
@@ -203,7 +203,7 @@ def read_to_dict(path):
 
 def serialize_dict(dictionnary, path):
     with open(path, "w") as f:
-        json.dump(dictionnary, f)
+        json.dump(dictionnary, f, indent=3)
 
 def encode_text(input_text:str, token_to_idx:dict, delimiters):
 	return [token_to_idx[item.lower()] for item in re.split(delimiters, input_text) if item not in [None, '']]

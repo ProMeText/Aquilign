@@ -2,7 +2,7 @@ import re
 import sys
 
 import numpy as np
-from transformers import AutoTokenizer, BertConfig
+from transformers import AutoTokenizer
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
 import torch
@@ -19,11 +19,9 @@ class Tagger:
 		config_file = utils.read_to_dict(f"{model_dir}/config/config.json")
 		vocab_path = f"{model_dir}/vocab"
 		self.saved_model = f"{model_dir}/{config_file['global']['model_path']}"
-		if ".safetensors" in self.saved_model:
-			use_safetensors = True
-		else:
-			use_safetensors = False
 		architecture = config_file["architecture"]["name"]
+		if architecture in ["BERT", "DISTILBERT"]:
+			model_name = config_file["global"]["model_name"]
 		device = config_file["global"]["device"]
 		workers = config_file["global"]["workers"]
 		base_model_name = config_file["global"]["base_model_name"]
@@ -143,6 +141,8 @@ class Tagger:
 											 use_bert_tokenizer=use_bert_tokenizer,
 											 keep_bert_dimensions=keep_bert_dimensions,
 											 linear_dropout=linear_dropout)
+			with torch.no_grad():
+				self.model.load_state_dict(torch.load(self.saved_model, map_location=torch.device(self.device)))
 		elif architecture == "gru":
 			self.model = models.GRU_Encoder(input_dim=self.input_dim,
 											 emb_dim=emb_dim,
@@ -151,7 +151,7 @@ class Tagger:
 											 positional_embeddings=False,
 											 device=self.device,
 											 hidden_size=hidden_size,
-											 batch_size=batch_size,
+											 batch_size=1,
 											 num_langs=len(self.lang_vocab),
 											 num_layers=num_layers,
 											 include_lang_metadata=include_lang_metadata,
@@ -161,6 +161,8 @@ class Tagger:
 											 load_pretrained_embeddings=False,
 											 pretrained_weights=None
 					)
+			with torch.no_grad():
+				self.model.load_state_dict(torch.load(self.saved_model, map_location=torch.device(self.device)))
 		elif architecture == "cnn":
 			self.model = models.CnnEncoder(input_dim=self.input_dim,
 									   emb_dim=emb_dim,
@@ -184,21 +186,13 @@ class Tagger:
 									   keep_bert_dimensions=keep_bert_dimensions,
 									   linear_dropout=linear_dropout
 									   )
+			with torch.no_grad():
+				self.model.load_state_dict(torch.load(self.saved_model, map_location=torch.device(self.device)))
 		elif architecture in ["BERT", "DISTILBERT"]:
 			from transformers import AutoModelForTokenClassification
 			with torch.no_grad():
 				print("Warning, BERT tokenizer not fully implemented yet")
-				self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
-		if not use_safetensors:
-			with torch.no_grad():
-				self.model.load_state_dict(torch.load(self.saved_model, map_location=torch.device(self.device)))
-		else:
-			from safetensors import safe_open
-			params = {}
-			with safe_open(self.saved_model, framework="pt", device=self.device) as f:
-				for k in f.keys():
-					params[k] = f.get_tensor(k)
-			self.model.load_state_dict(params)
+				self.model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels=3)
 		self.model.to(self.device)
 
 
@@ -229,12 +223,11 @@ class Tagger:
 			if self.architecture in ["BERT", "DISTILBERT"] or self.use_bert_tokenizer or self.use_pretrained_embeddings:
 				# In the case we use a BERT subword tokenizer
 				tokenized = self.tokenizer(example, truncation=True, padding="max_length", return_tensors="pt", max_length=380)
+				tokenized_inputs = tokenized['input_ids'].to(self.device)
 				if self.architecture in ["BERT", "DISTILBERT"]:
-					tokenized_inputs = tokenized['input_ids'].to(self.device)
 					masks = tokenized['attention_mask'].to(self.device)
 					preds = self.model(input_ids=tokenized_inputs, attention_mask=masks).logits.tolist()
 				else:
-					tokenized_inputs = tokenized['input_ids'].to(self.device)
 					lang = torch.tensor([self.lang_vocab[lang]]).to(self.device)
 					preds = self.model(src=tokenized_inputs, lang=lang).tolist()
 
@@ -282,5 +275,5 @@ if __name__ == '__main__':
 	tagger = Tagger(model_dir=model_dir)
 	segmented_text = tagger.tag(text_as_string, lang)
 
-	with open(f"/home/mgl/Documents/output.txt", "w") as output:
+	with open(sys.argv[2], "w") as output:
 		output.write("\n".join(segmented_text))

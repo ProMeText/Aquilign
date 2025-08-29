@@ -1,6 +1,8 @@
 import glob
 import json
 import re
+import traceback
+
 import torch
 import os
 import time
@@ -81,7 +83,13 @@ def tokenize_words(sentence:str, delimiter) -> list:
     """
     Cette fonction tokénise une phrase selon un certain nombre de marqueurs
     """
+    if f"{delimiter} " in sentence:
+        print("Problem with delimiter in sentence. Replacing")
+        print(sentence)
+        print("---")
+        sentence = sentence.replace(f"{delimiter} ", delimiter)
     words_delimiters = re.compile(r"[\.,;—:\?!’'«»“/\-]|[^\.,;—:\?!’'«»“/\-\s]+")
+    # words_delimiters = re.compile(r"[^\.,;—:\?!’'«»“/\-\s]")
     sentenceAsList = re.findall(words_delimiters, sentence)
     if delimiter in sentenceAsList:
         # Some workaround for when the delimiter is used on a token in the list of word delimiters.
@@ -99,24 +107,32 @@ def tokenize_words(sentence:str, delimiter) -> list:
 
 
 def align_labels(corresp, orig_labels, text):
-# function to align labels between the tokens in input and the tokenized tokens
-    new_labels = [0 for r in range(corresp[-1][1])]
+    # function to align labels between the tokens in input and the tokenized tokens
+    new_labels = [0 for _ in range(corresp[-1][1])]
     for index, label in enumerate(orig_labels):
         # label which is interesting : 1
         if label == 1:
             try:
                 if len(new_labels) == corresp[index][1]:
                     new_labels[(corresp[index][1]) - 1] = 1
-            except IndexError:
-                print(new_labels)
+                else:
+                    try:
+                        new_labels[(corresp[index][1])] = 1
+                    except IndexError:
+                        print(f"Error with example:\n {text}.\n"
+                              f"Exiting.")
+                        print(new_labels)
+                        exit(0)
+
+            except IndexError as e:
                 print("Error.")
+                print(index)
+                print(new_labels)
+                print(len(new_labels))
+                print(traceback.format_exc())
+                print(f"Example: {text}")
+                print(len(text.split()))
                 exit(0)
-            else:
-                try:
-                    new_labels[(corresp[index][1])] = 1
-                except IndexError:
-                    print(f"Error with example:\n {text}.\n"
-                          f"Exiting.")
         else:
             pass
     # for special tokens (automatically added by BERT tokenizer), value of 2
@@ -138,14 +154,14 @@ def get_token_max_length(train_texts, tokenizer):
     return max_length
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertSentenceToSubWordsAndLabels(sentence, tokenizer, delimiter="£",  max_length=380, verbose=False, output_masks=False):
+def convertSentenceToSubWordsAndLabels(orig_sentence, tokenizer, delimiter="£",  max_length=380, verbose=False, output_masks=False):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
     :param corpus: A list of dicts of the shape
                             {"example": "tutti e tre £e domandarono quali armi il cavaliere ne portò £quand’e'",
                              "lang": "it"}
     """
-    sentence = sentence.replace(delimiter, f" {delimiter}")
+    sentence = orig_sentence.replace(delimiter, f" {delimiter}")
     TokenizedSentence = tokenize_words(sentence, delimiter)
     example = tokenizer.tokenize(sentence)
     if len(example) > max_length:
@@ -158,19 +174,20 @@ def convertSentenceToSubWordsAndLabels(sentence, tokenizer, delimiter="£",  max
             masks.append(1)
         else:
             masks.append(0)
+    sentence_no_delim = sentence.replace(delimiter, "")
 
-    sentence = sentence.replace(delimiter, "")
-
-    toks = tokenizer(sentence, padding="max_length", max_length=max_length, truncation=True,
+    toks = tokenizer(sentence_no_delim, padding="max_length", max_length=max_length, truncation=True,
                      return_tensors="pt")
     # get the index correspondences between text and tok text
-    tokens = tokenize_words(sentence, delimiter)
+    tokens = tokenize_words(sentence_no_delim, delimiter)
     corresp = get_index_correspondence(tokens, tokenizer)
     # aligning the label
-    new_labels = align_labels(corresp, masks, sentence)
+    new_labels = align_labels(corresp, masks, sentence_no_delim)
     # get the length of the tensor
     sq = (toks['input_ids'].squeeze())
     ### insert 2 (padding) for in the new_labels in order to get tensors with the same size !
+    # reverse_vocab = {value: key for key, value in tokenizer.get_vocab().items()}
+    # splitted_text = [reverse_vocab[item] for item in toks['input_ids'].tolist()[0]][:len(new_labels)]
     if len(sq) == len(new_labels):
         pass
     else:

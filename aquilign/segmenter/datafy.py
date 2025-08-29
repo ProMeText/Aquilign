@@ -376,7 +376,11 @@ class Datafier:
                     example_length = len(example)
                     example = example + [pad_value for _ in range(self.max_length_examples - example_length)]
                     example = ["[PAD]"] + example
-                    example = [self.input_vocabulary[token] for token in example]
+                    try:
+                        example = [self.input_vocabulary[token] for token in example]
+                    except KeyError:
+                        print(example)
+                        exit(0)
                     padded_examples.append(example)
 
 

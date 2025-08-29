@@ -95,6 +95,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			dev_dataloader = bert_dev_dataloader
 			emb_dim = 100
 			use_bert_tokenizer = True
+			keep_bert_dimensions = True
 		else:
 			use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
 			keep_bert_dimensions = True

@@ -93,6 +93,7 @@ def tokenize_words(sentence:str, delimiter) -> list:
             if sentence[-1] == delimiter:
                 print("Last char of the sentence should not be the delimiter.")
                 sentenceAsList = sentenceAsList[:-1]
+                return sentenceAsList
         sentenceAsList[alone_delim_index] = delimiter + to_merge
     return sentenceAsList
 

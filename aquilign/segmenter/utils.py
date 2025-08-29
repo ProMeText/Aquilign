@@ -88,8 +88,7 @@ def tokenize_words(sentence:str, delimiter) -> list:
         print(sentence)
         print("---")
         sentence = sentence.replace(f"{delimiter} ", delimiter)
-    words_delimiters = re.compile(r"[\.,;—:\?!’'«»“/\-]|[^\.,;—:\?!’'«»“/\-\s]+")
-    # words_delimiters = re.compile(r"[^\.,;—:\?!’'«»“/\-\s]")
+    words_delimiters = re.compile(r"[\.,;—:\?\!’'”«»“/\-]|[^\.,;—”:\?\!’'«»“/\-\s]+")
     sentenceAsList = re.findall(words_delimiters, sentence)
     if delimiter in sentenceAsList:
         # Some workaround for when the delimiter is used on a token in the list of word delimiters.
@@ -106,8 +105,13 @@ def tokenize_words(sentence:str, delimiter) -> list:
 
 
 
-def align_labels(corresp, orig_labels, text):
+def align_labels(corresp, orig_labels, text, verbose=False):
     # function to align labels between the tokens in input and the tokenized tokens
+    if verbose:
+        print(corresp)
+        print(len(corresp))
+        print(orig_labels)
+        print(f" Orig labels: {len(orig_labels)}")
     new_labels = [0 for _ in range(corresp[-1][1])]
     for index, label in enumerate(orig_labels):
         # label which is interesting : 1
@@ -126,12 +130,13 @@ def align_labels(corresp, orig_labels, text):
 
             except IndexError as e:
                 print("Error.")
-                print(index)
                 print(new_labels)
                 print(len(new_labels))
                 print(traceback.format_exc())
                 print(f"Example: {text}")
                 print(len(text.split()))
+                print(f"Problematic index: {index}")
+                print(len(corresp))
                 exit(0)
         else:
             pass
@@ -178,16 +183,26 @@ def convertSentenceToSubWordsAndLabels(orig_sentence, tokenizer, delimiter="£",
 
     toks = tokenizer(sentence_no_delim, padding="max_length", max_length=max_length, truncation=True,
                      return_tensors="pt")
+
+    if verbose:
+        print(orig_sentence)
+        print(TokenizedSentence)
+        print(len(TokenizedSentence))
+        reverse_vocab = {value: key for key, value in tokenizer.get_vocab().items()}
+        splitted_text = [reverse_vocab[item] for item in toks['input_ids'].tolist()[0]]
+        print(splitted_text[:splitted_text.index("[PAD]")])
     # get the index correspondences between text and tok text
     tokens = tokenize_words(sentence_no_delim, delimiter)
     corresp = get_index_correspondence(tokens, tokenizer)
     # aligning the label
-    new_labels = align_labels(corresp, masks, sentence_no_delim)
+    new_labels = align_labels(corresp, masks, sentence_no_delim, verbose=verbose)
     # get the length of the tensor
     sq = (toks['input_ids'].squeeze())
+    if verbose:
+        reverse_vocab = {value: key for key, value in tokenizer.get_vocab().items()}
+        splitted_text = [reverse_vocab[item] for item in toks['input_ids'].tolist()[0]][:len(new_labels)]
+        print(list(zip(splitted_text, new_labels)))
     ### insert 2 (padding) for in the new_labels in order to get tensors with the same size !
-    # reverse_vocab = {value: key for key, value in tokenizer.get_vocab().items()}
-    # splitted_text = [reverse_vocab[item] for item in toks['input_ids'].tolist()[0]][:len(new_labels)]
     if len(sq) == len(new_labels):
         pass
     else:

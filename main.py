@@ -305,9 +305,9 @@ if __name__ == '__main__':
                         help="Use punctuation to tokenize texts (default: True).")
     parser.add_argument("-ml", "--multilingual", default=True,
                         help="Use multilingual segmentation model.")
-    parser.add_argument("-m", "--model", default=True,
+    parser.add_argument("-m", "--model", default="LaBSE",
                         help="Name or path to model.")
-    parser.add_argument("-md", "--model_dir", default=True,
+    parser.add_argument("-md", "--model_dir", default=None,
                         help="Name or path to model dir.")
     parser.add_argument("-mw", "--main_wit",
                         help="Path to pivot witness.")

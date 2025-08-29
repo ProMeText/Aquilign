@@ -17,11 +17,16 @@ parser.add_argument("-d", "--debug", default=False,
 					help="Debug mode")
 parser.add_argument("-t", "--trials", default=50,
 					help="Debug mode")
+parser.add_argument("-n", "--out_name", default="",
+					help="Debug mode")
 args = parser.parse_args()
 architecture = args.architecture
 debug = args.debug
 model_size = args.model_size
 parameters = args.parameters
+out_name = args.out_name
+if out_name != "":
+	out_name = f"_{out_name}"
 trials = int(args.trials)
 
 with open(parameters, "r") as input_json:
@@ -84,7 +89,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			batch_size = trial.suggest_int("batch_size", 16, 64, step=16)
 	if architecture not in ["BERT", "DISTILBERT"]:
 		# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
-		use_pretrained_embeddings = False
+		use_pretrained_embeddings = True
 		if use_pretrained_embeddings:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
@@ -92,7 +97,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			use_bert_tokenizer = True
 		else:
 			use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
-			keep_bert_dimensions = False
+			keep_bert_dimensions = True
 			emb_dim = trial.suggest_int("input_dim", 300, 400, step=8)
 			if use_bert_tokenizer:
 				print("Using Bert tokenized data")
@@ -348,7 +353,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		f1_score = f1[2]
 		# results.append(weighted_recall_precision)
 		results.append(weighted_recall_precision)
-		with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt", "a") as f:
+		with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}{out_name}.txt", "a") as f:
 			f.write(f"Epoch {epoch_number}: weighted: {round(weighted_recall_precision, 4)}, F1: {round(f1[2], 4)} (recall: {round(recall[2], 4)}, precision: {round(precision[2], 4)})\n")
 			if epoch_number == epochs:
 				f.write(f"Nombre de paramètres: {params_number_to_print}\n")
@@ -420,7 +425,7 @@ def evaluate(model,
 
 
 def print_trial_info(study, trial):
-	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt", "a") as f:
+	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}{out_name}.txt", "a") as f:
 		f.write(f"Trial {trial.number} - Paramètres : {trial.params}\n")
 		if not model_size:
 			f.write(f"Valeur de la métrique : {trial.value}\n")
@@ -429,9 +434,8 @@ def print_trial_info(study, trial):
 if __name__ == '__main__':
 
 	date_hour = datetime.datetime.now().isoformat()
-	if os.path.exists(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt"):
-		os.remove(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt")
-
+	if os.path.exists(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}{out_name}.txt"):
+		os.remove(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}{out_name}.txt")
 	train_path = config_file["global"]["train"]
 	test_path = config_file["global"]["test"]
 	device = config_file["global"]["device"]
@@ -514,7 +518,7 @@ if __name__ == '__main__':
 						architecture=architecture,
 						model_size=model_size)
 	study.optimize(objective, n_trials=trials, callbacks=[print_trial_info])
-	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}.txt", "a") as f:
+	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}{out_name}.txt", "a") as f:
 		f.write((str(study.best_trial) + "\n"))
 		if model_size:
 			f.write((str(study.best_trials) + "\n"))

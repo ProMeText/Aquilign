@@ -30,8 +30,8 @@ architecture = args.architecture
 debug = args.debug
 model_size = args.model_size
 parameters = args.parameters
-use_pretrained_embeddings = args.pretrained
-use_bert_tokenizer = args.bert_tokenizer
+use_pretrained_embeddings = True if args.pretrained == "True" else False
+use_bert_tokenizer = True if args.bert_tokenizer == "True" else False
 out_name = args.out_name
 if out_name != "":
 	out_name = f"_{out_name}"
@@ -96,17 +96,16 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 				num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
 			batch_size = trial.suggest_int("batch_size", 16, 64, step=16)
 	if architecture not in ["BERT", "DISTILBERT"]:
-		if use_pretrained_embeddings:
+		if use_pretrained_embeddings is True:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
 			emb_dim = 100
 			use_bert_tokenizer = True
 			keep_bert_dimensions = True
 		else:
-			# use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
 			keep_bert_dimensions = False
 			emb_dim = trial.suggest_int("input_dim", 300, 400, step=8)
-			if use_bert_tokenizer:
+			if use_bert_tokenizer is True:
 				print("Using Bert tokenized data")
 				train_dataloader = bert_train_dataloader
 				dev_dataloader = bert_dev_dataloader

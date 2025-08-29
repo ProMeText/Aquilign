@@ -320,6 +320,7 @@ class LSTM_Encoder(nn.Module):
 			else:
 				layers.append(nn.Linear(lstm_hidden_size, linear_layers_hidden_size))
 			layers.append(nn.ReLU())
+			layers.append(nn.Dropout(self.linear_dropout))
 			for layer in range(self.linear_layers):
 				if layer != self.linear_layers - 2:
 					layers.append(nn.Linear(linear_layers_hidden_size, linear_layers_hidden_size))

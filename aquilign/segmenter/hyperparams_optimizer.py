@@ -19,6 +19,10 @@ parser.add_argument("-t", "--trials", default=50,
 					help="Number of trials")
 parser.add_argument("-e", "--epochs", default=10,
 					help="Numbr of epochs per trial")
+parser.add_argument("-pt", "--pretrained", default=True,
+					help="Use pretrained embeddings")
+parser.add_argument("-bt", "--bert_tokenizer", default=False,
+					help="Use bert tokenizer (without pre-trained embeddings)")
 parser.add_argument("-n", "--out_name", default="",
 					help="Prefix to add to output dir")
 args = parser.parse_args()
@@ -26,6 +30,8 @@ architecture = args.architecture
 debug = args.debug
 model_size = args.model_size
 parameters = args.parameters
+use_pretrained_embeddings = args.pretrained
+use_bert_tokenizer = args.bert_tokenizer
 out_name = args.out_name
 if out_name != "":
 	out_name = f"_{out_name}"
@@ -47,7 +53,7 @@ import os
 
 
 
-def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, model_size):
+def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, model_size, use_pretrained_embeddings, use_bert_tokenizer):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	base_model_name = config_file["global"]["base_model_name"]
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
@@ -90,8 +96,6 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 				num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
 			batch_size = trial.suggest_int("batch_size", 16, 64, step=16)
 	if architecture not in ["BERT", "DISTILBERT"]:
-		# use_pretrained_embeddings = trial.suggest_categorical("use_pretrained_embeddings", [False, True])
-		use_pretrained_embeddings = False
 		if use_pretrained_embeddings:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader
@@ -100,7 +104,6 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			keep_bert_dimensions = True
 		else:
 			# use_bert_tokenizer = trial.suggest_categorical("use_bert_tokenizer", [False, True])
-			use_bert_tokenizer = True
 			keep_bert_dimensions = False
 			emb_dim = trial.suggest_int("input_dim", 300, 400, step=8)
 			if use_bert_tokenizer:
@@ -356,7 +359,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		weighted_recall_precision = (recall[2]*1.3 + precision[2]) / 2.3
 		f1_score = f1[2]
 		# results.append(weighted_recall_precision)
-		results.append(weighted_recall_precision)
+		results.append(f1_score)
 		with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}{out_name}.txt", "a") as f:
 			f.write(f"Epoch {epoch_number}: weighted: {round(weighted_recall_precision, 4)}, F1: {round(f1[2], 4)} (recall: {round(recall[2], 4)}, precision: {round(precision[2], 4)})\n")
 			if epoch_number == epochs:
@@ -520,7 +523,9 @@ if __name__ == '__main__':
 						no_bert_train_dataloader=not_pretrained_train_dataloader,
 						no_bert_dev_dataloader=not_pretrained_dev_dataloader,
 						architecture=architecture,
-						model_size=model_size)
+						model_size=model_size,
+						use_pretrained_embeddings=use_pretrained_embeddings,
+						use_bert_tokenizer=use_bert_tokenizer)
 	study.optimize(objective, n_trials=trials, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}{out_name}.txt", "a") as f:
 		f.write((str(study.best_trial) + "\n"))

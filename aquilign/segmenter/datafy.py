@@ -144,7 +144,7 @@ class Datafier:
         self.tuning_mode = tuning_mode
         if self.tuning_mode is False:
             utils.serialize_dict(self.target_classes, f"{self.vocab_dir}/target_classes.json")
-        self.delimiters_regex = re.compile(r"\s+|([\.“\?\!—\"/:;,\-¿«\[\]»])")
+        self.delimiters_regex = re.compile(r"\s+|([\.“\?\'!—\"/:;,\-¿«\[\]»])")
         full_corpus = self.train_data + self.test_data + self.dev_data
         assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
         self.architecture = architecture

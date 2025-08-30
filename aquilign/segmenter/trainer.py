@@ -80,6 +80,10 @@ class Trainer:
 			linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
 			bidirectional = config_file["architectures"][architecture]["bidirectional"]
 			keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
+		if architecture == "Baseline":
+			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+			linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
+			keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
 		elif architecture == "gru":
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
 			hidden_size = config_file["architectures"][architecture]["hidden_size"]
@@ -339,23 +343,23 @@ class Trainer:
 									   )
 
 		elif architecture == "Baseline":
-			model = models.BaseLineModel(input_dim=input_dim,
-										 emb_dim=emb_dim,
-										 positional_embeddings=False,
-										 device=device,
-										 batch_size=batch_size,
-										 num_langs=len(lang_vocab),
-										 include_lang_metadata=include_lang_metadata,
-										 out_classes=output_dim,
-										 attention=add_attention_layer,
-										 lang_emb_dim=lang_emb_dim,
-										 load_pretrained_embeddings=use_pretrained_embeddings,
-										 pretrained_weights=weights,
-										 linear_layers=linear_layers,
-										 linear_layers_hidden_size=linear_layers_hidden_size,
-										 use_bert_tokenizer=use_bert_tokenizer,
-										 keep_bert_dimensions=keep_bert_dimensions,
-										 linear_dropout=linear_dropout)
+			self.model = models.BaseLineModel(input_dim=self.input_dim,
+											 emb_dim=emb_dim,
+											 positional_embeddings=False,
+											 device=self.device,
+											 batch_size=batch_size,
+											 num_langs=len(self.lang_vocab),
+											 include_lang_metadata=include_lang_metadata,
+											 out_classes=self.output_dim,
+											 attention=add_attention_layer,
+											 lang_emb_dim=lang_emb_dim,
+											 load_pretrained_embeddings=use_pretrained_embeddings,
+											 pretrained_weights=weights,
+											 linear_layers=linear_layers,
+											 linear_layers_hidden_size=linear_layers_hidden_size,
+											 use_bert_tokenizer=use_bert_tokenizer,
+											 keep_bert_dimensions=keep_bert_dimensions,
+											 linear_dropout=linear_dropout)
 		elif architecture == "BERT":
 			from transformers import AutoModelForTokenClassification
 			self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)

@@ -268,6 +268,7 @@ class BaseLineModel(nn.Module):
 			self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim)  # * self.scale
 			# Si on concatène les embeddings, la dimension de sortie après concaténation est la somme de
 			# la dimension des deux types de plongements
+		emb_dim = emb_dim + lang_emb_dim
 		self.positional_embeddings = positional_embeddings
 
 		# On peut ajouter des plongements positionnels mais avec un lstm c'est probablement moins utile
@@ -281,7 +282,7 @@ class BaseLineModel(nn.Module):
 
 		# Une couche d'attention multitête
 		if self.attention:
-			self.multihead_attn = nn.MultiheadAttention(self.hidden_dim, 8)
+			self.multihead_attn = nn.MultiheadAttention(emb_dim, 8)
 
 		layers = []
 		if self.linear_layers == 1:
@@ -305,6 +306,7 @@ class BaseLineModel(nn.Module):
 		batch_size, seq_length = src.size()
 		# On plonge le texte [batch_size, max_length, embeddings_dim]
 		embedded = self.embedding(src)
+		print(embedded.shape)
 		if self.include_lang_metadata:
 			# Shape: [batch_size, lang_metadata_dimensions]
 			lang_embedding = self.lang_embedding(lang)
@@ -329,7 +331,10 @@ class BaseLineModel(nn.Module):
 			attn_output, _ = self.multihead_attn(embedded, embedded, embedded)
 			outs = self.layers(attn_output + embedded)
 		else:
+			print(embedded.shape)
 			outs = self.layers(embedded)
+			print(outs.shape)
+			exit(0)
 		# dimension: [batch_size, max_length, 3] pour [SC], [SB], [PAD]
 		return outs
 

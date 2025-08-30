@@ -11,8 +11,8 @@
     "freeze_embeddings": false,
     "emb_dim": 300,
     "freeze_lang_embeddings": false,
-    "linear_layers": 4,
-    "linear_layers_hidden_size": 256,
+    "linear_layers": 3,
+    "linear_layers_hidden_size": 128,
     "balance_class_weights": true,
     "include_lang_metadata": true,
     "lang_emb_dim": 32,
@@ -32,6 +32,12 @@
       "keep_bert_dimensions": false,
       "lstm_hidden_size": 64,
       "num_lstm_layers": 2,
+      "add_attention_layer": false
+    },
+    "Baseline": {
+      "positional_embeddings": true,
+      "linear_dropout": 0.5,
+      "keep_bert_dimensions": true,
       "add_attention_layer": false
     },
     "gru": {

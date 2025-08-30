@@ -401,7 +401,7 @@ class Trainer:
 			f1_averages.append(f1.item())
 
 		max_average = max(f1_averages)
-		best_epoch = weighted_averages.index(max_average)
+		best_epoch = f1_averages.index(max_average)
 		message = f"Best model: {best_epoch} with {max_average} weighted precision and recall on dev data."
 		utils.append_to_file(message, self.final_results_file)
 		print(message)

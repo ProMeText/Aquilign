@@ -306,7 +306,6 @@ class BaseLineModel(nn.Module):
 		batch_size, seq_length = src.size()
 		# On plonge le texte [batch_size, max_length, embeddings_dim]
 		embedded = self.embedding(src)
-		print(embedded.shape)
 		if self.include_lang_metadata:
 			# Shape: [batch_size, lang_metadata_dimensions]
 			lang_embedding = self.lang_embedding(lang)
@@ -331,10 +330,7 @@ class BaseLineModel(nn.Module):
 			attn_output, _ = self.multihead_attn(embedded, embedded, embedded)
 			outs = self.layers(attn_output + embedded)
 		else:
-			print(embedded.shape)
 			outs = self.layers(embedded)
-			print(outs.shape)
-			exit(0)
 		# dimension: [batch_size, max_length, 3] pour [SC], [SB], [PAD]
 		return outs
 

@@ -341,12 +341,15 @@ class Datafier:
                 target = []
                 example = []
                 text = text.replace(self.delimiter, " " + self.delimiter)
-                as_tokens = re.split(self.delimiters_regex, text)
+                as_tokens = [item for item in re.split(self.delimiters_regex, text) if item not in [None, ""]]
                 for idx, token in enumerate(as_tokens):
                     if not token:
                         continue
                     if self.delimiter in token:
                         target.append("[SB]")
+                        if token == self.delimiter:
+                            print("Problemo")
+                            print(text)
                         example.append(token.replace(self.delimiter, "").lower())
                     else:
                         target.append("[SC]")
@@ -380,6 +383,8 @@ class Datafier:
                         example = [self.input_vocabulary[token] for token in example]
                     except KeyError:
                         print(example)
+                        problem = next(item for item in example if item not in self.input_vocabulary)
+                        print(f"|{problem}| Is not in vocabulary")
                         exit(0)
                     padded_examples.append(example)
 

@@ -18,7 +18,7 @@
     "lang_emb_dim": 32,
     "epochs": 6,
     "use_pretrained_embeddings": false,
-    "use_bert_tokenizer": true,
+    "use_bert_tokenizer": false,
     "lr": 0.0002,
     "workers": 8,
     "batch_size": 32
@@ -32,7 +32,7 @@
       "keep_bert_dimensions": false,
       "lstm_hidden_size": 64,
       "num_lstm_layers": 2,
-      "add_attention_layer": false
+      "add_attention_layer": true
     },
     "Baseline": {
       "positional_embeddings": true,

@@ -114,7 +114,9 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 				train_dataloader = no_bert_train_dataloader
 				dev_dataloader = no_bert_dev_dataloader
 		if use_bert_tokenizer and not use_pretrained_embeddings:
-			freeze_embeddings = False
+			# pass
+			# freeze_embeddings = False
+			freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
 		else:
 			freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
 		include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])

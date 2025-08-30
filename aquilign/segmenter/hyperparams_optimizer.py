@@ -263,6 +263,25 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 								  keep_bert_dimensions=keep_bert_dimensions,
 								  linear_dropout=linear_dropout
 								  )
+
+	elif architecture == "Baseline":
+		model = models.BaseLineModel(input_dim=input_dim,
+										 emb_dim=emb_dim,
+										 positional_embeddings=False,
+										 device=device,
+										 batch_size=batch_size,
+										 num_langs=len(lang_vocab),
+										 include_lang_metadata=include_lang_metadata,
+										 out_classes=output_dim,
+										 attention=add_attention_layer,
+										 lang_emb_dim=lang_emb_dim,
+										 load_pretrained_embeddings=use_pretrained_embeddings,
+										 pretrained_weights=weights,
+										 linear_layers=linear_layers,
+										 linear_layers_hidden_size=linear_layers_hidden_size,
+										 use_bert_tokenizer=use_bert_tokenizer,
+										 keep_bert_dimensions=keep_bert_dimensions,
+										linear_dropout=linear_dropout)
 	elif architecture == "BERT":
 		from transformers import AutoModelForTokenClassification
 		model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)

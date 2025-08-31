@@ -104,7 +104,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			keep_bert_dimensions = True
 		else:
 			keep_bert_dimensions = False
-			emb_dim = trial.suggest_int("input_dim", 300, 400, step=8)
+			emb_dim = trial.suggest_int("input_dim", 304, 400, step=8)
 			if use_bert_tokenizer is True:
 				print("Using Bert tokenized data")
 				train_dataloader = bert_train_dataloader

@@ -396,12 +396,12 @@ class Trainer:
 			recall = result["recall"][1]
 			precision = result["precision"][1]
 			f1 = result["f1"][1]
-			weighted = (precision + (recall*1.5) ) / 2.5
+			weighted = (precision + (recall*1.3) ) / 2.3
 			weighted_averages.append(weighted.item())
 			f1_averages.append(f1.item())
 
-		max_average = max(f1_averages)
-		best_epoch = f1_averages.index(max_average)
+		max_average = max(weighted_averages)
+		best_epoch = weighted_averages.index(max_average)
 		message = f"Best model: {best_epoch} with {max_average} weighted precision and recall on dev data."
 		utils.append_to_file(message, self.final_results_file)
 		print(message)

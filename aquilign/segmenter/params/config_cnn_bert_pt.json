@@ -18,7 +18,7 @@
     "lang_emb_dim": 64,
     "epochs": 50,
     "use_pretrained_embeddings": true,
-    "use_bert_tokenizer": false,
+    "use_bert_tokenizer": true,
     "lr": 0.00079,
     "workers": 16,
     "batch_size": 80
@@ -53,7 +53,7 @@
       "linear_dropout":0.41,
       "positional_embeddings": true,
       "add_attention_layer": true,
-      "keep_bert_dimensions": false,
+      "keep_bert_dimensions": true,
       "num_heads": 8,
       "kernel_size": 15,
       "dropout": 0.69,

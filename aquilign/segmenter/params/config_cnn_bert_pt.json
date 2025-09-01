@@ -21,7 +21,7 @@
     "use_bert_tokenizer": true,
     "lr": 0.00079,
     "workers": 16,
-    "batch_size": 50
+    "batch_size": 32
   },
   "architectures": {
     "lstm": {

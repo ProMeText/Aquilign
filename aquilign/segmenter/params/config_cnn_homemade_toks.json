@@ -8,30 +8,30 @@
     "device": "cuda:0",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
     "data_augmentation": false,
-    "freeze_embeddings": false,
-    "emb_dim": 400,
-    "freeze_lang_embeddings": false,
-    "linear_layers": 3,
-    "linear_layers_hidden_size": 256,
+    "freeze_embeddings": true,
+    "emb_dim": 384,
+    "freeze_lang_embeddings": true,
+    "linear_layers": 1,
+    "linear_layers_hidden_size": 32,
     "balance_class_weights": false,
     "include_lang_metadata": true,
-    "lang_emb_dim": 64,
+    "lang_emb_dim": 16,
     "epochs": 50,
-    "use_pretrained_embeddings": false,
-    "use_bert_tokenizer": false,
-    "lr": 0.0040715173120908135,,
+    "use_pretrained_embeddings": true,
+    "use_bert_tokenizer": true,
+    "lr": 0.0013,
     "workers": 16,
-    "batch_size": 64
+    "batch_size": 32
   },
   "architectures": {
     "lstm": {
       "bidirectional": true,
-      "lstm_dropout": 0.65,
+      "lstm_dropout": 0.350,
       "positional_embeddings": false,
-      "linear_dropout": 0.012,
-      "keep_bert_dimensions": false,
-      "lstm_hidden_size": 72,
-      "num_lstm_layers": 2,
+      "linear_dropout": 0.059,
+      "keep_bert_dimensions": true,
+      "lstm_hidden_size": 136,
+      "num_lstm_layers": 4,
       "add_attention_layer": true
     },
     "gru": {
@@ -48,16 +48,17 @@
       "num_transformers_layers": 8
     },
     "cnn": {
-      "hidden_size": 64,
-      "linear_layers": 2,
+      "hidden_size": 96,
+      "linear_layers": 1,
       "positional_embeddings": true,
-      "add_attention_layer": true,
-      "keep_bert_dimensions": true,
+      "add_attention_layer": false,
+      "keep_bert_dimensions": false,
       "num_heads": 8,
       "kernel_size": 5,
-      "dropout": 0.5,
-      "cnn_scale": 0.5,
-      "num_cnn_layers": 10
+      "dropout": 0.32,
+      "linear_dropout": 0.145,
+      "cnn_scale": 0.75,
+      "num_cnn_layers": 5
     }
   }
 }

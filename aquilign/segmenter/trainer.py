@@ -20,8 +20,8 @@ parser.add_argument("-n", "--out_name", default="",
 args = parser.parse_args()
 architecture = args.architecture
 parameters = args.parameters
-mode = parameters.mode
-model = parameters.model
+mode = args.mode
+model = args.model
 debug = args.debug
 out_dir_suffix = args.out_name
 with open(parameters, "r") as input_json:

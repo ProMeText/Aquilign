@@ -8,20 +8,20 @@
     "device": "cuda:0",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
     "data_augmentation": false,
-    "freeze_embeddings": true,
+    "freeze_embeddings": false,
     "emb_dim": 392,
     "freeze_lang_embeddings": true,
     "linear_layers": 3,
-    "linear_layers_hidden_size": 64,
+    "linear_layers_hidden_size": 128,
     "balance_class_weights": false,
     "include_lang_metadata": true,
-    "lang_emb_dim": 1656,
+    "lang_emb_dim": 64,
     "epochs": 50,
-    "use_pretrained_embeddings": false,
+    "use_pretrained_embeddings": true,
     "use_bert_tokenizer": false,
-    "lr": 0.0006,
+    "lr": 0.00079,
     "workers": 16,
-    "batch_size": 48
+    "batch_size": 80
   },
   "architectures": {
     "lstm": {
@@ -48,17 +48,17 @@
       "num_transformers_layers": 8
     },
     "cnn": {
-      "hidden_size": 104,
+      "hidden_size": 120,
       "linear_layers": 2,
-      "linear_dropout":0.27, 
+      "linear_dropout":0.41,
       "positional_embeddings": true,
-      "add_attention_layer": false,
+      "add_attention_layer": true,
       "keep_bert_dimensions": false,
       "num_heads": 8,
       "kernel_size": 15,
-      "dropout": 0.45,
-      "cnn_scale": 0.68,
-      "num_cnn_layers": 13
+      "dropout": 0.69,
+      "cnn_scale": 0.44,
+      "num_cnn_layers": 11
     }
   }
 }

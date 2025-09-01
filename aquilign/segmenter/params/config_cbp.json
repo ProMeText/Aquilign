@@ -1,8 +1,8 @@
 {
   "global": {
-    "train": "/projects/users/mgillele/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json",
-    "test": "/projects/users/mgillele/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json",
-    "dev": "/projects/users/mgillele/multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/dev.json",
+    "train": "/projects/users/mgillele/multilingual-segmentation-dataset/data/segmented/split/multilingual/train.json",
+    "test": "/projects/users/mgillele/multilingual-segmentation-dataset/data/segmented/split/multilingual/test.json",
+    "dev": "/projects/users/mgillele/multilingual-segmentation-dataset/data/segmented/split/multilingual/dev.json",
     "import": "/projects/users/mgillele/Aquilign",
     "out_dir": "/projects/users/mgillele/trash/test_segmenter",
     "device": "cuda:0",

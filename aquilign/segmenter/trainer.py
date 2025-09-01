@@ -5,6 +5,10 @@ import json
 import argparse
 
 parser = argparse.ArgumentParser()
+parser.add_argument("-m", "--mode", default="train",
+					help="Mode (test, train)")
+parser.add_argument("-md", "--model", default="train",
+					help="Model path")
 parser.add_argument("-a", "--architecture", default="lstm",
 					help="Architecture to be tested")
 parser.add_argument("-p", "--parameters", default=None,
@@ -16,6 +20,8 @@ parser.add_argument("-n", "--out_name", default="",
 args = parser.parse_args()
 architecture = args.architecture
 parameters = args.parameters
+mode = parameters.mode
+model = parameters.model
 debug = args.debug
 out_dir_suffix = args.out_name
 with open(parameters, "r") as input_json:
@@ -737,6 +743,12 @@ class Trainer:
 
 if __name__ == '__main__':
 	random.seed(1234)
-	trainer = Trainer(config_file=config_file,
-					  out_dir_suffix=out_dir_suffix)
-	trainer.train()
+	if mode != "test":
+		trainer = Trainer(config_file=config_file,
+						  out_dir_suffix=out_dir_suffix)
+		trainer.train()
+	else:
+		trainer = Trainer(config_file=config_file,
+						  out_dir_suffix=out_dir_suffix)
+		trainer.best_model = model
+		trainer.evaluate_best_model_per_lang()

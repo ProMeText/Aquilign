@@ -61,6 +61,7 @@ def compute_ambiguity_metrics(tokens,
         out_file = f"{log_dir}/resultats_ambiguite_{name}.txt"
     else:
         out_file = f"{log_dir}/resultats_ambiguite.txt"
+    print(f"Saving to {out_file}")
     with open(out_file, "w") as output_ambiguity:
         output_ambiguity.write(f"Mean accuracy: {mean_accuracy}.\n\n")
         for results in results_per_token:

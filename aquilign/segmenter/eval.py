@@ -22,7 +22,7 @@ def compute_ambiguity_metrics(tokens,
     """
     This function produces a confusion matrix for the ambiguous tokens.
     """
-
+    print("Computing ambiguity metrics")
     predictions = predictions.cpu()
     labels = labels.cpu()
     tokens = tokens.cpu()

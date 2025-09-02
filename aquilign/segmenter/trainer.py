@@ -622,6 +622,8 @@ class Trainer:
 		self.model.eval()
 		results_per_lang = {}
 		for lang in self.lang_vocab:
+			if lang == "[UNK]":
+				continue
 			print(f"Testing {lang}")
 			all_preds = []
 			all_targets = []

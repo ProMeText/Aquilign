@@ -1,12 +1,12 @@
 {
   "global": {
-    "train": "/projects/users/mgillele/multilingual-segmentation-dataset/data/segmented/split/multilingual/train.json",
-    "test": "/projects/users/mgillele/multilingual-segmentation-dataset/data/segmented/split/multilingual/test.json",
-    "dev": "/projects/users/mgillele/multilingual-segmentation-dataset/data/segmented/split/multilingual/dev.json",
-    "import": "/projects/users/mgillele/Aquilign",
-    "out_dir": "/projects/users/mgillele/trash/test_segmenter",
-    "device": "cpu",
+    "train": "../multilingual-segmentation-dataset/data/segmented/split/multilingual/train.json",
+    "test": "../multilingual-segmentation-dataset/data/segmented/split/multilingual/test.json",
+    "dev": "../multilingual-segmentation-dataset/data/segmented/split/multilingual/dev.json",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
+    "out_dir": "/home/mgl/Documents/test_working",
+    "device": "cpu",
+    "import": "",
     "data_augmentation": false,
     "freeze_embeddings": true,
     "emb_dim": 400,

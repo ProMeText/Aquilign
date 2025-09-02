@@ -590,6 +590,8 @@ class Trainer:
 		loaded_test_data_per_lang = {}
 		# We change the batch size for really small sub-corpuses (ex. english for now)
 		for lang in self.lang_vocab:
+			if lang == "[UNK]":
+				continue
 			current_dataloader = datafy.CustomTextDataset(mode="test",
 														  train_path=self.train_path,
 														  test_path=self.test_path,
@@ -651,13 +653,13 @@ class Trainer:
 				continue
 			cat_targets = torch.cat(all_targets, dim=0)
 			cat_examples = torch.cat(all_examples, dim=0)
-			# eval.compute_ambiguity_metrics(tokens=cat_examples,
-			# 										   labels=cat_targets,
-			# 										   predictions=cat_preds,
-			# 										   id_to_word=self.reverse_input_vocab,
-			# 										   word_to_id=self.input_vocab,
-			# 										   log_dir=self.logs_dir,
-			# 										   name=lang)
+			eval.compute_ambiguity_metrics(tokens=cat_examples,
+			 										   labels=cat_targets,
+			 										   predictions=cat_preds,
+			 										   id_to_word=self.reverse_input_vocab,
+			 										   word_to_id=self.input_vocab,
+			 										   log_dir=self.logs_dir,
+			 										   name=lang)
 			results = eval.compute_metrics(predictions=cat_preds,
 										   labels=cat_targets,
 										   examples=cat_examples,

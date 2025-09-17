@@ -151,6 +151,10 @@ python3 main.py --help
 - [Multilingual Segmentation Dataset](https://github.com/carolisteia/multilingual-segmentation-dataset)
   Sentence and clause-level segmentation datasets in seven medieval languages, used to train and evaluate the segmentation model integrated into Aquilign.
 
+- [Corpus Temporis App](https://github.com/ProMeText/CorpusTemporis)  
+  A Streamlit-based application for managing and structuring metadata of medieval multilingual texts.  
+  It provides the metadata that accompanies this dataset and supports its use in the [Aquilign multilingual aligner](https://github.com/ProMeText/Aquilign).
+
 - [Parallelium – an aligned scriptures dataset](https://github.com/carolisteia/parallelium-scriptures-alignment-dataset)  
   A multilingual dataset of aligned Biblical and Qur’anic texts (medieval and modern), used for benchmarking multilingual alignment in diverse historical settings.
 

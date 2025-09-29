@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from positional_encodings.torch_encodings import PositionalEncoding1D, Summer
-from torchcrf import CRF
-from transformers import AutoTokenizer
 from transformers import AutoModelForTokenClassification
 import transformers
 
@@ -15,20 +13,7 @@ def save_bert_embeddings():
 	# word_embeddings = myBertModel.get_input_embeddings().weight.data.half()
 	torch.save(word_embeddings, "aquilign/segmenter/embeddings.npy")
 
-class BERT_Model_CRF():
-	def __init__(self,
-				 base_model_name):
-		self.num_labels = 3
-		self.model = AutoModelForTokenClassification.from_pretrained(base_model_name,
-																	 num_labels=self.num_labels)
-		self.CRF = CRF(self.num_labels)
 
-
-	def forward(self, data):
-		tgt = self.model(data)
-		crfed = self.CRF(tgt)
-
-		return crfed
 
 
 

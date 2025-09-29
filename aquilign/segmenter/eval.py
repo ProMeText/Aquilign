@@ -77,7 +77,8 @@ def compute_ambiguity_metrics(tokens,
 
 
 def compute_metrics(predictions,
-                    labels,
+                    labels=None,
+                    bert_training=True,
                     examples=None,
                     id_to_word=None,
                     last_epoch=False,
@@ -92,6 +93,8 @@ def compute_metrics(predictions,
     # the predictions are of shape [num_example, max_length, out_classes]
     # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
     # This way the out shape is [num_example, max_length]
+    if bert_training:
+        predictions, labels = predictions
     predictions = predictions.cpu()
     labels = labels.cpu()
     predictions_as_probs = copy.deepcopy(predictions)

@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--mode", default="train",
 					help="Mode (test, train)")
 parser.add_argument("-md", "--model", default="train",
-					help="Model path")
+ 						help="Model path")
 parser.add_argument("-a", "--architecture", default="lstm",
 					help="Architecture to be tested")
 parser.add_argument("-p", "--parameters", default=None,
@@ -30,8 +30,8 @@ with open(parameters, "r") as input_json:
 # Gestion des imports
 if config_file["global"]["import"] != "":
 	sys.path.append(config_file["global"]["import"])
-	
-from transformers import AutoTokenizer
+
+from transformers import AutoTokenizer, BertTokenizer, Trainer, TrainingArguments, AutoModelForTokenClassification, set_seed, TrainerCallback, EarlyStoppingCallback
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
 import aquilign.segmenter.eval as eval
@@ -44,8 +44,19 @@ import os
 import glob
 import shutil
 
+class SaveEveryNEpochsCallback(TrainerCallback):
+    def __init__(self, save_every):
+        self.save_every = save_every
 
-class Trainer:
+    def on_epoch_end(self, args, state, control, **kwargs):
+        if state.epoch % self.save_every == 0:
+            control.should_save = True  # Forces saving
+        else:
+            control.should_save = False  # Skips saving
+
+
+
+class SegmenterTrainer:
 	def  __init__(self,
 				  config_file,
 				  out_dir_suffix):
@@ -67,7 +78,7 @@ class Trainer:
 		base_model_name = config_file["global"]["base_model_name"]
 		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
 		use_bert_tokenizer = config_file["global"]["use_bert_tokenizer"]
-		if use_pretrained_embeddings or use_bert_tokenizer or architecture == "BERT":
+		if use_pretrained_embeddings or use_bert_tokenizer or "BERT" in architecture:
 			os.environ["TOKENIZERS_PARALLELISM"] = "false"
 		data_augmentation = config_file["global"]["data_augmentation"]
 		self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
@@ -122,7 +133,7 @@ class Trainer:
 		self.all_dataset_on_device = False
 		print("Loading data")
 		self.use_bert_tokenizer = use_bert_tokenizer
-		if use_pretrained_embeddings or architecture == "BERT" or self.use_bert_tokenizer:
+		if use_pretrained_embeddings or "BERT" in architecture or self.use_bert_tokenizer:
 			create_vocab = False
 			self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 		else:
@@ -141,7 +152,7 @@ class Trainer:
 		self.config_dir = f"{self.output_dir}/config"
 		os.makedirs(self.config_dir, exist_ok=True)
 		out_conf_dict = copy.deepcopy(config_file)
-		if architecture not in ["BERT", "DISTILBERT"]:
+		if "BERT" not in architecture:
 			out_conf_dict["architecture"] = out_conf_dict["architectures"][architecture]
 			out_conf_dict["architecture"]["name"] = architecture
 		else:
@@ -156,82 +167,120 @@ class Trainer:
 
 		self.data_augmentation = data_augmentation
 		print(f"Creating vocab is {create_vocab}")
-		self.train_dataloader = datafy.CustomTextDataset("train",
-													train_path=train_path,
-													test_path=test_path,
-													dev_path=dev_path,
-													device=self.device,
-													delimiter="£",
-													output_dir=self.output_dir,
-													create_vocab=create_vocab,
-													use_pretrained_embeddings=use_pretrained_embeddings,
-													debug=self.debug,
-													data_augmentation=self.data_augmentation,
-													tokenizer_name=base_model_name,
-													use_bert_tokenizer=use_bert_tokenizer,
-													   architecture=architecture)
-		self.test_dataloader = datafy.CustomTextDataset(mode="test",
-												   train_path=train_path,
-												   test_path=test_path,
-													dev_path=dev_path,
-												   device=self.device,
-												   delimiter="£",
-												   output_dir=self.output_dir,
-												   create_vocab=False,
-												   input_vocab=self.train_dataloader.datafy.input_vocabulary,
-												   lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
-													use_pretrained_embeddings=use_pretrained_embeddings,
-													debug=self.debug,
-													data_augmentation=self.data_augmentation,
-													tokenizer_name=base_model_name,
-													use_bert_tokenizer=use_bert_tokenizer,
-													   architecture=architecture)
+		if "BERT" not in architecture:
+			self.train_dataloader = datafy.CustomTextDataset("train",
+														train_path=train_path,
+														test_path=test_path,
+														dev_path=dev_path,
+														device=self.device,
+														delimiter="£",
+														output_dir=self.output_dir,
+														create_vocab=create_vocab,
+														use_pretrained_embeddings=use_pretrained_embeddings,
+														debug=self.debug,
+														data_augmentation=self.data_augmentation,
+														tokenizer_name=base_model_name,
+														use_bert_tokenizer=use_bert_tokenizer,
+														   architecture=architecture)
+			self.test_dataloader = datafy.CustomTextDataset(mode="test",
+													   train_path=train_path,
+													   test_path=test_path,
+														dev_path=dev_path,
+													   device=self.device,
+													   delimiter="£",
+													   output_dir=self.output_dir,
+													   create_vocab=False,
+													   input_vocab=self.train_dataloader.datafy.input_vocabulary,
+													   lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
+														use_pretrained_embeddings=use_pretrained_embeddings,
+														debug=self.debug,
+														data_augmentation=self.data_augmentation,
+														tokenizer_name=base_model_name,
+														use_bert_tokenizer=use_bert_tokenizer,
+														   architecture=architecture)
 
-		self.dev_dataloader = datafy.CustomTextDataset(mode="dev",
-												   train_path=train_path,
-												   test_path=test_path,
-													dev_path=dev_path,
-												   device=self.device,
-												   delimiter="£",
-												   output_dir=self.output_dir,
-												   create_vocab=False,
-												   input_vocab=self.train_dataloader.datafy.input_vocabulary,
-												   lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
-													use_pretrained_embeddings=use_pretrained_embeddings,
-													debug=self.debug,
-													data_augmentation=self.data_augmentation,
-													tokenizer_name=base_model_name,
-													use_bert_tokenizer=use_bert_tokenizer,
-													   architecture=architecture)
+			self.dev_dataloader = datafy.CustomTextDataset(mode="dev",
+													   train_path=train_path,
+													   test_path=test_path,
+														dev_path=dev_path,
+													   device=self.device,
+													   delimiter="£",
+													   output_dir=self.output_dir,
+													   create_vocab=False,
+													   input_vocab=self.train_dataloader.datafy.input_vocabulary,
+													   lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
+														use_pretrained_embeddings=use_pretrained_embeddings,
+														debug=self.debug,
+														data_augmentation=self.data_augmentation,
+														tokenizer_name=base_model_name,
+														use_bert_tokenizer=use_bert_tokenizer,
+														   architecture=architecture)
 
-		self.loaded_test_data = DataLoader(self.test_dataloader,
-										   batch_size=batch_size,
-										   shuffle=False,
-										   num_workers=self.workers,
-										   pin_memory=False,
-										   drop_last=True)
-		self.loaded_train_data = DataLoader(self.train_dataloader,
-											batch_size=batch_size,
-											shuffle=True,
-											num_workers=self.workers,
-											pin_memory=False,
-										   drop_last=True)
-		self.loaded_dev_data = DataLoader(self.dev_dataloader,
-											batch_size=batch_size,
-											shuffle=True,
-											num_workers=self.workers,
-											pin_memory=False,
-										   drop_last=True)
+			self.loaded_test_data = DataLoader(self.test_dataloader,
+											   batch_size=batch_size,
+											   shuffle=False,
+											   num_workers=self.workers,
+											   pin_memory=False,
+											   drop_last=True)
+			self.loaded_train_data = DataLoader(self.train_dataloader,
+												batch_size=batch_size,
+												shuffle=True,
+												num_workers=self.workers,
+												pin_memory=False,
+											   drop_last=True)
+			self.loaded_dev_data = DataLoader(self.dev_dataloader,
+												batch_size=batch_size,
+												shuffle=True,
+												num_workers=self.workers,
+												pin_memory=False,
+											   drop_last=True)
+
+			print(f"Number of train examples: {len(self.train_dataloader.datafy.train_padded_examples)}")
+			print(f"Number of test examples: {len(self.test_dataloader.datafy.test_padded_examples)}")
+			print(f"Total length of examples (with padding): {self.train_dataloader.datafy.max_length_examples}")
+			self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary
+			self.target_classes = self.train_dataloader.datafy.target_classes
+			self.reverse_target_classes = self.train_dataloader.datafy.reverse_target_classes
+
+			self.corpus_size = self.train_dataloader.__len__()
+			self.steps = self.corpus_size // batch_size
+
+			self.test_steps = self.test_dataloader.__len__() // batch_size
+			# Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
+			if self.use_pretrained_embeddings:
+				weights = torch.load("aquilign/segmenter/embeddings.npy")
+			else:
+				weights = None
+
+			self.tgt_PAD_IDX = self.target_classes["[PAD]"]
+			self.output_dim = len(self.target_classes)
+
+			if self.balance_class_weights:
+				weights = self.train_dataloader.datafy.target_weights.to(self.device)
+				self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
+			else:
+				self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
+
+		else:
+			train_lines = utils.json_corpus_to_lines(train_path, keep_punct=False)
+			dev_lines = utils.json_corpus_to_lines(dev_path, keep_punct=False)
+			eval_lines, delimiter = utils.json_corpus_to_lines(test_path, keep_punct=False, return_delimiter=True)
+			train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=self.tokenizer,
+																			   delimiter=delimiter)
+			self.train_dataset = utils.SentenceBoundaryDataset(train_texts_and_labels)
+
+			# Dev corpus
+			print("Dev corpus preparation")
+			dev_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(dev_lines, tokenizer=self.tokenizer,
+																			 delimiter=delimiter)
+			self.dev_dataset = utils.SentenceBoundaryDataset(dev_texts_and_labels)
+
 
 
 
 		os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
 
-		print(f"Number of train examples: {len(self.train_dataloader.datafy.train_padded_examples)}")
-		print(f"Number of test examples: {len(self.test_dataloader.datafy.test_padded_examples)}")
-		print(f"Total length of examples (with padding): {self.train_dataloader.datafy.max_length_examples}")
-
-		if architecture == "BERT" or self.use_pretrained_embeddings or self.use_bert_tokenizer:
+		if "BERT" in architecture or self.use_pretrained_embeddings or self.use_bert_tokenizer:
 			self.input_vocab = self.tokenizer.get_vocab()
 		else:
 			self.input_vocab = self.train_dataloader.datafy.input_vocabulary
@@ -239,18 +288,9 @@ class Trainer:
 		utils.serialize_dict(self.input_vocab, f"{self.vocab_dir}/input_vocab.json")
 		self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
 
-		self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary
-		self.target_classes = self.train_dataloader.datafy.target_classes
-		self.reverse_target_classes = self.train_dataloader.datafy.reverse_target_classes
 
-		self.corpus_size = self.train_dataloader.__len__()
-		self.steps = self.corpus_size // batch_size
-
-		self.test_steps = self.test_dataloader.__len__() // batch_size
-		self.tgt_PAD_IDX = self.target_classes["[PAD]"]
 		self.epochs = epochs
 		self.batch_size = batch_size
-		self.output_dim = len(self.target_classes)
 		self.include_lang_metadata = include_lang_metadata
 		self.best_model = None
 		self.input_dim = len(self.input_vocab)
@@ -263,11 +303,7 @@ class Trainer:
 		)
 
 
-		# Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
-		if self.use_pretrained_embeddings:
-			weights = torch.load("aquilign/segmenter/embeddings.npy")
-		else:
-			weights = None
+
 
 		if architecture == "transformer":
 			self.model = models.TransformerModel(input_dim=self.input_dim,
@@ -366,10 +402,14 @@ class Trainer:
 											 use_bert_tokenizer=use_bert_tokenizer,
 											 keep_bert_dimensions=keep_bert_dimensions,
 											 linear_dropout=linear_dropout)
-		elif architecture == "BERT":
-			from transformers import AutoModelForTokenClassification
-			self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
-
+		else:
+			if architecture in ["BERT", "TinyBERT"]:
+				from transformers import AutoModelForTokenClassification
+				self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
+			elif architecture == "DistilBERT":
+				from transformers import DistilBertTokenizer, DistilBertForTokenClassification
+				self.tokenizer = DistilBertTokenizer.from_pretrained(base_model_name)
+				self.model = DistilBertForTokenClassification.from_pretrained(base_model_name, num_labels=3)
 		self.architecture = architecture
 		self.model.to(self.device)
 		self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
@@ -378,11 +418,6 @@ class Trainer:
 
 		# Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
 		# qu'aux deux autres pour le calcul de la loss. On désactive pour l'instant
-		if self.balance_class_weights:
-			weights = self.train_dataloader.datafy.target_weights.to(self.device)
-			self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
-		else:
-			self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
 		print(self.model.__repr__())
 		self.accuracies = []
 		self.results = []
@@ -424,6 +459,37 @@ class Trainer:
 			os.remove(model)
 		self.best_model = f"{self.output_dir}/models/best/best.pt"
 
+	def Bert_Train(self):
+		training_args = TrainingArguments(
+			output_dir=f"results_{self.output_dir}/epoch{self.epochs}_bs{self.batch_size}",
+			num_train_epochs=self.epochs,
+			logging_strategy="epoch",
+			per_device_train_batch_size=self.batch_size,
+			per_device_eval_batch_size=self.batch_size,
+			evaluation_strategy="epoch",
+			dataloader_num_workers=8,
+			dataloader_prefetch_factor=4,
+			bf16=True,
+			use_cpu=self.device == "cpu",
+			save_strategy="epoch",
+			load_best_model_at_end=True
+			# best model is evaluated on loss
+		)
+		trainer = Trainer(
+			model=self.model,
+			args=training_args,
+			train_dataset=self.train_dataset,
+			eval_dataset=self.dev_dataset,
+			compute_metrics=eval.compute_metrics,
+			callbacks=[SaveEveryNEpochsCallback(save_every=1),
+					   EarlyStoppingCallback(early_stopping_patience=5)]
+
+		)
+
+		print("Starting training")
+		trainer.train()
+		print("End of training")
+
 	def train(self, clip=0.1):
 		# Ici on va faire en sorte que les plongements de mots ne soient pas entraînables, si c'est des plongements pré-entraînés
 		# Une possibilité serait de dégeler les paramètres en fin d'entraînement, quelques epochs avant la fin (3-4?)
@@ -458,7 +524,7 @@ class Trainer:
 			last_epoch = epoch == range(self.epochs)[-1]
 			print(f"Epoch {str(epoch_number)}")
 			for data in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
-				if self.architecture == "BERT":
+				if "BERT" in self.architecture:
 					examples, masks, targets = data
 					masks = masks.to(self.device)
 				else:
@@ -476,7 +542,7 @@ class Trainer:
 				# param.grad = None
 				self.optimizer.zero_grad()
 				# Shape [batch_size, max_length, output_dim]
-				if self.architecture != "BERT":
+				if "BERT" not in self.architecture:
 					output = self.model(examples, langs)
 					output = output.view(-1, self.output_dim)
 					tgt = targets.view(-1)
@@ -747,12 +813,13 @@ class Trainer:
 
 if __name__ == '__main__':
 	random.seed(1234)
+	trainer = SegmenterTrainer(config_file=config_file,
+					  out_dir_suffix=out_dir_suffix)
 	if mode != "test":
-		trainer = Trainer(config_file=config_file,
-						  out_dir_suffix=out_dir_suffix)
-		trainer.train()
+		if "BERT" in architecture:
+			trainer.Bert_Train()
+		else:
+			trainer.train()
 	else:
-		trainer = Trainer(config_file=config_file,
-						  out_dir_suffix=out_dir_suffix)
 		trainer.best_model = model
 		trainer.evaluate_best_model_per_lang()

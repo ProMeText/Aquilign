@@ -78,11 +78,8 @@ def compute_ambiguity_metrics(tokens,
 
 def compute_metrics(predictions,
                     labels,
-                    examples,
-                    id_to_word,
-                    idx_to_class,
-                    padding_idx,
-                    batch_size,
+                    examples=None,
+                    id_to_word=None,
                     last_epoch=False,
                     tokenizer=None):
     """

@@ -6,6 +6,7 @@
     "import": "/projects/users/mgillele/Aquilign",
     "out_dir": "/projects/users/mgillele/trash/test_segmenter",
     "device": "cuda:0",
+    "base_model_name": "distilbert/distilbert-base-multilingual-cased",
     "data_augmentation": false,
     "freeze_embeddings": false,
     "emb_dim": 300,

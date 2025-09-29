@@ -95,8 +95,9 @@ def compute_metrics(predictions,
     # This way the out shape is [num_example, max_length]
     if bert_training:
         predictions, labels = predictions
-    predictions = predictions.cpu()
-    labels = labels.cpu()
+    else:
+        predictions = predictions.cpu()
+        labels = labels.cpu()
     predictions_as_probs = copy.deepcopy(predictions)
     predictions = np.argmax(predictions, axis=2)
 

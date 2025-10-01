@@ -267,7 +267,7 @@ class SegmenterTrainer:
 			dev_lines = utils.json_corpus_to_lines(dev_path, keep_punct=True)
 			eval_lines, delimiter = utils.json_corpus_to_lines(test_path, keep_punct=True, return_delimiter=True)
 			if self.data_augmentation:
-				train_lines, dev_lines = utils.augment_data((train_lines, dev_lines))
+				train_lines = utils.augment_data((train_lines,))
 			train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=self.tokenizer,
 																			   delimiter=delimiter)
 			self.train_dataset = utils.SentenceBoundaryDataset(train_texts_and_labels)

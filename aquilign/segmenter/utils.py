@@ -11,12 +11,14 @@ import statistics
 import jsonschema
 import random
 
-def augment_data(corpuses:tuple, augment_proportion:float=1.0):
+def augment_data(corpuses:list, augment_proportion:float=1.0):
     assert augment_proportion >= 0.0 and augment_proportion <= 1.0, 'Augment proportion should be between 0 and 1'
     augmented_data = []
+    print(len(corpuses))
     for corpus in corpuses:
         noised_corpus = []
         for example in corpus:
+            print(example)
             example_text = example['example']
             print(example_text)
             noised = apply_noise(example_text)
@@ -27,6 +29,7 @@ def augment_data(corpuses:tuple, augment_proportion:float=1.0):
         random.shuffle(noised_corpus)
         summed_corpus = corpus + noised_corpus[:round(len(corpus)*augment_proportion)]
         augmented_data.append(summed_corpus)
+
 
     return augmented_data
 # -------------------------------------------------------------------

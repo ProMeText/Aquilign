@@ -7,7 +7,7 @@
     "out_dir": "/home/mgl/Documents/test_working",
     "import": "",
     "device": "cpu",
-    "data_augmentation": false,
+    "data_augmentation": true,
     "freeze_embeddings": false,
     "emb_dim": 300,
     "freeze_lang_embeddings": false,

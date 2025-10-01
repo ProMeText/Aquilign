@@ -95,7 +95,7 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 			if architecture == "transformers":
 				num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
 			batch_size = trial.suggest_int("batch_size", 16, 64, step=16)
-	if architecture not in ["BERT", "DISTILBERT"]:
+	if "BERT" not in architecture:
 		if use_pretrained_embeddings is True:
 			train_dataloader = bert_train_dataloader
 			dev_dataloader = bert_dev_dataloader

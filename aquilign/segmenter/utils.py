@@ -292,8 +292,6 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         out_toks_and_labels.append({'input_ids': toks['input_ids'].squeeze(),
                                     'attention_mask': toks['attention_mask'].squeeze(),
                                     'labels': label})
-        print(out_toks_and_labels)
-        exit(0)
     return out_toks_and_labels
 
 

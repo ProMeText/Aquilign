@@ -67,7 +67,7 @@ def random_delete_char(word, prob=0.1):
     Example:
         "dominus" -> "domins"
     """
-    if len(word) <= 1:
+    if len(word) <= 1 or word[-2] == "£":
         return word
     return "".join([c for c in word if random.random() > prob])
 

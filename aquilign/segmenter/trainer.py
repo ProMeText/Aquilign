@@ -640,7 +640,7 @@ class SegmenterTrainer:
 					transitions = torch.zeros(C, C, device=device)
 					start_transitions = torch.zeros(C, device=device)
 					end_transitions = torch.zeros(C, device=device)
-					mask = examples["attention_mask"].bool()
+					mask = data["attention_mask"].bool()
 					L_O, L_B, L_I = 2, 1, 0
 					N = 7
 					preds = utils.constrained_viterbi(emissions, transitions, start_transitions, end_transitions, mask,
@@ -649,6 +649,8 @@ class SegmenterTrainer:
 				all_targets.append(targets)
 				all_examples.append(examples)
 
+		print(f"Model: {emissions.shape}")
+		print(f"Viterbi: {preds.shape}")
 		# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
 		cat_preds = torch.cat(all_preds, dim=0)
 		cat_targets = torch.cat(all_targets, dim=0)

@@ -634,7 +634,17 @@ class SegmenterTrainer:
 				if "BERT" not in self.architecture:
 					preds = self.model(examples, langs)
 				else:
-					preds = self.model(input_ids=examples, attention_mask=masks).logits
+					emissions = self.model(input_ids=examples, attention_mask=masks).logits
+					C = emissions.size(-1)
+					device = emissions.device
+					transitions = torch.zeros(C, C, device=device)
+					start_transitions = torch.zeros(C, device=device)
+					end_transitions = torch.zeros(C, device=device)
+					mask = examples["attention_mask"].bool()
+					L_O, L_B, L_I = 2, 1, 0
+					N = 7
+					preds = utils.constrained_viterbi(emissions, transitions, start_transitions, end_transitions, mask,
+													  N, L_O, L_B, L_I)
 				all_preds.append(preds)
 				all_targets.append(targets)
 				all_examples.append(examples)

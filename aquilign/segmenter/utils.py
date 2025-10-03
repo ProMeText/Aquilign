@@ -11,136 +11,87 @@ import statistics
 import jsonschema
 import random
 
-O, B_, I_ = 0, 1, 2
-
-def next_run_len(prev_tag, prev_r, curr_tag, n):
-    """
-    Calcule le compteur r courant selon (prev_tag, prev_r) -> curr_tag.
-    Retourne -1 si transition invalide (BIO ou longueur).
-    """
-    if curr_tag == O:
-        return 0
-    if curr_tag == B_:
-        return 1
-    # curr_tag == I_
-    # I ne peut suivre que B ou I
-    if prev_tag in (B_, I_):
+def next_run_len(prev_tag, prev_r, curr_tag, n, L_O, L_B, L_I):
+    if curr_tag == L_O: return 0
+    if curr_tag == L_B: return 1
+    if prev_tag in (L_B, L_I):
         r = prev_r + 1
-        if 1 <= r <= n:
-            return r
+        return r if 1 <= r <= n else -1
     return -1
 
-def constrained_viterbi(emissions, transitions, start_transitions, end_transitions, mask, n=10):
-    """
-    emissions: [B, T, C]
-    transitions: [C, C]  (from -> to)
-    start_transitions: [C]
-    end_transitions: [C]
-    mask: [B, T] bool
-    n: longueur max des segments B/I
-
-    Retourne: best_paths [B, T] (tags O/B/I) respectant la contrainte de longueur.
-    """
+@torch.no_grad()
+def constrained_viterbi(emissions, transitions, start_transitions, end_transitions, mask, n, L_O, L_B, L_I):
     device = emissions.device
     B, T, C = emissions.shape
-    # DP sur (tag, r). r in [0..n] (0 seulement valable pour O)
-    # On code -inf pour états impossibles
-    NEG_INF = -1e30
+    transitions = transitions.to(device)
+    start_transitions = start_transitions.to(device)
+    end_transitions = end_transitions.to(device)
 
-    # scores[t, tag, r]
+    NEG_INF = emissions.new_tensor(-1e30)
     scores = emissions.new_full((B, T, C, n+1), NEG_INF)
-    backp  = torch.full((B, T, C, n+1, 2), -1, dtype=torch.long, device=device)  # (prev_tag, prev_r)
+    backp  = torch.full((B, T, C, n+1, 2), -1, dtype=torch.long, device=device)
 
-    # Init t=0
-    t = 0
-    valid0 = mask[:, t]
+    # t=0 (I interdit)
+    valid0 = mask[:, 0]
     for y in range(C):
-        # r initial associé à y
-        r0 = 0 if y == O else (1 if y == B_ else -1)  # I au premier pas est invalide
+        r0 = 0 if y == L_O else (1 if y == L_B else -1)
         if r0 >= 0:
-            base = start_transitions[y] + emissions[:, t, y]
-            # on n'écrit que là où mask est True
-            s = torch.where(valid0, base, emissions.new_tensor(0.0))
-            scores[:, t, y, r0] = s
-            # backp inutiles à t=0
+            base = start_transitions[y] + emissions[:, 0, y]
+            scores[:, 0, y, r0] = torch.where(valid0, base, NEG_INF)
 
-    # Récurrence t=1..T-1
+    # t=1..T-1
     for t in range(1, T):
         valid = mask[:, t]
         if not valid.any():
-            # si tout est padding, on peut copier les scores (ou laisser -inf, ça n'affectera pas)
             continue
-        for y in range(C):  # tag courant
-            for r in range(n+1):  # run_len courant
-                # On va trouver le meilleur (prev_tag, prev_r) menant à (y, r)
-                best_prev_score = emissions.new_full((B,), NEG_INF)
-                best_prev_tag   = torch.full((B,), -1, dtype=torch.long, device=device)
-                best_prev_r     = torch.full((B,), -1, dtype=torch.long, device=device)
-
-                for y_prev in range(C):
-                    # On parcourt seulement les prev_r possibles
-                    for r_prev in range(n+1):
-                        # ignorer états impossibles
-                        prev_score = scores[:, t-1, y_prev, r_prev]
-                        if (prev_score <= NEG_INF/2).all():
-                            continue
-                        r_new = next_run_len(y_prev, r_prev, y, n)
-                        if r_new != r:
-                            continue
-                        # score de transition
-                        trans = transitions[y_prev, y]
-                        cand = prev_score + trans
-                        # on garde le meilleur par batch
-                        better = cand > best_prev_score
-                        best_prev_score = torch.where(better, cand, best_prev_score)
-                        best_prev_tag   = torch.where(better, torch.full_like(best_prev_tag, y_prev), best_prev_tag)
-                        best_prev_r     = torch.where(better, torch.full_like(best_prev_r, r_prev), best_prev_r)
-
-                # ajouter émission et respecter mask
-                s = best_prev_score + emissions[:, t, y]
-                s = torch.where(valid, s, scores[:, t, y, r])  # si padding, ne pas écraser
-                scores[:, t, y, r] = torch.maximum(scores[:, t, y, r], s)
-
-                # backpointers (uniquement là où valid et on a amélioré)
-                improved = valid & (scores[:, t, y, r] == s) & (best_prev_tag >= 0)
-                backp[improved, t, y, r, 0] = best_prev_tag[improved]
-                backp[improved, t, y, r, 1] = best_prev_r[improved]
-
-    # Terminaison : ajouter end_transitions
-    best_last_score = emissions.new_full((B,), NEG_INF)
-    best_last_tag   = torch.full((B,), -1, dtype=torch.long, device=device)
-    best_last_r     = torch.full((B,), -1, dtype=torch.long, device=device)
-    last_idx = mask.long().sum(dim=1) - 1  # index du dernier token valide par séquence
-
-    for b in range(B):
-        t = last_idx[b].item()
         for y in range(C):
             for r in range(n+1):
-                sc = scores[b, t, y, r]
-                if sc <= NEG_INF/2:
-                    continue
-                cand = sc + end_transitions[y]
-                if cand > best_last_score[b]:
-                    best_last_score[b] = cand
-                    best_last_tag[b]   = y
-                    best_last_r[b]     = r
+                best = emissions.new_full((B,), NEG_INF)
+                by   = torch.full((B,), -1, dtype=torch.long, device=device)
+                br   = torch.full((B,), -1, dtype=torch.long, device=device)
+                for yp in range(C):
+                    for rp in range(n+1):
+                        prev = scores[:, t-1, yp, rp]
+                        if (prev <= NEG_INF/2).all():
+                            continue
+                        r_new = next_run_len(yp, rp, y, n, L_O, L_B, L_I)
+                        if r_new != r:
+                            continue
+                        cand = prev + transitions[yp, y]
+                        better = cand > best
+                        best = torch.where(better, cand, best)
+                        by   = torch.where(better, torch.full_like(by, yp), by)
+                        br   = torch.where(better, torch.full_like(br, rp), br)
 
-    # Backtracking
-    paths = torch.full((B, T), fill_value=O, dtype=torch.long, device=device)
+                s = best + emissions[:, t, y]
+                cur = scores[:, t, y, r]
+                improved = valid & (s > cur) & (by >= 0)
+                scores[:, t, y, r] = torch.where(improved, s, cur)
+                backp[improved, t, y, r, 0] = by[improved]
+                backp[improved, t, y, r, 1] = br[improved]
+
+    # terminaison + backtrack
+    last = mask.long().sum(1) - 1
+    paths = torch.full((B, T), L_O, dtype=torch.long, device=device)
     for b in range(B):
-        t = last_idx[b].item()
-        y = best_last_tag[b].item()
-        r = best_last_r[b].item()
-        if y < 0:
+        tb = int(last[b].item())
+        best, yb, rb = -1e30, -1, -1
+        for y in range(C):
+            for r in range(n+1):
+                sc = scores[b, tb, y, r].item()
+                if sc <= -5e29:
+                    continue
+                cand = sc + end_transitions[y].item()
+                if cand > best: best, yb, rb = cand, y, r
+        if yb < 0:
             continue
-        paths[b, t] = y
-        for tt in range(t, 0, -1):
-            prev_y = backp[b, tt, y, r, 0].item()
-            prev_r = backp[b, tt, y, r, 1].item()
-            if prev_y < 0:
-                break
-            paths[b, tt-1] = prev_y
-            y, r = prev_y, prev_r
+        paths[b, tb] = yb
+        for tt in range(tb, 0, -1):
+            py = int(backp[b, tt, yb, rb, 0].item())
+            pr = int(backp[b, tt, yb, rb, 1].item())
+            if py < 0: break
+            paths[b, tt-1] = py
+            yb, rb = py, pr
     return paths
 
 

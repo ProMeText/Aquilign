@@ -608,7 +608,7 @@ class SegmenterTrainer:
 		all_preds = []
 		all_targets = []
 		all_examples = []
-
+		self.device = "cpu"
 		if "BERT" in self.architecture:
 			best_model_path = self.trainer.state.best_model_checkpoint
 			self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)

@@ -783,7 +783,7 @@ class SegmenterTrainer:
 		all_targets = []
 		all_examples = []
 		self.model.eval()
-		for data in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):
+		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			if self.architecture == "BERT":
 				examples, masks, targets = data
 				masks = masks.to(self.device)

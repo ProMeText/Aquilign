@@ -619,8 +619,10 @@ class SegmenterTrainer:
 		print("Starting evaluation")
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			if "BERT" in self.architecture:
-				examples, masks, targets = data
+				examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
 				masks = masks.to(self.device)
+				targets = targets.to(self.device)
+				examples = examples.to(self.device)
 			else:
 				examples, langs, targets = data
 				langs = langs.to(self.device)
@@ -651,9 +653,9 @@ class SegmenterTrainer:
 									   labels=cat_targets,
 									   examples=cat_examples,
 									   id_to_word=self.reverse_input_vocab,
-									   idx_to_class=self.reverse_target_classes,
-									   padding_idx=self.tgt_PAD_IDX,
-									   batch_size=self.batch_size,
+									   # idx_to_class=self.reverse_target_classes,
+									   # padding_idx=self.tgt_PAD_IDX,
+									   # batch_size=self.batch_size,
 									   last_epoch=True,
 									   tokenizer=self.tokenizer)
 

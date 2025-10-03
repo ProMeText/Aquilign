@@ -93,9 +93,12 @@ def compute_metrics(predictions,
     # the predictions are of shape [num_example, max_length, out_classes]
     # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
     # This way the out shape is [num_example, max_length]
-    if bert_training:
+    last_epoch = False
+    if bert_training and labels is None:
         print(predictions)
         predictions, labels = predictions
+    elif bert_training and labels is not None:
+        pass
     else:
         predictions = predictions.cpu()
         labels = labels.cpu()

@@ -279,6 +279,26 @@ class SegmenterTrainer:
 			self.dev_dataset = utils.SentenceBoundaryDataset(dev_texts_and_labels)
 
 
+			# Dev corpus
+			print("Dev corpus preparation")
+			test_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(eval_lines, tokenizer=self.tokenizer,
+																			 delimiter=delimiter)
+			self.test_data = utils.SentenceBoundaryDataset(test_texts_and_labels)
+
+			self.loaded_test_data = DataLoader(self.test_data,
+											   batch_size=batch_size,
+											   shuffle=False,
+											   num_workers=self.workers,
+											   pin_memory=False,
+											   drop_last=True)
+
+			self.target_classes = {"[SC]": 0,  # Segment content > no split
+								   "[SB]": 1,  # Segment boundary > split before
+								   "[PAD]": 2
+								   }
+			self.reverse_target_classes = {id: label for label, id in self.target_classes.items()}
+			self.tgt_PAD_IDX = self.target_classes["[PAD]"]
+
 
 
 		os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
@@ -490,7 +510,7 @@ class SegmenterTrainer:
 		)
 
 		print("Starting training")
-		trainer.train()
+		self.trainer.train()
 		print("End of training")
 
 	def train(self, clip=0.1):
@@ -774,7 +794,7 @@ class SegmenterTrainer:
 		"""
 		Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
 		"""
-		print("Evaluating model on dev data")
+		print("Evaluating model on test data")
 		debug = False
 		epoch_accuracy = []
 		epoch_loss = []
@@ -784,8 +804,8 @@ class SegmenterTrainer:
 		all_examples = []
 		self.model.eval()
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
-			if self.architecture == "BERT":
-				examples, masks, targets = data
+			if "BERT" in self.architecture:
+				examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
 				masks = masks.to(self.device)
 			else:
 				examples, langs, targets = data
@@ -803,6 +823,7 @@ class SegmenterTrainer:
 				all_examples.append(examples)
 
 		# On supprime les batchs:
+		print(all_preds)
 		cat_preds = torch.cat(all_preds, dim=0) # [num_examples, max_dim, num_classes]
 		cat_targets = torch.cat(all_targets, dim=0) # [num_examples, max_dim]
 		cat_examples = torch.cat(all_examples, dim=0) # [num_examples, max_dim]
@@ -810,9 +831,9 @@ class SegmenterTrainer:
 									   labels=cat_targets,
 									   examples=cat_examples,
 									   id_to_word=self.reverse_input_vocab,
-									   idx_to_class=self.reverse_target_classes,
-									   padding_idx=self.tgt_PAD_IDX,
-									   batch_size=self.batch_size,
+									   # idx_to_class=self.reverse_target_classes,
+									   # padding_idx=self.tgt_PAD_IDX,
+									   # batch_size=self.batch_size,
 									   last_epoch=last_epoch,
 									   tokenizer=self.tokenizer)
 		self.results.append(results)

@@ -4,6 +4,7 @@
     "test": "/projects/users/mgillele/multilingual-segmentation-dataset/data/segmented/split/multilingual/test.json",
     "dev": "/projects/users/mgillele/multilingual-segmentation-dataset/data/segmented/split/multilingual/dev.json",
     "import": "/projects/users/mgillele/Aquilign",
+    "base_model_name": "google-bert/bert-base-multilingual-cased",
     "out_dir": "/projects/users/mgillele/trash/test_segmenter",
     "device": "cuda:0",
     "data_augmentation": false,

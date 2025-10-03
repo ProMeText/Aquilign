@@ -478,7 +478,7 @@ class SegmenterTrainer:
 			load_best_model_at_end=True
 			# best model is evaluated on loss
 		)
-		trainer = Trainer(
+		self.trainer = Trainer(
 			model=self.model,
 			args=training_args,
 			train_dataset=self.train_dataset,
@@ -589,13 +589,16 @@ class SegmenterTrainer:
 		all_targets = []
 		all_examples = []
 
-
-		self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
+		if "BERT" in self.architecture:
+			best_model_path = self.trainer.state.best_model_checkpoint
+			self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
+		else:
+			self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
 		print("Model loaded.")
 		self.model.eval()
 		print("Starting evaluation")
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
-			if self.architecture == "BERT":
+			if "BERT" in self.architecture:
 				examples, masks, targets = data
 				masks = masks.to(self.device)
 			else:
@@ -605,10 +608,10 @@ class SegmenterTrainer:
 			targets = targets.to(self.device)
 			with torch.no_grad():
 				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-				if self.architecture != "BERT":
+				if "BERT" not in self.architecture:
 					preds = self.model(examples, langs)
 				else:
-					preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
+					preds = self.model(input_ids=examples, attention_mask=masks).logits
 				all_preds.append(preds)
 				all_targets.append(targets)
 				all_examples.append(examples)
@@ -661,33 +664,42 @@ class SegmenterTrainer:
 		for lang in self.lang_vocab:
 			if lang == "[UNK]":
 				continue
-			current_dataloader = datafy.CustomTextDataset(mode="test",
-														  train_path=self.train_path,
-														  test_path=self.test_path,
-														  dev_path=self.dev_path,
-														  device=self.device,
-														  delimiter="£",
-														  output_dir=self.output_dir,
-														  create_vocab=False,
-														  input_vocab=self.train_dataloader.datafy.input_vocabulary,
-														  lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
-														  use_pretrained_embeddings=self.use_pretrained_embeddings,
-														  debug=self.debug,
-														  data_augmentation=self.data_augmentation,
-														  filter_by_lang=lang,
-														 tokenizer_name=self.base_model_name,
-														  architecture=self.architecture,
-														  use_bert_tokenizer=self.use_bert_tokenizer)
-			loaded_test_data_per_lang[lang] = DataLoader(current_dataloader,
-															  batch_size=self.batch_size,
-															  shuffle=False,
-															  num_workers=self.workers,
-															  pin_memory=False,
-															  drop_last=True)
+			if self.architecture not in "BERT":
+				current_dataloader = datafy.CustomTextDataset(mode="test",
+															  train_path=self.train_path,
+															  test_path=self.test_path,
+															  dev_path=self.dev_path,
+															  device=self.device,
+															  delimiter="£",
+															  output_dir=self.output_dir,
+															  create_vocab=False,
+															  input_vocab=self.train_dataloader.datafy.input_vocabulary,
+															  lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
+															  use_pretrained_embeddings=self.use_pretrained_embeddings,
+															  debug=self.debug,
+															  data_augmentation=self.data_augmentation,
+															  filter_by_lang=lang,
+															 tokenizer_name=self.base_model_name,
+															  architecture=self.architecture,
+															  use_bert_tokenizer=self.use_bert_tokenizer)
+				loaded_test_data_per_lang[lang] = DataLoader(current_dataloader,
+																  batch_size=self.batch_size,
+																  shuffle=False,
+																  num_workers=self.workers,
+																  pin_memory=False,
+																  drop_last=True)
+				self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
+			else:
+
+				test_lines, delimiter = utils.json_corpus_to_lines(self.test_path, keep_punct=True, return_delimiter=True)
+				text_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(test_lines,
+																				   tokenizer=self.tokenizer,
+																				   delimiter=delimiter)
+				self.test_dataset = utils.SentenceBoundaryDataset(text_texts_and_labels)
+				self.model = AutoModelForTokenClassification.from_pretrained(self.best_model_name)
 
 
 
-		self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
 		self.model.eval()
 		results_per_lang = {}
 		for lang in self.lang_vocab:
@@ -698,7 +710,7 @@ class SegmenterTrainer:
 			all_targets = []
 			all_examples = []
 			for data in tqdm.tqdm(loaded_test_data_per_lang[lang], unit_scale=self.batch_size):
-				if self.architecture == "BERT":
+				if "BERT" in self.architecture:
 					examples, masks, targets = data
 					masks = masks.to(self.device)
 				else:
@@ -821,6 +833,7 @@ if __name__ == '__main__':
 	if mode != "test":
 		if "BERT" in architecture:
 			trainer.Bert_Train()
+			trainer.evaluate_best_model()
 		else:
 			trainer.train()
 	else:

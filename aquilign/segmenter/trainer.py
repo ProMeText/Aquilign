@@ -615,6 +615,7 @@ class SegmenterTrainer:
 		else:
 			self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
 		print("Model loaded.")
+		self.model.to(self.device)
 		self.model.eval()
 		print("Starting evaluation")
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
@@ -656,7 +657,7 @@ class SegmenterTrainer:
 									   # idx_to_class=self.reverse_target_classes,
 									   # padding_idx=self.tgt_PAD_IDX,
 									   # batch_size=self.batch_size,
-									   last_epoch=True,
+									   # last_epoch=True,
 									   tokenizer=self.tokenizer)
 
 

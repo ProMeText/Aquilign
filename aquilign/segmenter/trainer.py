@@ -608,27 +608,27 @@ class SegmenterTrainer:
 		all_preds = []
 		all_targets = []
 		all_examples = []
-		self.device = "cpu"
+		eval_device = "cpu"
 		if "BERT" in self.architecture:
 			best_model_path = self.trainer.state.best_model_checkpoint
 			self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
 		else:
 			self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
 		print("Model loaded.")
-		self.model.to(self.device)
+		self.model.to(eval_device)
 		self.model.eval()
 		print("Starting evaluation")
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			if "BERT" in self.architecture:
 				examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
-				masks = masks.to(self.device)
-				targets = targets.to(self.device)
-				examples = examples.to(self.device)
+				masks = masks.to(eval_device)
+				targets = targets.to(eval_device)
+				examples = examples.to(eval_device)
 			else:
 				examples, langs, targets = data
-				langs = langs.to(self.device)
-			examples = examples.to(self.device)
-			targets = targets.to(self.device)
+				langs = langs.to(eval_device)
+			examples = examples.to(eval_device)
+			targets = targets.to(eval_device)
 			with torch.no_grad():
 				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
 				if "BERT" not in self.architecture:

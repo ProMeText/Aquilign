@@ -13,7 +13,7 @@
     "freeze_lang_embeddings": false,
     "linear_layers": 3,
     "linear_layers_hidden_size": 128,
-    "balance_class_weights": false,
+    "balance_class_weights": true,
     "include_lang_metadata": false,
     "lang_emb_dim": 16,
     "epochs": 10,

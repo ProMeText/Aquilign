@@ -82,8 +82,7 @@ def compute_metrics(predictions,
                     examples=None,
                     id_to_word=None,
                     last_epoch=False,
-                    tokenizer=None,
-                    metrics:list=None):
+                    tokenizer=None):
     """
     This function evaluates the model against the targets.
     :TODO: ignore padding classes?

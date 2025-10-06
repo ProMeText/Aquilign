@@ -269,7 +269,7 @@ class SegmenterTrainer:
 			eval_lines, delimiter = utils.json_corpus_to_lines(test_path, keep_punct=True, return_delimiter=True)
 			if self.data_augmentation:
 				train_lines = utils.augment_data([train_lines])[0]
-			train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=self.tokenizer,
+			train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines[:100], tokenizer=self.tokenizer,
 																			   delimiter=delimiter)
 			self.train_dataset = utils.SentenceBoundaryDataset(train_texts_and_labels)
 
@@ -610,7 +610,7 @@ class SegmenterTrainer:
 		all_preds = []
 		all_targets = []
 		all_examples = []
-		eval_device = "cpu"
+		eval_device = "cuda:0"
 		if "BERT" in self.architecture:
 			best_model_path = self.trainer.state.best_model_checkpoint
 			self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
@@ -680,8 +680,7 @@ class SegmenterTrainer:
 									   # padding_idx=self.tgt_PAD_IDX,
 									   # batch_size=self.batch_size,
 									   # last_epoch=True,
-									   tokenizer=self.tokenizer,
-									   metrics=metrics)
+									   tokenizer=self.tokenizer)
 
 
 

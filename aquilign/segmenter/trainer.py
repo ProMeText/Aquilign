@@ -601,8 +601,6 @@ class SegmenterTrainer:
 			utils.append_to_file("---", self.epochs_log_file)
 			self.save_model(epoch_number)
 		self.get_best_model()
-		for i in range(self.segments_max_length - 5, self.segments_max_length + 5):
-			self.evaluate_best_model(max_length=i)
 		# self.evaluate_best_model_per_lang()
 
 	def evaluate_best_model(self, max_length):
@@ -883,7 +881,8 @@ if __name__ == '__main__':
 	if mode != "test":
 		if "BERT" in architecture:
 			trainer.Bert_Train()
-			trainer.evaluate_best_model()
+			for i in range(trainer.segments_max_length - 5, trainer.segments_max_length + 5):
+				trainer.evaluate_best_model(max_length=i)
 		else:
 			trainer.train()
 	else:

@@ -620,7 +620,7 @@ class SegmenterTrainer:
 		self.model.to(eval_device)
 		self.model.eval()
 		print("Starting evaluation")
-		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
+		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size*4):
 			if "BERT" in self.architecture:
 				examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
 				masks = masks.to(eval_device)

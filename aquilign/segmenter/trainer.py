@@ -635,25 +635,28 @@ class SegmenterTrainer:
 					preds = self.model(examples, langs)
 				else:
 					emissions = self.model(input_ids=examples, attention_mask=masks).logits
-					C = emissions.size(-1)
-					device = "cpu"
-					emissions = emissions.to(device)
-					masks = masks.to(device)
-					transitions = torch.zeros(C, C, device=device)
-					start_transitions = torch.zeros(C, device=device)
-					end_transitions = torch.zeros(C, device=device)
-					mask = data["attention_mask"].bool()
-					L_O, L_B, L_I = 2, 1, 0
-					preds = utils.constrained_viterbi(emissions,
-													  transitions,
-													  start_transitions,
-													  end_transitions,
-													  mask,
-													  device,
-													  ideal_segments_length=max_length,
-													  L_O=L_O,
-													  L_B=L_B,
-													  L_I=L_I)
+					if max_length is None:
+						preds = emissions
+					else:
+						C = emissions.size(-1)
+						device = "cpu"
+						emissions = emissions.to(device)
+						masks = masks.to(device)
+						transitions = torch.zeros(C, C, device=device)
+						start_transitions = torch.zeros(C, device=device)
+						end_transitions = torch.zeros(C, device=device)
+						mask = data["attention_mask"].bool()
+						L_O, L_B, L_I = 2, 1, 0
+						preds = utils.constrained_viterbi(emissions,
+														  transitions,
+														  start_transitions,
+														  end_transitions,
+														  mask,
+														  device,
+														  ideal_segments_length=max_length,
+														  L_O=L_O,
+														  L_B=L_B,
+														  L_I=L_I)
 				all_preds.append(preds)
 				all_targets.append(targets)
 				examples = examples.to(device)
@@ -881,6 +884,7 @@ if __name__ == '__main__':
 	if mode != "test":
 		if "BERT" in architecture:
 			trainer.Bert_Train()
+			trainer.evaluate_best_model(max_length=None)
 			for i in range(trainer.segments_max_length - 5, trainer.segments_max_length + 5):
 				trainer.evaluate_best_model(max_length=i)
 		else:

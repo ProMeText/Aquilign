@@ -652,6 +652,7 @@ class SegmenterTrainer:
 													  start_transitions,
 													  end_transitions,
 													  mask,
+													  device,
 													  ideal_segments_length,
 													  L_O,
 													  L_B,

@@ -22,8 +22,7 @@ def next_run_len(prev_tag, prev_r, curr_tag, n, L_O, L_B, L_I):
     return -1
 
 @torch.no_grad()
-def constrained_viterbi(emissions, transitions, start_transitions, end_transitions, mask, n, L_O, L_B, L_I):
-    device = emissions.device
+def constrained_viterbi(emissions, transitions, start_transitions, end_transitions, mask, device, n, L_O, L_B, L_I):
     B, T, C = emissions.shape
     transitions = transitions.to(device)
     start_transitions = start_transitions.to(device)

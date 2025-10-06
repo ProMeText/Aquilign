@@ -303,10 +303,7 @@ class Datafier:
         This function creates the test corpus, and uses the vocabulary of the train set to do so.
         Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
         """
-        if self.data_augmentation:
-            full_corpus = self.test_data + self.remove_punctuation(self.test_data)
-        else:
-            full_corpus = self.test_data
+        full_corpus = self.test_data
         if self.architecture in ["BERT", "DISTILBERT"]:
             test_padded_examples, test_attention_masks, test_langs, test_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
             self.test_attention_masks = utils.tensorize(test_attention_masks)

@@ -240,7 +240,8 @@ class CharacterCNN(torch.nn.Module):
                     [7, 1024]
                     ],
                 'n_highway': 2,
-                'embedding': {'dim': 16},
+                'embedding': {'dim': 64},
+                'total': {'dim': 96},
                 'n_characters': vocab_length,
                 'max_characters_per_token': max_tokens
             }
@@ -249,6 +250,7 @@ class CharacterCNN(torch.nn.Module):
         self.requires_grad = requires_grad
 
         self._init_weights()
+        self.lang_embeddings = torch.nn.Embedding(8, 32)
 
 
     def _init_weights(self):
@@ -272,7 +274,7 @@ class CharacterCNN(torch.nn.Module):
     def _init_cnn_weights(self):
         cnn_options = self._options["char_cnn"]
         filters = cnn_options["filters"]
-        char_embed_dim = cnn_options["embedding"]["dim"]
+        char_embed_dim = cnn_options["total"]["dim"]
 
         convolutions = []
         for i, (width, num) in enumerate(filters):
@@ -310,7 +312,7 @@ class CharacterCNN(torch.nn.Module):
     def get_output_dim(self):
         return self.output_dim
 
-    def forward(self, inputs: torch.Tensor) -> Dict[str, torch.Tensor]:
+    def forward(self, inputs: torch.Tensor, langs: torch.Tensor) -> Dict[str, torch.Tensor]:
         """
         Parameters
         ----------
@@ -337,6 +339,14 @@ class CharacterCNN(torch.nn.Module):
             inputs.view(-1, max_chars_per_token + 2), self._char_embedding_weights
         )
 
+        batch_size, sequence_length, max_chars = inputs.size()
+        language_vectors = self.lang_embeddings(langs)
+        language_vectors = language_vectors.unsqueeze(1)  # [48, 1, 32]
+        language_vectors = language_vectors.expand(-1, sequence_length, -1)  # [48, 163, 32]
+        language_vectors_flat = language_vectors.reshape(-1, 32)  # [7824, 32]
+
+        language_vectors_expanded = language_vectors_flat.unsqueeze(1).expand(-1, max_chars, -1)
+        character_embedding = torch.cat([character_embedding, language_vectors_expanded], dim=-1)
         # run convolutions
         cnn_options = self._options["char_cnn"]
         if cnn_options["activation"] == "tanh":
@@ -368,4 +378,5 @@ class CharacterCNN(torch.nn.Module):
 
         # reshape to (batch_size, sequence_length, embedding_dim)
         batch_size, sequence_length, _ = character_ids_with_bos_eos.size()
+
         return token_embedding.view(batch_size, sequence_length, -1)

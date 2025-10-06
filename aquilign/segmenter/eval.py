@@ -78,11 +78,12 @@ def compute_ambiguity_metrics(tokens,
 
 def compute_metrics(predictions,
                     labels=None,
-                    bert_training=True,
                     examples=None,
                     id_to_word=None,
                     last_epoch=False,
-                    tokenizer=None):
+                    tokenizer=None,
+                    bert_training=False
+                    ):
     """
     This function evaluates the model against the targets.
     :TODO: ignore padding classes?
@@ -94,12 +95,12 @@ def compute_metrics(predictions,
     # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
     # This way the out shape is [num_example, max_length]
     if bert_training and labels is None:
-        print(predictions)
         predictions, labels = predictions
         predictions = np.argmax(predictions, axis=2)
     elif bert_training and labels is not None:
         pass
     else:
+        predictions = np.argmax(predictions, axis=2)
         predictions = predictions.cpu()
         labels = labels.cpu()
 

@@ -25,7 +25,25 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
-    def __init__(self, mode, train_path, test_path, dev_path, device, delimiter, output_dir, create_vocab, data_augmentation, tokenizer_name, input_vocab=None, lang_vocab=None, use_pretrained_embeddings=False, debug=False, filter_by_lang=None, use_bert_tokenizer=False, architecture="lstm", tuning_mode=False):
+    def __init__(self,
+                 mode,
+                 train_path,
+                 test_path,
+                 dev_path,
+                 delimiter,
+                 output_dir,
+                 create_vocab,
+                 data_augmentation,
+                 tokenizer_name,
+                 input_vocab=None,
+                 lang_vocab=None,
+                 use_pretrained_embeddings=False,
+                 debug=False,
+                 filter_by_lang=None,
+                 use_bert_tokenizer=False,
+                 use_char_embeddings=True,
+                 architecture="lstm",
+                 tuning_mode=False):
         self.datafy = Datafier(train_path,
                                test_path,
                                dev_path,
@@ -40,15 +58,26 @@ class CustomTextDataset(Dataset):
                                tokenizer_name=tokenizer_name,
                                filter_by_lang=filter_by_lang,
                                use_bert_tokenizer=use_bert_tokenizer,
+                               use_char_embeddings=True,
                                architecture=architecture,
                                tuning_mode=tuning_mode)
+        self.use_char_embeddings = use_char_embeddings
         self.architecture = architecture
         self.mode = mode
         if mode == "train":
+            print("Creating train corpus")
             self.datafy.create_train_corpus()
+            print("Train corpus created.")
+            print(self.datafy.train_padded_examples.shape)
+            print(self.datafy.train_padded_targets.shape)
+            assert self.datafy.train_padded_examples.shape[1] == self.datafy.train_padded_targets.shape[1] , (f"Something went wrong with corpus creation.\n"
+             f"Padded examples shape: {self.datafy.train_padded_examples.shape}\n"
+             f"Padded targets shape: {self.datafy.train_padded_targets.shape}.")
         elif mode == "test":
+            print("Creating test corpus")
             self.datafy.create_test_corpus()
         else:
+            print("Creating dev corpus")
             self.datafy.create_dev_corpus()
 
     def __len__(self):
@@ -106,6 +135,7 @@ class Datafier:
                  tokenizer_name,
                  filter_by_lang=None,
                  use_bert_tokenizer=False,
+                 use_char_embeddings=True,
                  architecture="lstm",
                  tuning_mode=False
                  ):
@@ -148,13 +178,16 @@ class Datafier:
         full_corpus = self.train_data + self.test_data + self.dev_data
         assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
         self.architecture = architecture
+        self.use_char_embeddings = use_char_embeddings
         if self.architecture in ["BERT", "DISTILBERT"]:
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
             self.create_lang_vocab(full_corpus)
             self.input_vocabulary = self.tokenizer.get_vocab()
         else:
+            if self.use_char_embeddings:
+                self.get_max_length(full_corpus)
             if create_vocab:
-                self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus)
+                self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus, use_char_embeddings)
                 self.create_lang_vocab(full_corpus)
             elif self.use_pretrained_embeddings or self.use_bert_tokenizer:
                 self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
@@ -174,25 +207,44 @@ class Datafier:
         if self.tuning_mode is False:
             utils.serialize_dict(self.lang_vocabulary, f"{self.vocab_dir}/lang_vocab.json")
 
+    def get_max_length(self, corpus):
+        corpus_as_string = " ".join([example['example'] for example in corpus])
+        splitted_text = re.split(self.delimiters_regex, corpus_as_string)
+        self.max_token_length = max([len(item) for item in splitted_text if item])
 
-    def create_vocab(self, data:list[dict]):
-        input_vocabulary = {"[PAD]": 0,
-                            "[UNK]": 1}
+    def create_vocab(self, data:list[dict], use_char_embeddings:bool=False):
+
         examples = [item["example"] for item in data]
         # On fusionne l'ensemble du corpus
         data_string = " ".join(examples).replace(self.delimiter, " ")
         # data_string = data_string[:100]
-        splitted_text = re.split(self.delimiters_regex, data_string)
-
-        n = 2
-        for item in splitted_text:
-            if item not in ["", None] and item.lower() not in input_vocabulary:
-                input_vocabulary[item.lower()] = n
-                n += 1
-        reverse_input_vocabulary = {idx + n: token for idx, token in enumerate(splitted_text)}
-
+        if use_char_embeddings is False:
+            input_vocabulary = {"[PAD]": 0,
+                                "[UNK]": 1}
+            n = 2
+            splitted_text = re.split(self.delimiters_regex, data_string)
+            for item in splitted_text:
+                if item not in ["", None] and item.lower() not in input_vocabulary:
+                    input_vocabulary[item.lower()] = n
+                    n += 1
+        else:
+            input_vocabulary = {"[PAD]": 0,
+                                "[UNK]": 1,
+                                "[EOT]": 2,
+                                "[SOT]": 3}
+            n = 4
+            input_vocabulary = {**input_vocabulary,
+                                **{
+                char: idx + n for idx, char
+                in enumerate(
+                    list(
+                        set(data_string)
+                    )
+                )
+            }
+                                }
         self.input_vocabulary = input_vocabulary
-        self.reverse_input_vocabulary = reverse_input_vocabulary
+        self.reverse_input_vocabulary = {idx:char for char, idx in self.input_vocabulary.items()}
         if self.tuning_mode is False:
             utils.serialize_dict(self.input_vocabulary, f"{self.vocab_dir}/input_vocab.json")
 
@@ -309,6 +361,25 @@ class Datafier:
         return "".join(normalized)
 
 
+    def text_to_chars_ids(self, corpus, max_tokens, max_sentence_length):
+        sentence_as_ids = []
+        for token in corpus:
+            try:
+                token_as_ids = [self.input_vocabulary[char] for char in token]
+            except KeyError:
+                print("Error with token:", token)
+                print("Tagging token as UNK")
+                token_as_ids = [self.input_vocabulary["[UNK]"] if char not in self.input_vocabulary else self.input_vocabulary[char] for char in token]
+            token_as_ids = token_as_ids + [self.input_vocabulary["[EOT]"]]
+            token_as_ids = [self.input_vocabulary["[SOT]"]] + token_as_ids
+            padding_number = max_tokens - len(token_as_ids)
+            token_as_ids = token_as_ids + [self.input_vocabulary["[PAD]"] for _ in range(padding_number)]
+            sentence_as_ids.append(token_as_ids)
+        sentence_difference = max_sentence_length - len(sentence_as_ids)
+        sentence_as_ids = sentence_as_ids + [[self.input_vocabulary["[PAD]"] for _ in range(max_tokens)] for sentence in
+                                             range(sentence_difference)]
+        return sentence_as_ids
+
     def produce_corpus(self, data:list, debug=True) -> tuple:
         """
         This function takes the targets and creates the examples.
@@ -329,7 +400,7 @@ class Datafier:
             # Si on veut utiliser des embeddings pré-entraînés, il faut tokéniser avec le tokéniseur maison
             if self.use_pretrained_embeddings or self.use_bert_tokenizer or self.architecture in ["BERT", "DISTILBERT"]:
                 try:
-                    if self.architecture in ["BERT", "DISTILBERT"]:
+                    if "BERT" in self.architecture:
                         example, masks, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380, output_masks=True)
                         attention_masks.append(masks.tolist())
                     else:
@@ -356,7 +427,6 @@ class Datafier:
                         target.append("[SC]")
                         example.append(token.lower())
                 assert len(example) == len(target), "Length inconsistency"
-
             examples.append(example)
             targets.append(target)
             if not self.architecture in ["BERT", "DISTILBERT"]:
@@ -370,8 +440,23 @@ class Datafier:
             print(np.mean([len(target) for target in targets]))
             print(max_length_targets)
             exit(0)
-        if self.architecture not in ["BERT", "DISTILBERT"]:
-            if self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
+        if "BERT" not in self.architecture:
+            if self.use_char_embeddings:
+                pad_value = "[PAD]"
+                padded_examples = []
+                padded_targets = []
+                assert self.input_vocabulary != {}, "Error with input vocabulary"
+                for example in examples:
+                    ids = self.text_to_chars_ids(example, max_tokens=self.max_token_length + 2, max_sentence_length=self.max_length_examples)
+                    padded_examples.append(ids)
+
+                for target in targets:
+                    target_length = len(target)
+                    target = target + [pad_value for _ in range(max_length_targets - target_length)]
+                    target = [self.target_classes[token] for token in target]
+                    padded_targets.append(target)
+                return padded_examples, langs, padded_targets
+            elif self.use_pretrained_embeddings is False and self.use_bert_tokenizer is False:
                 pad_value = "[PAD]"
                 padded_examples = []
                 padded_targets = []

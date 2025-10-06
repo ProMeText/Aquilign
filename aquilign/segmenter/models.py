@@ -1,3 +1,6 @@
+import json
+from types import SimpleNamespace
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -5,6 +8,7 @@ import torch.nn.functional as F
 from positional_encodings.torch_encodings import PositionalEncoding1D, Summer
 from transformers import AutoModelForTokenClassification
 import transformers
+import aquilign.segmenter.characterCNN as CharacterCNN
 
 
 def save_bert_embeddings():
@@ -14,6 +18,40 @@ def save_bert_embeddings():
 	torch.save(word_embeddings, "aquilign/segmenter/embeddings.npy")
 
 
+
+class BertCharacterEmbeddings(nn.Module):
+    """ Construct the embeddings from char-cnn, position and token_type embeddings. """
+    def __init__(self, config):
+        super(BertCharacterEmbeddings, self).__init__()
+
+        # This is the module that computes word embeddings from a token's characters
+        self.word_embeddings = CharacterCNN.CharacterCNN(
+            requires_grad=True,
+            output_dim=config.hidden_size)
+
+        self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.hidden_size)
+        self.token_type_embeddings = nn.Embedding(config.type_vocab_size, config.hidden_size)
+
+        # self.LayerNorm is not snake-cased to stick with TensorFlow model variable name and be able to load
+        # any TensorFlow checkpoint file
+        self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=1e-12)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+
+    def forward(self, input_ids, token_type_ids=None, position_ids=None):
+        seq_length = input_ids[:, :, 0].size(1)
+        if position_ids is None:
+            position_ids = torch.arange(seq_length, dtype=torch.long, device=input_ids[:, :, 0].device)
+            position_ids = position_ids.unsqueeze(0).expand_as(input_ids[:, :, 0])
+        if token_type_ids is None:
+            token_type_ids = torch.zeros_like(input_ids[:, :, 0])
+        words_embeddings = self.word_embeddings(input_ids)
+        position_embeddings = self.position_embeddings(position_ids)
+        token_type_embeddings = self.token_type_embeddings(token_type_ids)
+
+        embeddings = words_embeddings + position_embeddings + token_type_embeddings
+        embeddings = self.LayerNorm(embeddings)
+        embeddings = self.dropout(embeddings)
+        return embeddings
 
 
 
@@ -360,10 +398,17 @@ class LSTM_Encoder(nn.Module):
 				 linear_layers_hidden_size:int,
 				 use_bert_tokenizer:bool,
 				 keep_bert_dimensions:bool,
+				 use_character_embeddings:bool,
 				 linear_dropout:float):
 		super().__init__()
-
+		self.use_character_embeddings = use_character_embeddings
 		# On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
+		if use_character_embeddings:
+			with open(f"/home/mgl/Bureau/Travail/projets/alignement/alignement_multilingue/character-bert/pretrained-models/medical_character_bert/config.json") as f:
+				as_string = f.read()
+			self.config = json.loads(as_string, object_hook=lambda d: SimpleNamespace(**d))
+			self.character_embeddings = BertCharacterEmbeddings(self.config)
+
 		if load_pretrained_embeddings or use_bert_tokenizer:
 			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
 			self.input_dim = 119547
@@ -450,9 +495,15 @@ class LSTM_Encoder(nn.Module):
 		self.layers = nn.Sequential(*layers)
 
 	def forward(self, src, lang):
-		batch_size, seq_length = src.size()
-		# On plonge le texte [batch_size, max_length, embeddings_dim]
-		embedded = self.embedding(src)
+		if not self.use_character_embeddings:
+			batch_size, seq_length = src.size()
+			# On plonge le texte [batch_size, max_length, embeddings_dim]
+			embedded = self.embedding(src)
+		else:
+			embedded = self.character_embeddings(
+				input_ids=src, position_ids=None,
+				token_type_ids=None
+			)
 		if self.include_lang_metadata:
 
 			# Shape: [batch_size, lang_metadata_dimensions]
@@ -465,10 +516,10 @@ class LSTM_Encoder(nn.Module):
 			# dimensionnalité de chaque vecteur de mot dont la dimension sera la somme des deux dimensions:
 			# [batch_size, max_length, lang_metadata_dimensions + word_embedding_dimension]
 			embedded = torch.cat((embedded, projected_lang), 2)
-		else:
-			embedded = self.embedding(src)
-		if self.positional_embeddings:
-			embedded = self.pos1Dsum(embedded)  #
+		# else:
+			# embedded = self.embedding(src)
+		# if self.positional_embeddings:
+			# embedded = self.pos1Dsum(embedded)  #
 		if self.bidi:
 			(h, c) = (torch.zeros(2 * self.num_lstm_layers, self.batch_size, self.hidden_dim).to(self.device),
 					  torch.zeros(2 * self.num_lstm_layers, self.batch_size, self.hidden_dim).to(self.device))

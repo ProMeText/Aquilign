@@ -91,6 +91,7 @@ class SegmenterTrainer:
 		linear_layers = config_file["global"]["linear_layers"]
 		linear_layers_hidden_size = config_file["global"]["linear_layers_hidden_size"]
 		self.segments_max_length = config_file["global"]["segments_max_length"]
+		self.use_char_embeddings = config_file["global"]["use_char_embeddings"]
 		emb_dim = config_file["global"]["emb_dim"]
 		if architecture == "lstm":
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
@@ -175,7 +176,6 @@ class SegmenterTrainer:
 														train_path=train_path,
 														test_path=test_path,
 														dev_path=dev_path,
-														device=self.device,
 														delimiter="£",
 														output_dir=self.output_dir,
 														create_vocab=create_vocab,
@@ -184,12 +184,12 @@ class SegmenterTrainer:
 														data_augmentation=self.data_augmentation,
 														tokenizer_name=base_model_name,
 														use_bert_tokenizer=use_bert_tokenizer,
-														   architecture=architecture)
+													    use_char_embeddings=self.use_char_embeddings,
+														architecture=architecture)
 			self.test_dataloader = datafy.CustomTextDataset(mode="test",
 													   train_path=train_path,
 													   test_path=test_path,
 														dev_path=dev_path,
-													   device=self.device,
 													   delimiter="£",
 													   output_dir=self.output_dir,
 													   create_vocab=False,
@@ -200,13 +200,13 @@ class SegmenterTrainer:
 														data_augmentation=self.data_augmentation,
 														tokenizer_name=base_model_name,
 														use_bert_tokenizer=use_bert_tokenizer,
+													    use_char_embeddings=self.use_char_embeddings,
 														   architecture=architecture)
 
 			self.dev_dataloader = datafy.CustomTextDataset(mode="dev",
 													   train_path=train_path,
 													   test_path=test_path,
 														dev_path=dev_path,
-													   device=self.device,
 													   delimiter="£",
 													   output_dir=self.output_dir,
 													   create_vocab=False,
@@ -217,6 +217,7 @@ class SegmenterTrainer:
 														data_augmentation=self.data_augmentation,
 														tokenizer_name=base_model_name,
 														use_bert_tokenizer=use_bert_tokenizer,
+													    use_char_embeddings=self.use_char_embeddings,
 														   architecture=architecture)
 
 			self.loaded_test_data = DataLoader(self.test_dataloader,
@@ -367,6 +368,7 @@ class SegmenterTrainer:
 											 linear_layers_hidden_size=linear_layers_hidden_size,
 											 use_bert_tokenizer=use_bert_tokenizer,
 											 keep_bert_dimensions=keep_bert_dimensions,
+											 use_character_embeddings=self.use_char_embeddings,
 											 linear_dropout=linear_dropout)
 		elif architecture == "gru":
 			self.model = models.GRU_Encoder(input_dim=self.input_dim,
@@ -797,9 +799,6 @@ class SegmenterTrainer:
 										   labels=cat_targets,
 										   examples=cat_examples,
 										   id_to_word=self.reverse_input_vocab,
-										   idx_to_class=self.reverse_target_classes,
-										   padding_idx=self.tgt_PAD_IDX,
-										   batch_size=self.batch_size,
 										   last_epoch=False,
 										   tokenizer=self.tokenizer)
 			results_per_lang[lang] = results
@@ -853,7 +852,6 @@ class SegmenterTrainer:
 				all_examples.append(examples)
 
 		# On supprime les batchs:
-		print(all_preds)
 		cat_preds = torch.cat(all_preds, dim=0) # [num_examples, max_dim, num_classes]
 		cat_targets = torch.cat(all_targets, dim=0) # [num_examples, max_dim]
 		cat_examples = torch.cat(all_examples, dim=0) # [num_examples, max_dim]
@@ -865,7 +863,8 @@ class SegmenterTrainer:
 									   # padding_idx=self.tgt_PAD_IDX,
 									   # batch_size=self.batch_size,
 									   last_epoch=last_epoch,
-									   tokenizer=self.tokenizer)
+									   tokenizer=self.tokenizer,
+									   bert_training=False)
 		self.results.append(results)
 
 		recall = ["Recall", results["recall"][0], results["recall"][1]]

@@ -404,7 +404,7 @@ class LSTM_Encoder(nn.Module):
 		self.use_character_embeddings = use_character_embeddings
 		# On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
 		if use_character_embeddings:
-			with open(f"/home/mgl/Bureau/Travail/projets/alignement/alignement_multilingue/character-bert/pretrained-models/medical_character_bert/config.json") as f:
+			with open(f"aquilign/segmenter/params/char_bert_config.json") as f:
 				as_string = f.read()
 			self.config = json.loads(as_string, object_hook=lambda d: SimpleNamespace(**d))
 			self.character_embeddings = BertCharacterEmbeddings(self.config)

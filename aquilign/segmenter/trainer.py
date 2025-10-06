@@ -638,6 +638,8 @@ class SegmenterTrainer:
 				else:
 					emissions = self.model(input_ids=examples, attention_mask=masks).logits
 					C = emissions.size(-1)
+					emissions.to("cpu")
+					masks.to("cpu")
 					device = emissions.device
 					transitions = torch.zeros(C, C, device=device)
 					start_transitions = torch.zeros(C, device=device)
@@ -645,8 +647,6 @@ class SegmenterTrainer:
 					mask = data["attention_mask"].bool()
 					L_O, L_B, L_I = 2, 1, 0
 					ideal_segments_length = 12
-					emissions.to("cpu")
-					masks.to("cpu")
 					preds = utils.constrained_viterbi(emissions,
 													  transitions,
 													  start_transitions,

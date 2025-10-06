@@ -7,7 +7,7 @@
     "out_dir": "/projects/users/mgillele/trash/test_segmenter",
     "device": "cuda:0",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
-    "data_augmentation": false,
+    "data_augmentation": true,
     "freeze_embeddings": true,
     "emb_dim": 768,
     "freeze_lang_embeddings": false,

@@ -35,11 +35,12 @@ def constrained_viterbi(emissions, transitions, start_transitions, end_transitio
     backp  = torch.full((B, T, C, n+1, 2), -1, dtype=torch.long, device=device)
 
     # t=0 (I interdit)
-    valid0 = mask[:, 0]
+    valid0 = mask[:, 0].to(device)
     for y in range(C):
         r0 = 0 if y == L_O else (1 if y == L_B else -1)
         if r0 >= 0:
             base = start_transitions[y] + emissions[:, 0, y]
+            base.to(device)
             scores[:, 0, y, r0] = torch.where(valid0, base, NEG_INF)
 
     # t=1..T-1

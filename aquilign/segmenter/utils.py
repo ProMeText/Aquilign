@@ -24,24 +24,21 @@ def next_run_len(prev_tag, prev_r, curr_tag, n, L_O, L_B, L_I):
 @torch.no_grad()
 def constrained_viterbi(emissions, transitions, start_transitions, end_transitions, mask, n, L_O, L_B, L_I):
     device = emissions.device
-    print(device)
     B, T, C = emissions.shape
     transitions = transitions.to(device)
     start_transitions = start_transitions.to(device)
     end_transitions = end_transitions.to(device)
-    mask = mask.to(device)
 
-    NEG_INF = emissions.new_tensor(-1e30).to(device)
+    NEG_INF = emissions.new_tensor(-1e30)
     scores = emissions.new_full((B, T, C, n+1), NEG_INF)
     backp  = torch.full((B, T, C, n+1, 2), -1, dtype=torch.long, device=device)
 
     # t=0 (I interdit)
-    valid0 = mask[:, 0].to(device)
+    valid0 = mask[:, 0]
     for y in range(C):
         r0 = 0 if y == L_O else (1 if y == L_B else -1)
         if r0 >= 0:
             base = start_transitions[y] + emissions[:, 0, y]
-            base.to(device)
             scores[:, 0, y, r0] = torch.where(valid0, base, NEG_INF)
 
     # t=1..T-1

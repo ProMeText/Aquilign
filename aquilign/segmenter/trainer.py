@@ -628,7 +628,6 @@ class SegmenterTrainer:
 				examples, langs, targets = data
 				langs = langs.to(eval_device)
 			examples = examples.to(eval_device)
-			targets = targets.to(eval_device)
 			with torch.no_grad():
 				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
 				if "BERT" not in self.architecture:
@@ -657,6 +656,7 @@ class SegmenterTrainer:
 													  L_I)
 				all_preds.append(preds)
 				all_targets.append(targets)
+				examples = examples.to(device)
 				all_examples.append(examples)
 
 		print(f"Model: {emissions.shape}")

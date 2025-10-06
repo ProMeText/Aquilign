@@ -157,29 +157,20 @@ def compute_metrics(predictions,
 
 
     # load the metrics we want to evaluate
-    accuracy, recall, precision, f1 = metrics
+
+    accuracy = evaluate.load("accuracy")
+    recall = evaluate.load("recall")
+    precision = evaluate.load("precision")
+    f1 = evaluate.load("f1")
 
     # We flatten the 2 vectors to get a 1d vector of shape [num_examples*max_length]
     predictions = np.array(predictions, dtype='int32').flatten()
     labels = np.array(labels, dtype='int32').flatten()
 
     # On supprime le padding des données
-    # labels_as_list = labels.tolist()
-    # predictions_as_list = predictions.tolist()
-    # predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx] != padding_idx], dtype='int32')
-    # labels = np.array([item for item in labels_as_list if item  != padding_idx], dtype='int32')
-
-    # assert 2 not in predictions.tolist(), "Labels reduction didn't work for preds"
-    # assert 2 not in labels.tolist(), "Labels reduction didn't work for labels"
-    # automatically, value of -100 are produce ; we haven't understood why but we change them to 0. If not, it will give poor results
-    ###
-    # labels = [0 if x == -100 else x for x in labels]
-    ###
     mask = label != 2
     predictions = predictions[mask]
-    labels = predictions[mask]
-    # predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx]  != 2], dtype='int32')
-    # labels = np.array([item for item in labels_as_list if item != 2], dtype='int32')
+    labels = labels[mask]
 
     accuracy = accuracy.compute(predictions=predictions, references=labels)
     recall = recall.compute(predictions=predictions, references=labels, average=None)

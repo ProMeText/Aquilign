@@ -484,6 +484,7 @@ class SegmenterTrainer:
 		self.best_model = f"{self.output_dir}/models/best/best.pt"
 
 	def Bert_Train(self):
+
 		training_args = TrainingArguments(
 			output_dir=f"results_{self.output_dir}/epoch{self.epochs}_bs{self.batch_size}",
 			num_train_epochs=self.epochs,
@@ -619,10 +620,6 @@ class SegmenterTrainer:
 		self.model.to(eval_device)
 		self.model.eval()
 		print("Starting evaluation")
-		metrics = [evaluate.load("accuracy"),
-				   evaluate.load("recall"),
-				   evaluate.load("precision"),
-		 		   evaluate.load("f1")]
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			if "BERT" in self.architecture:
 				examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
@@ -674,6 +671,7 @@ class SegmenterTrainer:
 		# 										   word_to_id=self.input_vocab,
 		# 										   log_dir = self.logs_dir,
 		# 										   name="global")
+
 		results = eval.compute_metrics(predictions=cat_preds,
 									   labels=cat_targets,
 									   examples=cat_examples,

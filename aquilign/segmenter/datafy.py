@@ -285,7 +285,7 @@ class Datafier:
     def create_train_corpus(self):
         if self.data_augmentation:
             # full_corpus = self.train_data + self.remove_punctuation(self.train_data) + utils.apply_noise()
-            full_corpus = self.train_data + utils.augment_data([self.train_data])
+            full_corpus = self.train_data + utils.augment_data([self.train_data])[0]
         else:
             full_corpus = self.train_data
         if self.architecture in ["BERT", "DISTILBERT"]:
@@ -393,7 +393,12 @@ class Datafier:
         if debug:
             data = data[:100]
         for example in data:
-            text = example['example']
+            try:
+                text = example['example']
+            except TypeError as e:
+                print("Error with example:", example)
+                print(e)
+                exit(0)
             lang = example['lang']
             if self.filter_by_lang and lang != self.filter_by_lang:
                 continue

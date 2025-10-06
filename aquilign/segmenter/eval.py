@@ -82,7 +82,8 @@ def compute_metrics(predictions,
                     examples=None,
                     id_to_word=None,
                     last_epoch=False,
-                    tokenizer=None):
+                    tokenizer=None,
+                    metrics:list=None):
     """
     This function evaluates the model against the targets.
     :TODO: ignore padding classes?
@@ -102,10 +103,10 @@ def compute_metrics(predictions,
     else:
         predictions = predictions.cpu()
         labels = labels.cpu()
-    predictions_as_probs = copy.deepcopy(predictions)
 
     # On teste un exemple pour voir si tout est OK.
     if last_epoch:
+        predictions_as_probs = copy.deepcopy(predictions)
         if tokenizer:
             id_to_word = {ident: value for value, ident in tokenizer.get_vocab().items()}
         examples_number = 10
@@ -156,19 +157,15 @@ def compute_metrics(predictions,
 
 
     # load the metrics we want to evaluate
-    metric1 = evaluate.load("accuracy")
-    metric2 = evaluate.load("recall")
-    metric3 = evaluate.load("precision")
-    metric4 = evaluate.load("f1")
-
+    accuracy, recall, precision, f1 = metrics
 
     # We flatten the 2 vectors to get a 1d vector of shape [num_examples*max_length]
     predictions = np.array(predictions, dtype='int32').flatten()
     labels = np.array(labels, dtype='int32').flatten()
 
     # On supprime le padding des données
-    labels_as_list = labels.tolist()
-    predictions_as_list = predictions.tolist()
+    # labels_as_list = labels.tolist()
+    # predictions_as_list = predictions.tolist()
     # predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx] != padding_idx], dtype='int32')
     # labels = np.array([item for item in labels_as_list if item  != padding_idx], dtype='int32')
 
@@ -178,20 +175,20 @@ def compute_metrics(predictions,
     ###
     # labels = [0 if x == -100 else x for x in labels]
     ###
-    print(len(predictions_as_list))
-    print(len(labels_as_list))
+    mask = label != 2
+    predictions = predictions[mask]
+    labels = predictions[mask]
+    # predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx]  != 2], dtype='int32')
+    # labels = np.array([item for item in labels_as_list if item != 2], dtype='int32')
 
-    predictions = np.array([item for idx, item in enumerate(predictions_as_list) if labels_as_list[idx]  != 2], dtype='int32')
-    labels = np.array([item for item in labels_as_list if item != 2], dtype='int32')
-
-    accuracy = metric1.compute(predictions=predictions, references=labels)
-    recall = metric2.compute(predictions=predictions, references=labels, average=None)
+    accuracy = accuracy.compute(predictions=predictions, references=labels)
+    recall = recall.compute(predictions=predictions, references=labels, average=None)
     recall_l = []
     [recall_l.extend(v) for k, v in recall.items()]
-    precision = metric3.compute(predictions=predictions, references=labels, average=None)
+    precision = precision.compute(predictions=predictions, references=labels, average=None)
     precision_l = []
     [precision_l.extend(v) for k, v in precision.items()]
-    f1 = metric4.compute(predictions=predictions, references=labels, average=None)
+    f1 = f1.compute(predictions=predictions, references=labels, average=None)
     f1_l = []
     [f1_l.extend(v) for k, v in f1.items()]
 

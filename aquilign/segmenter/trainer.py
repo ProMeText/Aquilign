@@ -3,6 +3,7 @@ import random
 import sys
 import json
 import argparse
+import evaluate
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--mode", default="train",
@@ -618,6 +619,10 @@ class SegmenterTrainer:
 		self.model.to(eval_device)
 		self.model.eval()
 		print("Starting evaluation")
+		metrics = [evaluate.load("accuracy"),
+				   evaluate.load("recall"),
+				   evaluate.load("precision"),
+		 		   evaluate.load("f1")]
 		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
 			if "BERT" in self.architecture:
 				examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
@@ -677,7 +682,8 @@ class SegmenterTrainer:
 									   # padding_idx=self.tgt_PAD_IDX,
 									   # batch_size=self.batch_size,
 									   # last_epoch=True,
-									   tokenizer=self.tokenizer)
+									   tokenizer=self.tokenizer,
+									   metrics=metrics)
 
 
 

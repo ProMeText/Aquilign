@@ -3,6 +3,8 @@ import json
 import re
 import traceback
 import unicodedata
+
+import numpy as np
 import torch
 import os
 import time
@@ -350,6 +352,7 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         sentencesList.append(sentence)
     num_max_length = get_token_max_length(sentencesList, tokenizer)
     out_toks_and_labels = []
+    all_lengths = []
     for text, labels in zip(sentencesList, sentencesAsLabels):
         toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=True,
                          return_tensors="pt")
@@ -360,6 +363,12 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         corresp = get_index_correspondence(tokens, tokenizer)
         # aligning the label
         new_labels = align_labels(corresp, labels, text)
+        stripped = new_labels[1:-1]
+        from itertools import groupby
+        delim = 1
+        groups = groupby(stripped, lambda x: x == delim)
+        groupes = [list(group) + [delim] for is_zero, group in groups if not is_zero]
+        test = [all_lengths.append(len(group)) for group in groupes]
         # get the length of the tensor
         sq = (toks['input_ids'].squeeze())
         ### insert 2 for in the new_labels in order to get tensors with the same size !
@@ -380,6 +389,7 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         out_toks_and_labels.append({'input_ids': toks['input_ids'].squeeze(),
                                     'attention_mask': toks['attention_mask'].squeeze(),
                                     'labels': label})
+
     return out_toks_and_labels
 
 

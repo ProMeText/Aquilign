@@ -90,6 +90,7 @@ class SegmenterTrainer:
 		lang_emb_dim = config_file["global"]["lang_emb_dim"]
 		linear_layers = config_file["global"]["linear_layers"]
 		linear_layers_hidden_size = config_file["global"]["linear_layers_hidden_size"]
+		self.segments_max_length = config_file["global"]["segments_max_length"]
 		emb_dim = config_file["global"]["emb_dim"]
 		if architecture == "lstm":
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
@@ -644,14 +645,13 @@ class SegmenterTrainer:
 					end_transitions = torch.zeros(C, device=device)
 					mask = data["attention_mask"].bool()
 					L_O, L_B, L_I = 2, 1, 0
-					ideal_segments_length = 12
 					preds = utils.constrained_viterbi(emissions,
 													  transitions,
 													  start_transitions,
 													  end_transitions,
 													  mask,
 													  device,
-													  ideal_segments_length,
+													  ideal_segments_length=self.segments_max_length,
 													  L_O,
 													  L_B,
 													  L_I)

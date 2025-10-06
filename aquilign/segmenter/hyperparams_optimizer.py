@@ -439,9 +439,6 @@ def evaluate(model,
 								   labels=cat_targets,
 								   examples=cat_examples,
 								   id_to_word=reverse_input_vocab,
-								   idx_to_class=reverse_target_classes,
-								   padding_idx=tgt_PAD_IDX,
-								   batch_size=batch_size,
 								   last_epoch=False,
 								   tokenizer=tokenizer)
 

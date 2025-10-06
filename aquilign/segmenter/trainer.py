@@ -638,9 +638,11 @@ class SegmenterTrainer:
 				else:
 					emissions = self.model(input_ids=examples, attention_mask=masks).logits
 					C = emissions.size(-1)
-					emissions.to("cpu")
-					masks.to("cpu")
-					device = emissions.device
+					device = "cpu"
+					emissions.to(device)
+					masks.to(device)
+					print(emissions.device)
+					exit(0)
 					transitions = torch.zeros(C, C, device=device)
 					start_transitions = torch.zeros(C, device=device)
 					end_transitions = torch.zeros(C, device=device)

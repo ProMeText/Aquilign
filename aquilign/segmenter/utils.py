@@ -29,7 +29,7 @@ def constrained_viterbi(emissions, transitions, start_transitions, end_transitio
     start_transitions = start_transitions.to(device)
     end_transitions = end_transitions.to(device)
 
-    NEG_INF = emissions.new_tensor(-1e30)
+    NEG_INF = emissions.new_tensor(-1e30).to(device)
     scores = emissions.new_full((B, T, C, n+1), NEG_INF)
     backp  = torch.full((B, T, C, n+1, 2), -1, dtype=torch.long, device=device)
 

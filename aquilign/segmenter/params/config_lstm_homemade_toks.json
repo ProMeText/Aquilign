@@ -23,6 +23,7 @@
     "workers": 16,
     "batch_size": 48,
     "segments_max_length": 25,
+    "eval_batch_size": 48,
     "use_char_embeddings": true
   },
   "architectures": {

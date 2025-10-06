@@ -22,15 +22,15 @@ def next_run_len(prev_tag, prev_r, curr_tag, n, L_O, L_B, L_I):
     return -1
 
 @torch.no_grad()
-def constrained_viterbi(emissions, transitions, start_transitions, end_transitions, mask, device, n, L_O, L_B, L_I):
+def constrained_viterbi(emissions, transitions, start_transitions, end_transitions, mask, device, ideal_segments_length, L_O, L_B, L_I):
     B, T, C = emissions.shape
     transitions = transitions.to(device)
     start_transitions = start_transitions.to(device)
     end_transitions = end_transitions.to(device)
 
     NEG_INF = emissions.new_tensor(-1e30)
-    scores = emissions.new_full((B, T, C, n+1), NEG_INF)
-    backp  = torch.full((B, T, C, n+1, 2), -1, dtype=torch.long, device=device)
+    scores = emissions.new_full((B, T, C, ideal_segments_length+1), NEG_INF)
+    backp  = torch.full((B, T, C, ideal_segments_length+1, 2), -1, dtype=torch.long, device=device)
 
     # t=0 (I interdit)
     valid0 = mask[:, 0]
@@ -46,16 +46,16 @@ def constrained_viterbi(emissions, transitions, start_transitions, end_transitio
         if not valid.any():
             continue
         for y in range(C):
-            for r in range(n+1):
+            for r in range(ideal_segments_length+1):
                 best = emissions.new_full((B,), NEG_INF)
                 by   = torch.full((B,), -1, dtype=torch.long, device=device)
                 br   = torch.full((B,), -1, dtype=torch.long, device=device)
                 for yp in range(C):
-                    for rp in range(n+1):
+                    for rp in range(ideal_segments_length+1):
                         prev = scores[:, t-1, yp, rp]
                         if (prev <= NEG_INF/2).all():
                             continue
-                        r_new = next_run_len(yp, rp, y, n, L_O, L_B, L_I)
+                        r_new = next_run_len(yp, rp, y, ideal_segments_length, L_O, L_B, L_I)
                         if r_new != r:
                             continue
                         cand = prev + transitions[yp, y]
@@ -78,7 +78,7 @@ def constrained_viterbi(emissions, transitions, start_transitions, end_transitio
         tb = int(last[b].item())
         best, yb, rb = -1e30, -1, -1
         for y in range(C):
-            for r in range(n+1):
+            for r in range(ideal_segments_length+1):
                 sc = scores[b, tb, y, r].item()
                 if sc <= -5e29:
                     continue

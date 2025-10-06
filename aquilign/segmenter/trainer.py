@@ -652,9 +652,9 @@ class SegmenterTrainer:
 													  mask,
 													  device,
 													  ideal_segments_length=self.segments_max_length,
-													  L_O,
-													  L_B,
-													  L_I)
+													  L_O=L_O,
+													  L_B=L_B,
+													  L_I=L_I)
 				all_preds.append(preds)
 				all_targets.append(targets)
 				examples = examples.to(device)

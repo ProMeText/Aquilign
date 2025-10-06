@@ -287,7 +287,7 @@ class SegmenterTrainer:
 			self.test_data = utils.SentenceBoundaryDataset(test_texts_and_labels)
 
 			self.loaded_test_data = DataLoader(self.test_data,
-											   batch_size=batch_size,
+											   batch_size=batch_size*4,
 											   shuffle=False,
 											   num_workers=self.workers,
 											   pin_memory=False,

@@ -97,12 +97,8 @@ def compute_metrics(predictions,
         print(predictions)
         predictions, labels = predictions
         predictions = np.argmax(predictions, axis=2)
-    elif bert_training and labels is not None:
-        pass
-    else:
-        predictions = predictions.cpu()
-        labels = labels.cpu()
 
+    predictions, labels = predictions.cpu(), labels.cpu()
     # On teste un exemple pour voir si tout est OK.
     if last_epoch:
         predictions_as_probs = copy.deepcopy(predictions)

@@ -287,7 +287,7 @@ class SegmenterTrainer:
 			self.test_data = utils.SentenceBoundaryDataset(test_texts_and_labels)
 
 			self.loaded_test_data = DataLoader(self.test_data,
-											   batch_size=batch_size*4,
+											   batch_size=batch_size*8,
 											   shuffle=False,
 											   num_workers=self.workers,
 											   pin_memory=False,
@@ -620,12 +620,10 @@ class SegmenterTrainer:
 		self.model.to(eval_device)
 		self.model.eval()
 		print("Starting evaluation")
-		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size*4):
+		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size*8):
 			if "BERT" in self.architecture:
 				examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
 				masks = masks.to(eval_device)
-				targets = targets.to(eval_device)
-				examples = examples.to(eval_device)
 			else:
 				examples, langs, targets = data
 				langs = langs.to(eval_device)

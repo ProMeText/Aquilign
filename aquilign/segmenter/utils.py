@@ -29,6 +29,7 @@ def constrained_viterbi(emissions, transitions, start_transitions, end_transitio
     transitions = transitions.to(device)
     start_transitions = start_transitions.to(device)
     end_transitions = end_transitions.to(device)
+    mask = mask.to(device)
 
     NEG_INF = emissions.new_tensor(-1e30).to(device)
     scores = emissions.new_full((B, T, C, n+1), NEG_INF)

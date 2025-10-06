@@ -610,7 +610,7 @@ class SegmenterTrainer:
 		all_preds = []
 		all_targets = []
 		all_examples = []
-		eval_device = "cpu"
+		eval_device = "cuda:0"
 		if "BERT" in self.architecture:
 			best_model_path = self.trainer.state.best_model_checkpoint
 			self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
@@ -646,6 +646,7 @@ class SegmenterTrainer:
 					L_O, L_B, L_I = 2, 1, 0
 					ideal_segments_length = 12
 					emissions.to("cpu")
+					masks.to("cpu")
 					preds = utils.constrained_viterbi(emissions,
 													  transitions,
 													  start_transitions,

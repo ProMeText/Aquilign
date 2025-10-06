@@ -601,10 +601,11 @@ class SegmenterTrainer:
 			utils.append_to_file("---", self.epochs_log_file)
 			self.save_model(epoch_number)
 		self.get_best_model()
-		self.evaluate_best_model()
+		for i in range(self.segments_max_length - 5, self.segments_max_length + 5):
+			self.evaluate_best_model(max_length=i)
 		# self.evaluate_best_model_per_lang()
 
-	def evaluate_best_model(self):
+	def evaluate_best_model(self, max_length):
 		"""
 				Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
 				"""
@@ -651,7 +652,7 @@ class SegmenterTrainer:
 													  end_transitions,
 													  mask,
 													  device,
-													  ideal_segments_length=self.segments_max_length,
+													  ideal_segments_length=max_length,
 													  L_O=L_O,
 													  L_B=L_B,
 													  L_I=L_I)
@@ -690,6 +691,7 @@ class SegmenterTrainer:
 		precision = ["Precision", results["precision"][0], results["precision"][1]]
 		f1 = ["F1", results["f1"][0], results["f1"][1]]
 		header = ["", "Segment Content", "Segment Boundary"]
+		print(f"\n\nTesting config with max length: {max_length}")
 		print(f"Results for all langs:")
 		utils.format_results(results=[precision, recall, f1], header=header)
 		utils.append_to_file(

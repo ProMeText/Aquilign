@@ -100,9 +100,9 @@ def compute_metrics(predictions,
     elif bert_training and labels is not None:
         pass
     else:
-        predictions = np.argmax(predictions, axis=2)
         predictions = predictions.cpu()
         labels = labels.cpu()
+        predictions = np.argmax(predictions, axis=2)
 
     # On teste un exemple pour voir si tout est OK.
     if last_epoch:

@@ -85,6 +85,7 @@ class SegmenterTrainer:
 		self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
 		self.freeze_lang_embeddings = config_file["global"]["freeze_lang_embeddings"]
 		self.balance_class_weights = config_file["global"]["balance_class_weights"]
+		self.eval_batch_size = config_file["global"]["eval_batch_size"]
 		include_lang_metadata = config_file["global"]["include_lang_metadata"]
 		lang_emb_dim = config_file["global"]["lang_emb_dim"]
 		linear_layers = config_file["global"]["linear_layers"]
@@ -269,7 +270,7 @@ class SegmenterTrainer:
 			eval_lines, delimiter = utils.json_corpus_to_lines(test_path, keep_punct=True, return_delimiter=True)
 			if self.data_augmentation:
 				train_lines = utils.augment_data([train_lines])[0]
-			train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines[:100], tokenizer=self.tokenizer,
+			train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=self.tokenizer,
 																			   delimiter=delimiter)
 			self.train_dataset = utils.SentenceBoundaryDataset(train_texts_and_labels)
 
@@ -287,7 +288,7 @@ class SegmenterTrainer:
 			self.test_data = utils.SentenceBoundaryDataset(test_texts_and_labels)
 
 			self.loaded_test_data = DataLoader(self.test_data,
-											   batch_size=batch_size*8,
+											   batch_size=self.eval_batch_size,
 											   shuffle=False,
 											   num_workers=self.workers,
 											   pin_memory=False,
@@ -620,7 +621,7 @@ class SegmenterTrainer:
 		self.model.to(eval_device)
 		self.model.eval()
 		print("Starting evaluation")
-		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size*8):
+		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.eval_batch_size):
 			if "BERT" in self.architecture:
 				examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
 				masks = masks.to(eval_device)

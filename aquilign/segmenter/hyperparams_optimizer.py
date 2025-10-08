@@ -56,7 +56,8 @@ import os
 
 
 
-def objective(trial, bert_train_dataloader,
+def objective(trial,
+			  bert_train_dataloader,
 			  bert_dev_dataloader,
 			  no_bert_train_dataloader,
 			  no_bert_dev_dataloader,
@@ -77,9 +78,6 @@ def objective(trial, bert_train_dataloader,
 		batch_size = 32
 		base_model_name = "distilbert/distilbert-base-multilingual-cased"
 	else:
-		if use_char_embeddings:
-			char_embeddings_dim = trial.suggest_int("char_embeddings_dim", 8, 64, step=8)
-			char_dropout_prob = trial.suggest_float("char_dropout_prob", 0.0, 0.5)
 		lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 		hidden_size = trial.suggest_int("hidden_size", 8, 160, step=8)
 		linear_layers = trial.suggest_int("linear_layers", 1, 4)
@@ -118,7 +116,15 @@ def objective(trial, bert_train_dataloader,
 			keep_bert_dimensions = True
 		else:
 			keep_bert_dimensions = False
-			emb_dim = trial.suggest_int("input_dim", 304, 400, step=8)
+			if use_char_embeddings:
+				char_embeddings_dim = trial.suggest_int("char_embeddings_dim", 32, 128, step=16)
+				char_embeddings_dim = 64
+				char_dropout_prob = trial.suggest_float("char_dropout_prob", 0.0, 0.5)
+				emb_dim = 768
+			else:
+				char_embeddings_dim = None
+				char_dropout_prob = None
+				emb_dim = trial.suggest_int("input_dim", 304, 400, step=8)
 			if use_bert_tokenizer is True:
 				print("Using Bert tokenized data")
 				train_dataloader = bert_train_dataloader
@@ -133,13 +139,15 @@ def objective(trial, bert_train_dataloader,
 			freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
 		else:
 			freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
-		include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
+		# include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
+		include_lang_metadata = True
 		if include_lang_metadata:
 			freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
-			lang_emb_dim = trial.suggest_int("lang_emb_dim", 8, 64, step=8)
+			lang_emb_dim = trial.suggest_int("lang_emb_dim", 16, 32, step=2)
+			lang_emb_dim = 32
 		else:
 			freeze_lang_embeddings = False
-			lang_emb_dim = 4
+			lang_emb_dim = None
 	else:
 		train_dataloader = bert_train_dataloader
 		dev_dataloader = bert_dev_dataloader
@@ -220,6 +228,7 @@ def objective(trial, bert_train_dataloader,
 										 use_bert_tokenizer=use_bert_tokenizer,
 										 use_character_embeddings=use_char_embeddings,
 										 linear_dropout=linear_dropout,
+									keep_bert_dimensions=keep_bert_dimensions,
 										 char_dropout_prob=char_dropout_prob,
 										 char_embedding_dim=char_embeddings_dim,
 										 lang_emb_dim=lang_emb_dim)
@@ -439,7 +448,7 @@ def evaluate(model,
 		# Timer.start_timer("preds")
 		with torch.no_grad():
 			# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-			if architecture not in ["BERT", "DISTILBERT"]:
+			if "BERT" not in architecture:
 				preds = model(examples, langs)
 			else:
 				preds = model(input_ids=examples, attention_mask=masks, labels=targets).logits
@@ -483,64 +492,71 @@ if __name__ == '__main__':
 	output_dir = config_file["global"]["out_dir"] + f"/{date_hour}"
 	base_model_name = config_file["global"]["base_model_name"]
 	data_augmentation = config_file["global"]["data_augmentation"]
-	pretrained_train_dataloader = datafy.CustomTextDataset("train",
-												train_path=train_path,
-												test_path=test_path,
-												dev_path=dev_path,
-												delimiter="£",
-												output_dir=output_dir,
-												create_vocab=False,
-												use_pretrained_embeddings=True,
-												debug=debug,
-												data_augmentation=data_augmentation,
-												tokenizer_name=base_model_name,
-												architecture=architecture,
-														   tuning_mode=True)
-	pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
-											  train_path=train_path,
-											  test_path=test_path,
-											  dev_path=dev_path,
-											  delimiter="£",
-											  output_dir=output_dir,
-											  create_vocab=False,
-											  input_vocab=pretrained_train_dataloader.datafy.input_vocabulary,
-											  lang_vocab=pretrained_train_dataloader.datafy.lang_vocabulary,
-											  use_pretrained_embeddings=True,
-											  debug=debug,
-											  data_augmentation=data_augmentation,
-											  tokenizer_name=base_model_name,
-												architecture=architecture,
-														   tuning_mode=True)
+	if use_pretrained_embeddings is True:
+		not_pretrained_train_dataloader = None
+		not_pretrained_dev_dataloader = None
+		pretrained_train_dataloader = datafy.CustomTextDataset("train",
+													train_path=train_path,
+													test_path=test_path,
+													dev_path=dev_path,
+													delimiter="£",
+													output_dir=output_dir,
+													create_vocab=False,
+													use_pretrained_embeddings=True,
+													debug=debug,
+													data_augmentation=data_augmentation,
+													tokenizer_name=base_model_name,
+													architecture=architecture,
+															   tuning_mode=True)
+		pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
+												  train_path=train_path,
+												  test_path=test_path,
+												  dev_path=dev_path,
+												  delimiter="£",
+												  output_dir=output_dir,
+												  create_vocab=False,
+												  input_vocab=pretrained_train_dataloader.datafy.input_vocabulary,
+												  lang_vocab=pretrained_train_dataloader.datafy.lang_vocabulary,
+												  use_pretrained_embeddings=True,
+												  debug=debug,
+												  data_augmentation=data_augmentation,
+												  tokenizer_name=base_model_name,
+													architecture=architecture,
+															   tuning_mode=True)
 
-
-	not_pretrained_train_dataloader = datafy.CustomTextDataset("train",
-												train_path=train_path,
-												test_path=test_path,
-												dev_path=dev_path,
-												delimiter="£",
-												output_dir=output_dir,
-												create_vocab=True,
-												use_pretrained_embeddings=False,
-												debug=debug,
-												data_augmentation=data_augmentation,
-												tokenizer_name=base_model_name,
-												architecture=architecture,
-														   tuning_mode=True)
-	not_pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
-											  train_path=train_path,
-											  test_path=test_path,
-											  dev_path=dev_path,
-											  delimiter="£",
-											  output_dir=output_dir,
-											  create_vocab=False,
-											  input_vocab=not_pretrained_train_dataloader.datafy.input_vocabulary,
-											  lang_vocab=not_pretrained_train_dataloader.datafy.lang_vocabulary,
-											  use_pretrained_embeddings=False,
-											  debug=debug,
-											  data_augmentation=data_augmentation,
-											  tokenizer_name=base_model_name,
-												architecture=architecture,
-														   tuning_mode=True)
+	if use_pretrained_embeddings is False:
+		pretrained_train_dataloader = None
+		pretrained_dev_dataloader = None
+		not_pretrained_train_dataloader = datafy.CustomTextDataset("train",
+													train_path=train_path,
+													test_path=test_path,
+													dev_path=dev_path,
+													delimiter="£",
+													output_dir=output_dir,
+													create_vocab=True,
+													use_pretrained_embeddings=False,
+													debug=debug,
+													data_augmentation=data_augmentation,
+													tokenizer_name=base_model_name,
+													use_char_embeddings=char_embeddings,
+													architecture=architecture,
+															   tuning_mode=True)
+		not_pretrained_dev_dataloader = datafy.CustomTextDataset(mode="dev",
+												  train_path=train_path,
+												  test_path=test_path,
+												  dev_path=dev_path,
+												  delimiter="£",
+												  output_dir=output_dir,
+												  create_vocab=False,
+												  input_vocab=not_pretrained_train_dataloader.datafy.input_vocabulary,
+												  lang_vocab=not_pretrained_train_dataloader.datafy.lang_vocabulary,
+												  use_pretrained_embeddings=False,
+												  debug=debug,
+												  data_augmentation=data_augmentation,
+																 use_char_embeddings=char_embeddings,
+												  tokenizer_name=base_model_name,
+													architecture=architecture,
+															   tuning_mode=True)
 
 	if model_size:
 		study = optuna.create_study(directions=['maximize', 'minimize'])
@@ -555,7 +571,7 @@ if __name__ == '__main__':
 						model_size=model_size,
 						use_pretrained_embeddings=use_pretrained_embeddings,
 						use_bert_tokenizer=use_bert_tokenizer,
-						char_embeddings=char_embeddings)
+						use_char_embeddings=char_embeddings)
 	study.optimize(objective, n_trials=trials, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}{out_name}.txt", "a") as f:
 		f.write((str(study.best_trial) + "\n"))

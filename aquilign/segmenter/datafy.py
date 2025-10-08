@@ -58,7 +58,7 @@ class CustomTextDataset(Dataset):
                                tokenizer_name=tokenizer_name,
                                filter_by_lang=filter_by_lang,
                                use_bert_tokenizer=use_bert_tokenizer,
-                               use_char_embeddings=True,
+                               use_char_embeddings=use_char_embeddings,
                                architecture=architecture,
                                tuning_mode=tuning_mode)
         self.use_char_embeddings = use_char_embeddings
@@ -135,7 +135,7 @@ class Datafier:
                  tokenizer_name,
                  filter_by_lang=None,
                  use_bert_tokenizer=False,
-                 use_char_embeddings=True,
+                 use_char_embeddings=False,
                  architecture="lstm",
                  tuning_mode=False
                  ):

@@ -370,9 +370,8 @@ class SegmenterTrainer:
 											 keep_bert_dimensions=keep_bert_dimensions,
 											 use_character_embeddings=self.use_char_embeddings,
 											 linear_dropout=linear_dropout,
-											 chat_dropout_prob=0.1,
-											 char_embedding_dim=64,
-											 lang_embedding_dim=16)
+											 char_dropout_prob=0.1,
+											 char_embedding_dim=64)
 		elif architecture == "gru":
 			self.model = models.GRU_Encoder(input_dim=self.input_dim,
 											 emb_dim=emb_dim,

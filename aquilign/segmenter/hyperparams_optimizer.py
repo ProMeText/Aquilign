@@ -17,9 +17,9 @@ parser.add_argument("-d", "--debug", default=False,
 					help="Debug mode")
 parser.add_argument("-t", "--trials", default=50,
 					help="Number of trials")
-parser.add_argument("-e", "--epochs", default=10,
+parser.add_argument("-e", "--epochs", default=6,
 					help="Numbr of epochs per trial")
-parser.add_argument("-pt", "--pretrained", default=True,
+parser.add_argument("-pt", "--pretrained", default=False,
 					help="Use pretrained embeddings")
 parser.add_argument("-bt", "--bert_tokenizer", default=False,
 					help="Use bert tokenizer (without pre-trained embeddings)")
@@ -487,7 +487,6 @@ if __name__ == '__main__':
 												train_path=train_path,
 												test_path=test_path,
 												dev_path=dev_path,
-												device=device,
 												delimiter="£",
 												output_dir=output_dir,
 												create_vocab=False,
@@ -501,7 +500,6 @@ if __name__ == '__main__':
 											  train_path=train_path,
 											  test_path=test_path,
 											  dev_path=dev_path,
-											  device=device,
 											  delimiter="£",
 											  output_dir=output_dir,
 											  create_vocab=False,
@@ -519,7 +517,6 @@ if __name__ == '__main__':
 												train_path=train_path,
 												test_path=test_path,
 												dev_path=dev_path,
-												device=device,
 												delimiter="£",
 												output_dir=output_dir,
 												create_vocab=True,
@@ -533,7 +530,6 @@ if __name__ == '__main__':
 											  train_path=train_path,
 											  test_path=test_path,
 											  dev_path=dev_path,
-											  device=device,
 											  delimiter="£",
 											  output_dir=output_dir,
 											  create_vocab=False,

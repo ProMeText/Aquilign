@@ -23,6 +23,8 @@ parser.add_argument("-pt", "--pretrained", default=True,
 					help="Use pretrained embeddings")
 parser.add_argument("-bt", "--bert_tokenizer", default=False,
 					help="Use bert tokenizer (without pre-trained embeddings)")
+parser.add_argument("-ce", "--char_embeddings", default=False,
+					help="Use character embeddings")
 parser.add_argument("-n", "--out_name", default="",
 					help="Prefix to add to output dir")
 args = parser.parse_args()
@@ -32,6 +34,7 @@ model_size = args.model_size
 parameters = args.parameters
 use_pretrained_embeddings = True if args.pretrained == "True" else False
 use_bert_tokenizer = True if args.bert_tokenizer == "True" else False
+char_embeddings = args.char_embeddings
 out_name = args.out_name
 if out_name != "":
 	out_name = f"_{out_name}"
@@ -53,7 +56,15 @@ import os
 
 
 
-def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_dataloader, no_bert_dev_dataloader, architecture, model_size, use_pretrained_embeddings, use_bert_tokenizer):
+def objective(trial, bert_train_dataloader,
+			  bert_dev_dataloader,
+			  no_bert_train_dataloader,
+			  no_bert_dev_dataloader,
+			  architecture,
+			  model_size,
+			  use_pretrained_embeddings,
+			  use_bert_tokenizer,
+			  use_char_embeddings):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	base_model_name = config_file["global"]["base_model_name"]
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
@@ -66,6 +77,9 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 		batch_size = 32
 		base_model_name = "distilbert/distilbert-base-multilingual-cased"
 	else:
+		if use_char_embeddings:
+			char_embeddings_dim = trial.suggest_int("char_embeddings_dim", 8, 64, step=8)
+			char_dropout_prob = trial.suggest_float("char_dropout_prob", 0.0, 0.5)
 		lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)
 		hidden_size = trial.suggest_int("hidden_size", 8, 160, step=8)
 		linear_layers = trial.suggest_int("linear_layers", 1, 4)
@@ -199,14 +213,16 @@ def objective(trial, bert_train_dataloader, bert_dev_dataloader, no_bert_train_d
 										 include_lang_metadata=include_lang_metadata,
 										 out_classes=output_dim,
 										 attention=add_attention_layer,
-										 lang_emb_dim=lang_emb_dim,
 										 load_pretrained_embeddings=use_pretrained_embeddings,
 										 pretrained_weights=weights,
 										 linear_layers=linear_layers,
 										 linear_layers_hidden_size=linear_layers_hidden_size,
 										 use_bert_tokenizer=use_bert_tokenizer,
-										 keep_bert_dimensions=keep_bert_dimensions,
-										linear_dropout=linear_dropout)
+										 use_character_embeddings=use_char_embeddings,
+										 linear_dropout=linear_dropout,
+										 char_dropout_prob=char_dropout_prob,
+										 char_embedding_dim=char_embeddings_dim,
+										 lang_emb_dim=lang_emb_dim)
 	elif architecture == "transformers":
 		model = models.TransformerModel(input_dim=input_dim,
 											 emb_dim=emb_dim,
@@ -542,7 +558,8 @@ if __name__ == '__main__':
 						architecture=architecture,
 						model_size=model_size,
 						use_pretrained_embeddings=use_pretrained_embeddings,
-						use_bert_tokenizer=use_bert_tokenizer)
+						use_bert_tokenizer=use_bert_tokenizer,
+						char_embeddings=char_embeddings)
 	study.optimize(objective, n_trials=trials, callbacks=[print_trial_info])
 	with open(f"../trash/segmenter_hyperparasearch_{architecture}_{date_hour}{out_name}.txt", "a") as f:
 		f.write((str(study.best_trial) + "\n"))

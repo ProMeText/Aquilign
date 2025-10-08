@@ -21,21 +21,27 @@ def save_bert_embeddings():
 
 class BertCharacterEmbeddings(nn.Module):
     """ Construct the embeddings from char-cnn, position and token_type embeddings. """
-    def __init__(self, config):
+    def __init__(self,
+				 embeddings_output_dim,
+				 dropout_prob,
+				char_embedding_dim,
+				lang_emb_dim):
         super(BertCharacterEmbeddings, self).__init__()
 
         # This is the module that computes word embeddings from a token's characters
         self.word_embeddings = CharacterCNN.CharacterCNN(
             requires_grad=True,
-            output_dim=config.hidden_size)
+            output_dim=embeddings_output_dim,
+		char_embedding_dim=char_embedding_dim,
+		lang_emb_dim=lang_emb_dim)
 
-        self.position_embeddings = nn.Embedding(config.max_position_embeddings, config.hidden_size)
-        self.token_type_embeddings = nn.Embedding(config.type_vocab_size, config.hidden_size)
+        self.position_embeddings = nn.Embedding(512, embeddings_output_dim)
+        self.token_type_embeddings = nn.Embedding(3, embeddings_output_dim)
 
         # self.LayerNorm is not snake-cased to stick with TensorFlow model variable name and be able to load
         # any TensorFlow checkpoint file
-        self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=1e-12)
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.LayerNorm = nn.LayerNorm(embeddings_output_dim, eps=1e-12)
+        self.dropout = nn.Dropout(dropout_prob)
 
     def forward(self, input_ids, token_type_ids=None, position_ids=None, langs=None):
         seq_length = input_ids[:, :, 0].size(1)
@@ -399,7 +405,9 @@ class LSTM_Encoder(nn.Module):
 				 use_bert_tokenizer:bool,
 				 keep_bert_dimensions:bool,
 				 use_character_embeddings:bool,
-				 linear_dropout:float):
+				 linear_dropout:float,
+				 char_dropout_prob:float,
+				char_embedding_dim):
 		super().__init__()
 		self.use_character_embeddings = use_character_embeddings
 		# On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
@@ -407,7 +415,10 @@ class LSTM_Encoder(nn.Module):
 			with open(f"aquilign/segmenter/params/char_bert_config.json") as f:
 				as_string = f.read()
 			self.config = json.loads(as_string, object_hook=lambda d: SimpleNamespace(**d))
-			self.character_embeddings = BertCharacterEmbeddings(self.config)
+			self.character_embeddings = BertCharacterEmbeddings(embeddings_output_dim=768,
+																dropout_prob=char_dropout_prob,
+																char_embedding_dim=char_embedding_dim,
+																lang_emb_dim=lang_emb_dim)
 
 		if load_pretrained_embeddings or use_bert_tokenizer:
 			# Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings

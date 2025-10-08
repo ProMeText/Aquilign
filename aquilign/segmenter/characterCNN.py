@@ -221,6 +221,8 @@ class CharacterCNN(torch.nn.Module):
     """
 
     def __init__(self,
+                 char_embedding_dim,
+                 lang_emb_dim=None,
             output_dim: int = 768,
             requires_grad: bool = True,
             vocab_length=179,
@@ -240,17 +242,20 @@ class CharacterCNN(torch.nn.Module):
                     [7, 1024]
                     ],
                 'n_highway': 2,
-                'embedding': {'dim': 64},
-                'total': {'dim': 96},
+                'embedding': {'dim': char_embedding_dim},
+                'total': {'dim': char_embedding_dim + lang_emb_dim
+                if lang_emb_dim else char_embedding_dim},
                 'n_characters': vocab_length,
                 'max_characters_per_token': max_tokens
             }
         }
         self.output_dim = output_dim
         self.requires_grad = requires_grad
-
+        self.lang_embedding_dim = lang_emb_dim
         self._init_weights()
-        self.lang_embeddings = torch.nn.Embedding(8, 32)
+        self.char_embedding_dim = char_embedding_dim
+        if lang_emb_dim:
+            self.lang_embeddings = torch.nn.Embedding(8, lang_emb_dim)
 
 
     def _init_weights(self):
@@ -338,15 +343,14 @@ class CharacterCNN(torch.nn.Module):
         character_embedding = torch.nn.functional.embedding(
             inputs.view(-1, max_chars_per_token + 2), self._char_embedding_weights
         )
-
-        batch_size, sequence_length, max_chars = inputs.size()
-        language_vectors = self.lang_embeddings(langs)
-        language_vectors = language_vectors.unsqueeze(1)  # [48, 1, 32]
-        language_vectors = language_vectors.expand(-1, sequence_length, -1)  # [48, 163, 32]
-        language_vectors_flat = language_vectors.reshape(-1, 32)  # [7824, 32]
-
-        language_vectors_expanded = language_vectors_flat.unsqueeze(1).expand(-1, max_chars, -1)
-        character_embedding = torch.cat([character_embedding, language_vectors_expanded], dim=-1)
+        if self.lang_embedding_dim:
+            batch_size, sequence_length, max_chars = inputs.size()
+            language_vectors = self.lang_embeddings(langs)
+            language_vectors = language_vectors.unsqueeze(1)  # [48, 1, 32]
+            language_vectors = language_vectors.expand(-1, sequence_length, -1)  # [48, 163, 32]
+            language_vectors_flat = language_vectors.reshape(-1, self.char_embedding_dim)  # [7824, 32]
+            language_vectors_expanded = language_vectors_flat.unsqueeze(1).expand(-1, max_chars, -1)
+            character_embedding = torch.cat([character_embedding, language_vectors_expanded], dim=-1)
         # run convolutions
         cnn_options = self._options["char_cnn"]
         if cnn_options["activation"] == "tanh":

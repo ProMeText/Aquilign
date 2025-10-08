@@ -118,7 +118,6 @@ def objective(trial,
 			keep_bert_dimensions = False
 			if use_char_embeddings:
 				char_embeddings_dim = trial.suggest_int("char_embeddings_dim", 32, 128, step=16)
-				char_embeddings_dim = 64
 				char_dropout_prob = trial.suggest_float("char_dropout_prob", 0.0, 0.5)
 				emb_dim = 768
 			else:
@@ -139,12 +138,10 @@ def objective(trial,
 			freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
 		else:
 			freeze_embeddings = trial.suggest_categorical("freeze_embeddings", [False, True])
-		# include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
-		include_lang_metadata = True
+		include_lang_metadata = trial.suggest_categorical("include_lang_metadata", [False, True])
 		if include_lang_metadata:
 			freeze_lang_embeddings = trial.suggest_categorical("freeze_lang_embeddings", [False, True])
 			lang_emb_dim = trial.suggest_int("lang_emb_dim", 16, 32, step=2)
-			lang_emb_dim = 32
 		else:
 			freeze_lang_embeddings = False
 			lang_emb_dim = None

@@ -577,7 +577,7 @@ def convertSentenceToSubWordsAndLabels(orig_sentence, tokenizer, delimiter="£",
     toks = tokenizer(sentence_no_delim, padding="max_length", max_length=max_length, truncation=True,
                      return_tensors="pt")
 
-    if verbose:
+    if verbose is True:
         print(orig_sentence)
         print(TokenizedSentence)
         print(len(TokenizedSentence))

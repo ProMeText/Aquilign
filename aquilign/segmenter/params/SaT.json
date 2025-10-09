@@ -24,5 +24,6 @@
     "batch_size": 64,
     "eval_batch_size": 256,
     "segments_max_length": 18
-  }
+  },
+  "architectures": {"architecture":  "SaT"}
 }

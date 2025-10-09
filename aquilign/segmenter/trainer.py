@@ -287,7 +287,7 @@ class SegmenterTrainer:
 
 
 			# Dev corpus
-			print("Dev corpus preparation")
+			print("Test corpus preparation")
 			test_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(eval_lines, tokenizer=self.tokenizer,
 																			 delimiter=delimiter)
 			self.test_data = utils.SentenceBoundaryDataset(test_texts_and_labels)

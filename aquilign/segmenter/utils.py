@@ -326,7 +326,8 @@ def get_token_max_length(train_texts, tokenizer):
     return max_length
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False):
+def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=True
+                                        ):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
     :param corpus: A list of dicts of the shape
@@ -352,9 +353,11 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     num_max_length = get_token_max_length(sentencesList, tokenizer)
     out_toks_and_labels = []
     all_lengths = []
-    for text, labels in zip(sentencesList, sentencesAsLabels):
+    for idx, text, labels in enumerate(zip(sentencesList, sentencesAsLabels)):
         toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=True,
                          return_tensors="pt")
+        if verbose:
+            print(f"{idx}: {text}")
 
         # get the text with the similar splits as for the creation of the data
         tokens = tokenize_words(text, delimiter)

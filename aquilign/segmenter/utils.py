@@ -353,7 +353,7 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     num_max_length = get_token_max_length(sentencesList, tokenizer)
     out_toks_and_labels = []
     all_lengths = []
-    for idx, text, labels in enumerate(zip(sentencesList, sentencesAsLabels)):
+    for idx, (text, labels) in enumerate(zip(sentencesList, sentencesAsLabels)):
         toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=True,
                          return_tensors="pt")
         if verbose:

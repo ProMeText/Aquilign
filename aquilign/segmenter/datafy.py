@@ -19,8 +19,6 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
         return len(self.texts_and_labels)
 
     def __getitem__(self, idx):
-        # get the max length of the training set in order to have the good feature to put in tokenizer
-        # current text (one line, ie 12 tokens [before automatic BERT tokenization])
         return self.texts_and_labels[idx]
 
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
@@ -43,7 +41,8 @@ class CustomTextDataset(Dataset):
                  use_bert_tokenizer=False,
                  use_char_embeddings=True,
                  architecture="lstm",
-                 tuning_mode=False):
+                 tuning_mode=False,
+                 weight_factor=2):
         self.datafy = Datafier(train_path,
                                test_path,
                                dev_path,
@@ -60,7 +59,8 @@ class CustomTextDataset(Dataset):
                                use_bert_tokenizer=use_bert_tokenizer,
                                use_char_embeddings=use_char_embeddings,
                                architecture=architecture,
-                               tuning_mode=tuning_mode)
+                               tuning_mode=tuning_mode,
+                               weight_factor=weight_factor)
         self.use_char_embeddings = use_char_embeddings
         self.architecture = architecture
         self.mode = mode
@@ -137,7 +137,8 @@ class Datafier:
                  use_bert_tokenizer=False,
                  use_char_embeddings=False,
                  architecture="lstm",
-                 tuning_mode=False
+                 tuning_mode=False,
+                 weight_factor=2
                  ):
         self.max_length_examples = 0
         self.frequency_dict = {}
@@ -179,6 +180,7 @@ class Datafier:
         assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
         self.architecture = architecture
         self.use_char_embeddings = use_char_embeddings
+        self.weight_factor = weight_factor
         if self.architecture in ["BERT", "DISTILBERT"]:
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
             self.create_lang_vocab(full_corpus)
@@ -260,7 +262,7 @@ class Datafier:
             data_no_punct.append({"example": text, "lang": lang})
         return data_no_punct
 
-    def deduce_weights(self):
+    def deduce_weights(self, weight_factor):
         """
         Fonction simple de pondération des classes:
         weight_for_class_i = total_samples / (num_samples_in_class_i * num_classes)
@@ -296,7 +298,6 @@ class Datafier:
         self.train_padded_examples = utils.tensorize(train_padded_examples)
         self.train_langs = utils.tensorize(train_langs)
         self.train_padded_targets = utils.tensorize(train_padded_targets)
-        self.deduce_weights()
 
     def create_test_corpus(self):
         """

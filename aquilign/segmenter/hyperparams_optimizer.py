@@ -69,6 +69,8 @@ def objective(trial,
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	base_model_name = config_file["global"]["base_model_name"]
 	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
+	if balance_class_weights:
+		weight_factor = trial.suggest_float("weight_factor", 1, 2, log=False)
 	if architecture == "BERT":
 		lr = trial.suggest_float("learning_rate", 0.00004, 0.00005, log=False)
 		batch_size = 32
@@ -320,6 +322,7 @@ def objective(trial,
 	# Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
 	# qu'aux deux autres pour le calcul de la loss
 	if balance_class_weights:
+		train_dataloader.datafy.deduce_weights(weight_factor=weight_factor)
 		weights = train_dataloader.datafy.target_weights.to(device)
 		criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=tgt_PAD_IDX)
 	else:

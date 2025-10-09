@@ -99,6 +99,8 @@ class SegmenterTrainer:
 			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
 			lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
 			linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
+			char_dropout_prob = config_file["architectures"][architecture]["char_dropout_prob"]
+			char_embedding_dim = config_file["architectures"][architecture]["char_embedding_dim"]
 			bidirectional = config_file["architectures"][architecture]["bidirectional"]
 			keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
 		if architecture == "Baseline":
@@ -260,6 +262,7 @@ class SegmenterTrainer:
 			self.output_dim = len(self.target_classes)
 
 			if self.balance_class_weights:
+				self.train_dataloader.datafy.deduce_weights(weight_factor=2)
 				weights = self.train_dataloader.datafy.target_weights.to(self.device)
 				self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
 			else:
@@ -370,8 +373,8 @@ class SegmenterTrainer:
 											 keep_bert_dimensions=keep_bert_dimensions,
 											 use_character_embeddings=self.use_char_embeddings,
 											 linear_dropout=linear_dropout,
-											 char_dropout_prob=0.1,
-											 char_embedding_dim=64)
+											 char_dropout_prob=char_dropout_prob,
+											 char_embedding_dim=char_embedding_dim)
 		elif architecture == "gru":
 			self.model = models.GRU_Encoder(input_dim=self.input_dim,
 											 emb_dim=emb_dim,

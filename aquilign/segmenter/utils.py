@@ -552,7 +552,7 @@ def align_labels(corresp, orig_labels, text, verbose=False):
 
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertSentenceToSubWordsAndLabels(orig_sentence, tokenizer, delimiter="£",  max_length=380, verbose=False, output_masks=False):
+def convertSentenceToSubWordsAndLabels(orig_sentence, tokenizer, delimiter="£",  max_length=380, verbose=True, output_masks=False):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
     :param corpus: A list of dicts of the shape
@@ -584,6 +584,7 @@ def convertSentenceToSubWordsAndLabels(orig_sentence, tokenizer, delimiter="£",
         reverse_vocab = {value: key for key, value in tokenizer.get_vocab().items()}
         splitted_text = [reverse_vocab[item] for item in toks['input_ids'].tolist()[0]]
         print(splitted_text[:splitted_text.index("[PAD]")])
+        print("---")
     # get the index correspondences between text and tok text
     tokens = tokenize_words(sentence_no_delim, delimiter)
     corresp = get_index_correspondence(tokens, tokenizer)

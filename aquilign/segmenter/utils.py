@@ -315,8 +315,12 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 # function who gets the max length of tokenized text, used then in the class SentenceBoundaryDataset
 def get_token_max_length(train_texts, tokenizer):
     lengths_list = []
-    for text in train_texts:
-        tok_text = tokenizer(text, return_tensors='pt')
+    for idx, text in enumerate(train_texts):
+        tok_text = tokenizer(text, return_tensors='pt', truncation=False)
+        if tok_text['input_ids'].size(1) > 511:
+            print(f"Example too long: {text}")
+            print("Exiting")
+            exit(0)
         # get the length for every tok text
         tensor_length = (tok_text['input_ids'].squeeze())
         length = tensor_length.shape[0]
@@ -326,7 +330,7 @@ def get_token_max_length(train_texts, tokenizer):
     return max_length
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=True
+def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verbose=False
                                         ):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
@@ -356,8 +360,6 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     for idx, (text, labels) in enumerate(zip(sentencesList, sentencesAsLabels)):
         toks = tokenizer(text, padding="max_length", max_length=num_max_length, truncation=True,
                          return_tensors="pt")
-        if verbose:
-            print(f"{idx}: {text}")
 
         # get the text with the similar splits as for the creation of the data
         tokens = tokenize_words(text, delimiter)
@@ -555,7 +557,7 @@ def align_labels(corresp, orig_labels, text, verbose=False):
 
 
 # function to convert text in input as tokens and labels (if label is identified in the file, gives 1, in other cases, 0)
-def convertSentenceToSubWordsAndLabels(orig_sentence, tokenizer, delimiter="£",  max_length=380, verbose=True, output_masks=False):
+def convertSentenceToSubWordsAndLabels(orig_sentence, tokenizer, delimiter="£",  max_length=380, verbose=False, output_masks=False):
     """
     This function takes a corpus and returns the tokenized corpus as subwords with their labels.
     :param corpus: A list of dicts of the shape

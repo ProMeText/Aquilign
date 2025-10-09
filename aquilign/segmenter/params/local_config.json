@@ -7,7 +7,7 @@
     "out_dir": "/home/mgl/Documents/test_working",
     "import": "",
     "device": "cpu",
-    "data_augmentation": true,
+    "data_augmentation": false,
     "freeze_embeddings": false,
     "emb_dim": 768,
     "freeze_lang_embeddings": false,
@@ -24,7 +24,7 @@
     "batch_size": 48,
     "eval_batch_size": 48,
     "segments_max_length": 25,
-    "use_char_embeddings": true
+    "use_char_embeddings": false
   },
   "architectures": {
     "lstm": {

@@ -158,7 +158,7 @@ class SegmenterTrainer:
 		self.config_dir = f"{self.output_dir}/config"
 		os.makedirs(self.config_dir, exist_ok=True)
 		out_conf_dict = copy.deepcopy(config_file)
-		if "BERT" not in architecture:
+		if "BERT" not in architecture and "SaT" not in architecture:
 			out_conf_dict["architecture"] = out_conf_dict["architectures"][architecture]
 			out_conf_dict["architecture"]["name"] = architecture
 		else:
@@ -445,7 +445,6 @@ class SegmenterTrainer:
 				self.model = DistilBertForTokenClassification.from_pretrained(base_model_name, num_labels=3)
 			elif architecture == "SaT":
 				import aquilign.segmenter.sat_models as SaT
-				model_str = "xlm-roberta-base"
 				config = SaT.SubwordXLMConfig.from_pretrained(base_model_name)
 				config.num_labels = 4
 				config.num_hidden_layers = 12
@@ -453,6 +452,7 @@ class SegmenterTrainer:
 				config.lookahead_split_layers = 6
 				self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 				self.model = SaT.SubwordXLMForTokenClassification.from_pretrained(base_model_name, config=config)
+				print("SaT model loaded.")
 		self.architecture = architecture
 		self.model.to(self.device)
 		self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)

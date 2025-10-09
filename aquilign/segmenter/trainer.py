@@ -173,7 +173,7 @@ class SegmenterTrainer:
 
 		self.data_augmentation = data_augmentation
 		print(f"Creating vocab is {create_vocab}")
-		if "BERT" not in architecture:
+		if "BERT" not in architecture and "SaT" not in architecture:
 			self.train_dataloader = datafy.CustomTextDataset("train",
 														train_path=train_path,
 														test_path=test_path,

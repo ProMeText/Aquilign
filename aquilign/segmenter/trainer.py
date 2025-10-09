@@ -91,9 +91,9 @@ class SegmenterTrainer:
 		linear_layers = config_file["global"]["linear_layers"]
 		linear_layers_hidden_size = config_file["global"]["linear_layers_hidden_size"]
 		self.segments_max_length = config_file["global"]["segments_max_length"]
-		self.use_char_embeddings = config_file["global"]["use_char_embeddings"]
 		emb_dim = config_file["global"]["emb_dim"]
 		if architecture == "lstm":
+			self.use_char_embeddings = config_file["global"]["use_char_embeddings"]
 			add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
 			lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
 			num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]

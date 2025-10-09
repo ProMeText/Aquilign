@@ -691,6 +691,7 @@ class SegmenterTrainer:
 									   # padding_idx=self.tgt_PAD_IDX,
 									   # batch_size=self.batch_size,
 									   # last_epoch=True,
+									   bert_training=False,
 									   tokenizer=self.tokenizer)
 
 
@@ -805,6 +806,7 @@ class SegmenterTrainer:
 										   examples=cat_examples,
 										   id_to_word=self.reverse_input_vocab,
 										   last_epoch=False,
+										   bert_training=False,
 										   tokenizer=self.tokenizer)
 			results_per_lang[lang] = results
 

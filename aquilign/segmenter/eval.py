@@ -82,7 +82,7 @@ def compute_metrics(predictions,
                     id_to_word=None,
                     last_epoch=False,
                     tokenizer=None,
-                    bert_training=False
+                    bert_training=True
                     ):
     """
     This function evaluates the model against the targets.

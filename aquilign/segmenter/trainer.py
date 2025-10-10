@@ -85,6 +85,10 @@ class SegmenterTrainer:
 		self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
 		self.freeze_lang_embeddings = config_file["global"]["freeze_lang_embeddings"]
 		self.balance_class_weights = config_file["global"]["balance_class_weights"]
+		if "custom_class_weights" in config_file["global"]:
+			self.custom_class_weights = config_file["global"]["custom_class_weights"]
+		else:
+			self.custom_class_weights = None
 		self.eval_batch_size = config_file["global"]["eval_batch_size"]
 		include_lang_metadata = config_file["global"]["include_lang_metadata"]
 		lang_emb_dim = config_file["global"]["lang_emb_dim"]
@@ -128,7 +132,12 @@ class SegmenterTrainer:
 			num_heads = config_file["architectures"][architecture]["num_heads"]
 			num_cnn_layers = config_file["architectures"][architecture]["num_cnn_layers"]
 
-
+		if self.use_char_embeddings:
+			self.eval_mode = "CharTokenizer"
+		elif "BERT" in architecture or use_bert_tokenizer:
+			self.eval_mode = "BertTokenizer"
+		else:
+			self.eval_mode = "WordTokenizer"
 
 		# First we prepare the corpus
 		self.device = device
@@ -199,7 +208,7 @@ class SegmenterTrainer:
 													   lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
 														use_pretrained_embeddings=use_pretrained_embeddings,
 														debug=self.debug,
-														data_augmentation=self.data_augmentation,
+														data_augmentation=False,
 														tokenizer_name=base_model_name,
 														use_bert_tokenizer=use_bert_tokenizer,
 													    use_char_embeddings=self.use_char_embeddings,
@@ -216,7 +225,7 @@ class SegmenterTrainer:
 													   lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
 														use_pretrained_embeddings=use_pretrained_embeddings,
 														debug=self.debug,
-														data_augmentation=self.data_augmentation,
+														data_augmentation=False,
 														tokenizer_name=base_model_name,
 														use_bert_tokenizer=use_bert_tokenizer,
 													    use_char_embeddings=self.use_char_embeddings,
@@ -240,6 +249,9 @@ class SegmenterTrainer:
 												num_workers=self.workers,
 												pin_memory=False,
 											   drop_last=True)
+			print(f"Train data: {len(self.train_dataloader)}")
+			print(f"Dev data: {len(self.dev_dataloader)}")
+			print(f"Test data: {len(self.test_dataloader)}")
 
 			print(f"Number of train examples: {len(self.train_dataloader.datafy.train_padded_examples)}")
 			print(f"Number of test examples: {len(self.test_dataloader.datafy.test_padded_examples)}")
@@ -262,8 +274,11 @@ class SegmenterTrainer:
 			self.output_dim = len(self.target_classes)
 
 			if self.balance_class_weights:
-				self.train_dataloader.datafy.deduce_weights(weight_factor=2)
-				weights = self.train_dataloader.datafy.target_weights.to(self.device)
+				if self.custom_class_weights is None:
+					self.train_dataloader.datafy.deduce_weights(weight_factor=2)
+					weights = self.train_dataloader.datafy.target_weights.to(self.device)
+				else:
+					weights = torch.tensor(self.custom_class_weights).to(self.device)
 				self.criterion = torch.nn.CrossEntropyLoss(weight=weights, ignore_index=self.tgt_PAD_IDX)
 			else:
 				self.criterion = torch.nn.CrossEntropyLoss(ignore_index=self.tgt_PAD_IDX)
@@ -558,7 +573,7 @@ class SegmenterTrainer:
 		os.makedirs(f"{self.output_dir}/models/best", exist_ok=True)
 		torch.save(self.input_vocab, f"{self.output_dir}/models/best/vocab.voc")
 		print("Evaluating randomly initiated model")
-		recall, precision, f1 = self.evaluate(last_epoch=False)
+		recall, precision, f1 = self.evaluate(last_epoch=False, append_to_results=False)
 		utils.append_to_file(
 			f"Randomly initiated model:\n" +
 			utils.format_results(
@@ -707,7 +722,8 @@ class SegmenterTrainer:
 									   last_epoch=True,
 									   bert_training=False,
 									   tokenizer=self.tokenizer,
-									   log_file=self.final_results_file)
+									   log_file=self.final_results_file,
+									   mode=self.eval_mode)
 
 
 
@@ -840,7 +856,7 @@ class SegmenterTrainer:
 
 
 
-	def evaluate(self, loss_calculation:bool=False, last_epoch:bool=False):
+	def evaluate(self, loss_calculation:bool=False, last_epoch:bool=False, append_to_results:bool=True):
 		"""
 		Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
 		"""
@@ -887,7 +903,8 @@ class SegmenterTrainer:
 									   last_epoch=last_epoch,
 									   tokenizer=self.tokenizer,
 									   bert_training=False)
-		self.results.append(results)
+		if append_to_results:
+			self.results.append(results)
 
 		recall = ["Recall", results["recall"][0], results["recall"][1]]
 		precision = ["Precision", results["precision"][0], results["precision"][1]]

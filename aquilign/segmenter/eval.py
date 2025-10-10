@@ -83,7 +83,7 @@ def compute_metrics(predictions,
                     last_epoch=False,
                     tokenizer=None,
                     bert_training=True,
-                    mode="CharTokens",
+                    mode="BertTokenizer",
                     log_file=None
                     ):
     """
@@ -119,7 +119,7 @@ def compute_metrics(predictions,
         for idx in example_range:
             example = examples[idx].tolist()[1:]
             label = labels[idx].tolist()[1:]
-            if mode != "CharTokens":
+            if mode != "CharTokenizer":
                 # example_as_string = " ".join([id_to_word[ident] for ident in example]).replace(" ##", "")
                 try:
                     position_first_left_padding = next(index for index, ident in enumerate(example) if ident == 0)

@@ -4,6 +4,7 @@ import sys
 import json
 import argparse
 import evaluate
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--mode", default="train",
@@ -572,10 +573,10 @@ class SegmenterTrainer:
 		print("Starting training")
 		os.makedirs(f"{self.output_dir}/models/best", exist_ok=True)
 		torch.save(self.input_vocab, f"{self.output_dir}/models/best/vocab.voc")
-		print("Evaluating randomly initiated model")
-		recall, precision, f1 = self.evaluate(last_epoch=False, append_to_results=False)
+		loss, recall, precision, f1 = self.evaluate(loss_calculation=True, last_epoch=False, append_to_results=False)
+		print(f"Evaluating randomly initiated model. Dev loss: {loss}")
 		utils.append_to_file(
-			f"Randomly initiated model:\n" +
+			f"Randomly initiated model. Dev loss: {loss}\n" +
 			utils.format_results(
 				results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"], print_to_term=False
 			),
@@ -587,6 +588,7 @@ class SegmenterTrainer:
 			epoch_number = epoch
 			last_epoch = epoch == range(self.epochs)[-1]
 			print(f"Epoch {str(epoch_number)}")
+			epoch_train_losses = []
 			for data in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
 				if "BERT" in self.architecture:
 					examples, masks, targets = data
@@ -622,12 +624,14 @@ class SegmenterTrainer:
 				# tgt = [batch size * tgt len - 1]
 
 				loss.backward()
+				epoch_train_losses.append(loss.item())
 				torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.1)
 				self.optimizer.step()
-
+			print(f"Epoch loss on train set: {np.mean(epoch_train_losses)}")
 			# self.model.eval()
 			self.scheduler.step()
-			recall, precision, f1 = self.evaluate()
+			dev_loss, recall, precision, f1 = self.evaluate(loss_calculation=True)
+			print(f"Epoch loss on dev set: {dev_loss}")
 			utils.append_to_file(
 				f"Epoch: {str(epoch_number)}\n" +
 				utils.format_results(
@@ -868,6 +872,7 @@ class SegmenterTrainer:
 		all_preds = []
 		all_targets = []
 		all_examples = []
+		all_losses = []
 		self.model.eval()
 		with torch.no_grad():
 			for data in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):
@@ -883,12 +888,23 @@ class SegmenterTrainer:
 					# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
 					if self.architecture != "BERT":
 						preds = self.model(examples, langs)
+						if loss_calculation:
+							output = preds.view(-1, self.output_dim)
+							tgt = targets.view(-1)
+							loss = self.criterion(output, tgt)
 					else:
-						preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
+						outs = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
+						preds = outs.logits
+						if loss_calculation:
+							loss = outs.loss
 					all_preds.append(preds)
 					all_targets.append(targets)
 					all_examples.append(examples)
+					if loss_calculation:
+						all_losses.append(loss)
 
+		if loss_calculation:
+			mean_loss = np.mean(all_losses)
 		# On supprime les batchs:
 		cat_preds = torch.cat(all_preds, dim=0) # [num_examples, max_dim, num_classes]
 		cat_targets = torch.cat(all_targets, dim=0) # [num_examples, max_dim]
@@ -911,7 +927,10 @@ class SegmenterTrainer:
 		f1 = ["F1", results["f1"][0], results["f1"][1]]
 		print(f"Results for all langs:")
 		utils.format_results(results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"])
-		return (recall, precision, f1)
+		if loss_calculation:
+			return (loss, recall, precision, f1)
+		else:
+			return (recall, precision, f1)
 
 
 
@@ -926,8 +945,10 @@ if __name__ == '__main__':
 				# trainer.evaluate_best_model(max_length=i)
 			# trainer.evaluate_best_model(max_length=100)
 			trainer.evaluate_best_model()
+			trainer.evaluate_best_model_per_lang()
 		else:
 			trainer.train()
+			trainer.evaluate_best_model_per_lang()
 	else:
 		trainer.best_model = model
 		trainer.evaluate_best_model_per_lang()

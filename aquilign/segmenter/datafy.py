@@ -288,7 +288,7 @@ class Datafier:
     def create_train_corpus(self):
         if self.data_augmentation:
             # full_corpus = self.train_data + self.remove_punctuation(self.train_data) + utils.apply_noise()
-            full_corpus = self.train_data + utils.augment_data([self.train_data])[0]
+            full_corpus = utils.augment_data([self.train_data])[0]
         else:
             full_corpus = self.train_data
         if self.architecture in ["BERT", "DISTILBERT"]:

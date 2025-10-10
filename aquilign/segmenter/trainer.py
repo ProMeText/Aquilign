@@ -79,7 +79,7 @@ class SegmenterTrainer:
 		base_model_name = config_file["global"]["base_model_name"]
 		use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
 		use_bert_tokenizer = config_file["global"]["use_bert_tokenizer"]
-		if use_pretrained_embeddings or use_bert_tokenizer or "BERT" in architecture:
+		if use_pretrained_embeddings or use_bert_tokenizer or "BERT" in architecture or "SaT" in architecture:
 			os.environ["TOKENIZERS_PARALLELISM"] = "false"
 		data_augmentation = config_file["global"]["data_augmentation"]
 		self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
@@ -449,7 +449,7 @@ class SegmenterTrainer:
 			elif architecture == "SaT":
 				import aquilign.segmenter.sat_models as SaT
 				config = SaT.SubwordXLMConfig.from_pretrained(base_model_name)
-				config.num_labels = 4
+				config.num_labels = 3
 				config.num_hidden_layers = 12
 				config.lookahead = 48
 				config.lookahead_split_layers = 6

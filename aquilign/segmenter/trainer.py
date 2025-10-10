@@ -621,6 +621,7 @@ class SegmenterTrainer:
 			utils.append_to_file("---", self.epochs_log_file)
 			self.save_model(epoch_number)
 		self.get_best_model()
+		self.evaluate_best_model()
 		# self.evaluate_best_model_per_lang()
 
 	def evaluate_best_model(self, max_length):
@@ -852,24 +853,25 @@ class SegmenterTrainer:
 		all_targets = []
 		all_examples = []
 		self.model.eval()
-		for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.batch_size):
-			if "BERT" in self.architecture:
-				examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
-				masks = masks.to(self.device)
-			else:
-				examples, langs, targets = data
-				langs = langs.to(self.device)
-			examples = examples.to(self.device)
-			targets = targets.to(self.device)
-			with torch.no_grad():
-				# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-				if self.architecture != "BERT":
-					preds = self.model(examples, langs)
+		with torch.no_grad():
+			for data in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):
+				if "BERT" in self.architecture:
+					examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
+					masks = masks.to(self.device)
 				else:
-					preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
-				all_preds.append(preds)
-				all_targets.append(targets)
-				all_examples.append(examples)
+					examples, langs, targets = data
+					langs = langs.to(self.device)
+				examples = examples.to(self.device)
+				targets = targets.to(self.device)
+				with torch.no_grad():
+					# On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
+					if self.architecture != "BERT":
+						preds = self.model(examples, langs)
+					else:
+						preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
+					all_preds.append(preds)
+					all_targets.append(targets)
+					all_examples.append(examples)
 
 		# On supprime les batchs:
 		cat_preds = torch.cat(all_preds, dim=0) # [num_examples, max_dim, num_classes]
@@ -903,9 +905,10 @@ if __name__ == '__main__':
 	if mode != "test":
 		if "BERT" in architecture or "SaT" in architecture:
 			trainer.Bert_Train()
-			for i in range(trainer.segments_max_length - 5, trainer.segments_max_length + 5):
-				trainer.evaluate_best_model(max_length=i)
-			trainer.evaluate_best_model(max_length=100)
+			# for i in range(trainer.segments_max_length - 5, trainer.segments_max_length + 5):
+				# trainer.evaluate_best_model(max_length=i)
+			# trainer.evaluate_best_model(max_length=100)
+			trainer.evaluate_best_model()
 		else:
 			trainer.train()
 	else:

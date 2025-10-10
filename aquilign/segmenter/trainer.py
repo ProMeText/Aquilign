@@ -493,16 +493,18 @@ class SegmenterTrainer:
 		utils.append_to_file(message, self.final_results_file)
 		print(message)
 		models = glob.glob(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
-		print(models)
 		try:
 			os.mkdir(f"{self.output_dir}/models/best")
 		except OSError:
 			pass
+		model_found = False
 		for model in models:
 			if model == f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_{best_epoch}.pt":
+				model_found = True
 				shutil.copy(model, f"{self.output_dir}/models/best/best.pt")
 				print(f"Saving best model to {self.output_dir}/models/best/best.pt")
 			os.remove(model)
+		assert model_found is True, "No best model found. Somethign went wrong."
 		self.best_model = f"{self.output_dir}/models/best/best.pt"
 
 	def Bert_Train(self):
@@ -556,7 +558,7 @@ class SegmenterTrainer:
 		os.makedirs(f"{self.output_dir}/models/best", exist_ok=True)
 		torch.save(self.input_vocab, f"{self.output_dir}/models/best/vocab.voc")
 		print("Evaluating randomly initiated model")
-		recall, precision, f1 = self.evaluate()
+		recall, precision, f1 = self.evaluate(last_epoch=False)
 		utils.append_to_file(
 			f"Randomly initiated model:\n" +
 			utils.format_results(
@@ -567,7 +569,7 @@ class SegmenterTrainer:
 		utils.append_to_file("---", self.epochs_log_file)
 		for epoch in range(self.epochs):
 			self.model.train()
-			epoch_number = epoch + 1
+			epoch_number = epoch
 			last_epoch = epoch == range(self.epochs)[-1]
 			print(f"Epoch {str(epoch_number)}")
 			for data in tqdm.tqdm(self.loaded_train_data, unit_scale=self.batch_size):
@@ -610,7 +612,7 @@ class SegmenterTrainer:
 
 			# self.model.eval()
 			self.scheduler.step()
-			recall, precision, f1 = self.evaluate(last_epoch=last_epoch)
+			recall, precision, f1 = self.evaluate()
 			utils.append_to_file(
 				f"Epoch: {str(epoch_number)}\n" +
 				utils.format_results(
@@ -622,9 +624,10 @@ class SegmenterTrainer:
 			self.save_model(epoch_number)
 		self.get_best_model()
 		self.evaluate_best_model()
+		print(f"End of training. Results written to {self.final_results_file}")
 		# self.evaluate_best_model_per_lang()
 
-	def evaluate_best_model(self, max_length):
+	def evaluate_best_model(self, max_length=None):
 		"""
 				Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
 				"""
@@ -632,7 +635,7 @@ class SegmenterTrainer:
 		all_preds = []
 		all_targets = []
 		all_examples = []
-		eval_device = "cuda:0"
+		eval_device = self.device
 		if "BERT" in self.architecture:
 			best_model_path = self.trainer.state.best_model_checkpoint
 			self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
@@ -680,11 +683,8 @@ class SegmenterTrainer:
 														  L_I=L_I)
 				all_preds.append(preds)
 				all_targets.append(targets)
-				examples = examples.to(device)
+				examples = examples.to(self.device)
 				all_examples.append(examples)
-
-		print(f"Model: {emissions.shape}")
-		print(f"Viterbi: {preds.shape}")
 		# On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
 		cat_preds = torch.cat(all_preds, dim=0)
 		cat_targets = torch.cat(all_targets, dim=0)
@@ -704,9 +704,10 @@ class SegmenterTrainer:
 									   # idx_to_class=self.reverse_target_classes,
 									   # padding_idx=self.tgt_PAD_IDX,
 									   # batch_size=self.batch_size,
-									   # last_epoch=True,
+									   last_epoch=True,
 									   bert_training=False,
-									   tokenizer=self.tokenizer)
+									   tokenizer=self.tokenizer,
+									   log_file=self.final_results_file)
 
 
 
@@ -714,7 +715,6 @@ class SegmenterTrainer:
 		precision = ["Precision", results["precision"][0], results["precision"][1]]
 		f1 = ["F1", results["f1"][0], results["f1"][1]]
 		header = ["", "Segment Content", "Segment Boundary"]
-		print(f"\n\nTesting config with max length: {max_length}")
 		print(f"Results for all langs:")
 		utils.format_results(results=[precision, recall, f1], header=header)
 		utils.append_to_file(
@@ -844,7 +844,7 @@ class SegmenterTrainer:
 		"""
 		Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
 		"""
-		print("Evaluating model on test data")
+		print("Evaluating model on dev data")
 		debug = False
 		epoch_accuracy = []
 		epoch_loss = []

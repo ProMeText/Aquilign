@@ -82,7 +82,9 @@ def compute_metrics(predictions,
                     id_to_word=None,
                     last_epoch=False,
                     tokenizer=None,
-                    bert_training=True
+                    bert_training=True,
+                    mode="CharTokens",
+                    log_file=None
                     ):
     """
     This function evaluates the model against the targets.
@@ -94,6 +96,8 @@ def compute_metrics(predictions,
     # the predictions are of shape [num_example, max_length, out_classes]
     # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
     # This way the out shape is [num_example, max_length]
+
+    predictions_as_probs = copy.deepcopy(predictions)
     if bert_training and labels is None:
         predictions, labels = predictions
         predictions = np.argmax(predictions, axis=2)
@@ -106,7 +110,6 @@ def compute_metrics(predictions,
 
     # On teste un exemple pour voir si tout est OK.
     if last_epoch:
-        predictions_as_probs = copy.deepcopy(predictions)
         if tokenizer:
             id_to_word = {ident: value for value, ident in tokenizer.get_vocab().items()}
         examples_number = 10
@@ -115,45 +118,77 @@ def compute_metrics(predictions,
         print(f"Showing example {random_number} to {random_number + examples_number}:")
         for idx in example_range:
             example = examples[idx].tolist()[1:]
-            example_as_string = " ".join([id_to_word[ident] for ident in example]).replace(" ##", "")
-            print(example_as_string)
             label = labels[idx].tolist()[1:]
-            try:
-                position_first_left_padding = next(index for index, ident in enumerate(example) if ident == 0)
-            except StopIteration:
-                position_first_left_padding = -1
-            example_no_padding = example[:position_first_left_padding]
-            label_no_padding = label[:position_first_left_padding]
+            if mode != "CharTokens":
+                # example_as_string = " ".join([id_to_word[ident] for ident in example]).replace(" ##", "")
+                try:
+                    position_first_left_padding = next(index for index, ident in enumerate(example) if ident == 0)
+                except StopIteration:
+                    position_first_left_padding = -1
+                example_no_padding = example[:position_first_left_padding]
+                label_no_padding = label[:position_first_left_padding]
 
-            probs_no_padding = predictions_as_probs[idx].tolist()[1:position_first_left_padding + 1]
-            corresp_prediction = predictions[idx].tolist()[1:position_first_left_padding + 1]
-            corresp_prediction_as_classes = [item for item in corresp_prediction]
-            corresp_label_as_classes = [item for item in label_no_padding]
-            corresp_tokens_as_str = [id_to_word[item] for item in example_no_padding]
-            correct = []
-            for pred, label in zip(corresp_prediction_as_classes, corresp_label_as_classes):
-                if label == 1:
-                    if pred == label:
-                        correct.append(True)
+                probs_no_padding = predictions_as_probs[idx].tolist()[1:position_first_left_padding + 1]
+                corresp_prediction = predictions[idx].tolist()[1:position_first_left_padding + 1]
+                corresp_prediction_as_classes = [item for item in corresp_prediction]
+                corresp_label_as_classes = [item for item in label_no_padding]
+                corresp_tokens_as_str = [id_to_word[item] for item in example_no_padding]
+                correct = []
+                for pred, label in zip(corresp_prediction_as_classes, corresp_label_as_classes):
+                    if label == 1:
+                        if pred == label:
+                            correct.append(True)
+                        else:
+                            correct.append(False)
                     else:
-                        correct.append(False)
-                else:
-                    if pred == 1:
-                        correct.append(False)
-                    else:
-                        correct.append("")
+                        if pred == 1:
+                            correct.append(False)
+                        else:
+                            correct.append("")
 
-            assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str) == len(correct)
-            for ex, token, prediction, target, correct, prob in list(
-                    zip(example_no_padding,
-                        corresp_tokens_as_str,
-                        corresp_prediction_as_classes,
-                        corresp_label_as_classes,
-                        correct,
-                        probs_no_padding)
-            ):
-                print(f"{ex}\t{token}\t{prediction}\t{target}\t{correct}\t{prob}")
-            print("---")
+                assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str) == len(correct)
+                for ex, token, prediction, target, correct, prob in list(
+                        zip(example_no_padding,
+                            corresp_tokens_as_str,
+                            corresp_prediction_as_classes,
+                            corresp_label_as_classes,
+                            correct,
+                            probs_no_padding)
+                ):
+                    print(f"{ex}\t{token}\t{prediction}\t{target}\t{correct}\t{prob}")
+                print("---")
+            else:
+                decoded_example = ["".join([id_to_word[char] for char in token if char not in [0, 1, 2, 3]]) for token in example]
+                decoded_example = [item for item in decoded_example if item != ""]
+                probs_no_padding = predictions_as_probs[idx].tolist()[1:]
+                corresp_prediction = predictions[idx].tolist()[1:]
+                corresp_prediction_as_classes = [item for item in corresp_prediction]
+                corresp_label_as_classes = [item for item in label]
+                correct = []
+                for pred, label in zip(corresp_prediction_as_classes, corresp_label_as_classes):
+                    if label == 1:
+                        if pred == label:
+                            correct.append("True")
+                        else:
+                            correct.append("False")
+                    else:
+                        if pred == 1:
+                            correct.append("False")
+                        else:
+                            correct.append("")
+
+
+                res = list(
+                        zip(decoded_example,
+                            corresp_prediction_as_classes,
+                            corresp_label_as_classes,
+                            correct,
+                            probs_no_padding)
+                )
+                formatted = utils.format_results(results=res, header=["Token", "Prediction", "Target", "Correct", "Probability"],
+                                     print_to_term=False)
+                utils.append_to_file(formatted, log_file)
+
 
 
     # load the metrics we want to evaluate

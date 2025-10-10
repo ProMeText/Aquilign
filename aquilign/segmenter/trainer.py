@@ -522,7 +522,6 @@ class SegmenterTrainer:
 			load_best_model_at_end=True
 			#best model is evaluated on loss
 		)
-		print(self.train_dataset.texts_and_labels)
 		self.trainer = Trainer(
 			model=self.model,
 			args=training_args,

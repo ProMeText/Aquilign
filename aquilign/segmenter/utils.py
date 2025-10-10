@@ -4,6 +4,7 @@ import re
 import traceback
 import unicodedata
 
+from itertools import groupby
 import numpy as np
 import torch
 import os
@@ -368,7 +369,6 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
         # aligning the label
         new_labels = align_labels(corresp, labels, text)
         stripped = new_labels[1:-1]
-        from itertools import groupby
         delim = 1
         groups = groupby(stripped, lambda x: x == delim)
         groupes = [list(group) + [delim] for is_zero, group in groups if not is_zero]
@@ -382,12 +382,14 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
             diff = len(sq) - len(new_labels)
             for elem in range(diff):
                 new_labels.append(2)
-        assert len(sq) == len(new_labels), f"Mismatch.\n" \
+        if len(sq) != len(new_labels):
+            print( f"Mismatch. Ignoring example.\n" \
                                            f"Text: {text}\n" \
                                            f"{(sq.tolist())}\n" \
                                            f"{(new_labels)}\n" \
                                            f"sq: {len(sq)}\n" \
-                                           f"new labels: {len(new_labels)}"
+                                           f"new labels: {len(new_labels)}")
+            continue
         # tensorize the new labels
         label = torch.tensor(new_labels)
         out_toks_and_labels.append({'input_ids': toks['input_ids'].squeeze(),

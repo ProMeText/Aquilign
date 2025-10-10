@@ -139,7 +139,7 @@ class SegmenterTrainer:
 		self.all_dataset_on_device = False
 		print("Loading data")
 		self.use_bert_tokenizer = use_bert_tokenizer
-		if use_pretrained_embeddings or "BERT" in architecture or self.use_bert_tokenizer:
+		if use_pretrained_embeddings or "BERT" in architecture or self.use_bert_tokenizer or "SaT" in architecture:
 			create_vocab = False
 			self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
 		else:
@@ -275,9 +275,12 @@ class SegmenterTrainer:
 			eval_lines, delimiter = utils.json_corpus_to_lines(test_path, keep_punct=True, return_delimiter=True)
 			if self.data_augmentation:
 				train_lines = utils.augment_data([train_lines])
+			print(self.tokenizer)
 			train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=self.tokenizer,
 																			   delimiter=delimiter)
+
 			self.train_dataset = utils.SentenceBoundaryDataset(train_texts_and_labels)
+			assert self.train_dataset.texts_and_labels is not None, f"Error with dataset production: {self.train_dataset.texts_and_labels}"
 
 			# Dev corpus
 			print("Dev corpus preparation")
@@ -310,7 +313,7 @@ class SegmenterTrainer:
 
 		os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
 
-		if "BERT" in architecture or self.use_pretrained_embeddings or self.use_bert_tokenizer:
+		if "BERT" in architecture or "SaT" in architecture or self.use_pretrained_embeddings or self.use_bert_tokenizer:
 			self.input_vocab = self.tokenizer.get_vocab()
 		else:
 			self.input_vocab = self.train_dataloader.datafy.input_vocabulary
@@ -517,8 +520,9 @@ class SegmenterTrainer:
 			use_cpu=self.device == "cpu",
 			save_strategy="epoch",
 			load_best_model_at_end=True
-			# best model is evaluated on loss
+			#best model is evaluated on loss
 		)
+		print(self.train_dataset.texts_and_labels)
 		self.trainer = Trainer(
 			model=self.model,
 			args=training_args,

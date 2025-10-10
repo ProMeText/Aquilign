@@ -904,7 +904,7 @@ class SegmenterTrainer:
 						all_losses.append(loss)
 
 		if loss_calculation:
-			mean_loss = np.mean(all_losses)
+			mean_loss = np.mean([loss.cpu() for loss in all_losses])
 		# On supprime les batchs:
 		cat_preds = torch.cat(all_preds, dim=0) # [num_examples, max_dim, num_classes]
 		cat_targets = torch.cat(all_targets, dim=0) # [num_examples, max_dim]
@@ -928,7 +928,7 @@ class SegmenterTrainer:
 		print(f"Results for all langs:")
 		utils.format_results(results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"])
 		if loss_calculation:
-			return (loss, recall, precision, f1)
+			return (mean_loss, recall, precision, f1)
 		else:
 			return (recall, precision, f1)
 

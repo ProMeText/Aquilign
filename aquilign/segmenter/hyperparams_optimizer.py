@@ -474,7 +474,7 @@ def evaluate(model,
 								   id_to_word=reverse_input_vocab,
 								   last_epoch=False,
 								   tokenizer=tokenizer,
-								   eval_mode)
+								   mode=eval_mode)
 
 	recall = ["Recall", results["recall"][0], results["recall"][1]]
 	precision = ["Precision", results["precision"][0], results["precision"][1]]

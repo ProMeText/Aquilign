@@ -400,7 +400,7 @@ def objective(trial,
 										 tgt_PAD_IDX=tgt_PAD_IDX,
 										 tokenizer=tokenizer,
 										 architecture=architecture,
-										 use_char_embeddings)
+										 use_char_embeddings=use_char_embeddings)
 
 		weighted_recall_precision = (recall[2]*1.3 + precision[2]) / 2.3
 		f1_score = f1[2]

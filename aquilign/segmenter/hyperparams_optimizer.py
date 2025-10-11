@@ -399,7 +399,8 @@ def objective(trial,
 										 reverse_target_classes=reverse_target_classes,
 										 tgt_PAD_IDX=tgt_PAD_IDX,
 										 tokenizer=tokenizer,
-										 architecture=architecture)
+										 architecture=architecture
+										 use_char_embeddings)
 
 		weighted_recall_precision = (recall[2]*1.3 + precision[2]) / 2.3
 		f1_score = f1[2]
@@ -424,7 +425,8 @@ def evaluate(model,
 			 reverse_target_classes,
 			 tgt_PAD_IDX,
 			 tokenizer,
-			 architecture):
+			 architecture,
+			 use_char_embeddings):
 	"""
 	Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
 	"""
@@ -460,12 +462,19 @@ def evaluate(model,
 	cat_preds = torch.cat(all_preds, dim=0)
 	cat_targets = torch.cat(all_targets, dim=0)
 	cat_examples = torch.cat(all_examples, dim=0)
+	if use_char_embeddings:
+		eval_mode = "CharTokenizer"
+	elif "BERT" in architecture or use_bert_tokenizer:
+		eval_mode = "BertTokenizer"
+	else:
+		eval_mode = "WordTokenizer"
 	results = eval.compute_metrics(predictions=cat_preds,
 								   labels=cat_targets,
 								   examples=cat_examples,
 								   id_to_word=reverse_input_vocab,
 								   last_epoch=False,
-								   tokenizer=tokenizer)
+								   tokenizer=tokenizer,
+								   eval_mode)
 
 	recall = ["Recall", results["recall"][0], results["recall"][1]]
 	precision = ["Precision", results["precision"][0], results["precision"][1]]

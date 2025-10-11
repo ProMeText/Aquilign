@@ -399,7 +399,7 @@ def objective(trial,
 										 reverse_target_classes=reverse_target_classes,
 										 tgt_PAD_IDX=tgt_PAD_IDX,
 										 tokenizer=tokenizer,
-										 architecture=architecture
+										 architecture=architecture,
 										 use_char_embeddings)
 
 		weighted_recall_precision = (recall[2]*1.3 + precision[2]) / 2.3

@@ -102,7 +102,8 @@ def compute_metrics(predictions,
         predictions, labels = predictions
         predictions = np.argmax(predictions, axis=2)
     elif bert_training and labels is not None:
-        pass
+        predictions = predictions.cpu()
+        labels = labels.cpu()
     else:
         predictions = predictions.cpu()
         labels = labels.cpu()

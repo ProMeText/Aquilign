@@ -530,7 +530,7 @@ class SegmenterTrainer:
         assert model_found is True, "No best model found. Somethign went wrong."
         self.best_model = f"{self.output_dir}/models/best/best.pt"
 
-    def evaluate_best_model(self, max_length=None):
+    def evaluate_best_model(self, best_model_path=None, max_length=None):
         """
                 Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
                 """
@@ -540,7 +540,6 @@ class SegmenterTrainer:
         all_examples = []
         eval_device = self.device
         if "BERT" in self.architecture:
-            best_model_path = self.trainer.state.best_model_checkpoint
             self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
         else:
             self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
@@ -953,32 +952,32 @@ if __name__ == '__main__':
     if mode != "test":
         if "BERT" in architecture or "SaT" in architecture:
             trainer.Bert_Train()
-            # for i in range(trainer.segments_max_length - 5, trainer.segments_max_length + 5):
-                # trainer.evaluate_best_model(max_length=i)
-            # trainer.evaluate_best_model(max_length=100)
-            trainer.evaluate_best_model()
-            trainer.evaluate_best_model_per_lang()
-        else:
-            trainer.train()
             best_precision_step, best_step_metrics = utils.get_best_step(trainer.trainer.state.log_history)
+            save_every = 1
+            if save_every != 1:
+                # On s'assure de prendre le step le plus proche
+                all_checkpoints = glob.glob(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-*")
+                print(all_checkpoints)
+                as_ints = [
+                    int(checkpoint.replace(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-",
+                                           ""))
+                    for checkpoint in all_checkpoints]
 
-            # On s'assure de prendre le step le plus proche
-            all_checkpoints = glob.glob(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-*")
-            print(all_checkpoints)
-            as_ints = [
-                int(checkpoint.replace(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-",
-                                       ""))
-                for checkpoint in all_checkpoints]
-
-            all_diffs = [abs(best_precision_step - checkpoint) for checkpoint in as_ints]
-            min_index = all_diffs.index(min(all_diffs))
-            best_model_path = all_checkpoints[min_index]
+                all_diffs = [abs(best_precision_step - checkpoint) for checkpoint in as_ints]
+                min_index = all_diffs.index(min(all_diffs))
+                best_model_path = all_checkpoints[min_index]
+            else:
+                best_model_path = trainer.trainer.state.best_model_path
 
             # best_model_path = f"results_{out_name}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{nearest_model}"
             print(f"Best model path according to precision: {best_model_path}")
             print(f"Full metrics: {best_step_metrics}")
-            eval_results = trainer.evaluate_best_model()
+            eval_results = trainer.evaluate_best_model(best_model_path)
+            trainer.trainer.save_model(output_dir=trainer.output_dir)
             # trainer.evaluate_best_model_per_lang()
+        else:
+            trainer.train()
+
     else:
         trainer.best_model = model
         trainer.evaluate_best_model_per_lang()

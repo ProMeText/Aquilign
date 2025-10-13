@@ -553,6 +553,8 @@ class SegmenterTrainer:
 		)
 
 		print("Starting training")
+		print(self.train_dataset.__len__())
+		exit(0)
 		self.trainer.train()
 		print("End of training")
 

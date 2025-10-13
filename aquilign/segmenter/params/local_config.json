@@ -8,7 +8,7 @@
     "device": "cpu",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
     "data_augmentation": true,
-    "freeze_embeddings": true,
+    "freeze_embeddings": false,
     "emb_dim": 768,
     "freeze_lang_embeddings": false,
     "linear_layers": 3,
@@ -22,7 +22,7 @@
     "use_bert_tokenizer": false,
     "lr": 0.0006,
     "workers": 16,
-    "batch_size": 48,
+    "batch_size": 32,
     "segments_max_length": 25,
     "eval_batch_size": 48,
     "use_char_embeddings": true

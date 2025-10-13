@@ -972,8 +972,8 @@ if __name__ == '__main__':
             print(f"Full metrics: {best_step_metrics}")
             eval_results = trainer.evaluate_best_model(best_model_path)
             best_dir = f"{trainer.output_dir}/best"
-            os.rename(trainer.final_results_file, f"{best_dir}/results.txt")
             os.rename(best_model_path, best_dir)
+            os.rename(trainer.final_results_file, f"{best_dir}/results.txt")
 
             print(f"\n\nBest model can be found at : {best_dir} ")
             print(

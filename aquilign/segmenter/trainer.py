@@ -971,8 +971,15 @@ if __name__ == '__main__':
             print(f"Best model path according to precision: {best_model_path}")
             print(f"Full metrics: {best_step_metrics}")
             eval_results = trainer.evaluate_best_model(best_model_path)
-            trainer.trainer.save_model(output_dir=f"{trainer.output_dir}/models/best")
-            # trainer.evaluate_best_model_per_lang()
+            best_dir = f"{trainer.output_dir}/best"
+            os.rename(trainer.final_results_file, f"{best_dir}/results.txt")
+            os.rename(best_model_path, best_dir)
+
+            print(f"\n\nBest model can be found at : {best_dir} ")
+            print(
+                f"You should remove the following directories by using `rm -r {trainer.output_dir}/models/checkpoint-*`")
+
+        # trainer.evaluate_best_model_per_lang()
         else:
             trainer.train()
 

@@ -14,6 +14,29 @@ import statistics
 import jsonschema
 import random
 
+
+def get_best_step(results):
+    """
+    This function gets the best metrics of label 1 (= delimiter) given the results of the trainer.
+    As for now it is the weighted average of precision (w=2) and recall (w=1)
+    """
+    print(results)
+    result_dict = {}
+    for result in results:
+        try:
+            result_dict[result['step']] = {**result_dict[result['step']], **result}
+        except KeyError:
+            result_dict[result['step']] = result
+
+    all_metrics = {}
+    for key, value in result_dict.items():
+        metric = (value['eval_precision'][1] + value['eval_recall'][1]*2)/3
+        all_metrics[key] = metric
+
+    best_step = next(step for step, metric in all_metrics.items() if metric == max(all_metrics.values()))
+    print(f"Best step according to precision: {best_step}")
+    return best_step, result_dict[best_step]
+
 def next_run_len(prev_tag, prev_r, curr_tag, n, L_O, L_B, L_I):
     if curr_tag == L_O: return 0
     if curr_tag == L_B: return 1

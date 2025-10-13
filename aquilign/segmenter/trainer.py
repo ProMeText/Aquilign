@@ -33,7 +33,8 @@ with open(parameters, "r") as input_json:
 if config_file["global"]["import"] != "":
 	sys.path.append(config_file["global"]["import"])
 
-from transformers import AutoTokenizer, BertTokenizer, Trainer, TrainingArguments, AutoModelForTokenClassification, set_seed, TrainerCallback, EarlyStoppingCallback
+from transformers import AutoTokenizer, DistilBertTokenizer, Trainer, TrainingArguments, AutoModelForTokenClassification, set_seed, TrainerCallback, EarlyStoppingCallback
+import transformers
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
 import aquilign.segmenter.eval as eval
@@ -152,7 +153,10 @@ class SegmenterTrainer:
 		self.use_bert_tokenizer = use_bert_tokenizer
 		if use_pretrained_embeddings or "BERT" in architecture or self.use_bert_tokenizer or "SaT" in architecture:
 			create_vocab = False
-			self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+			if architecture == "BERT":
+				self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+			elif architecture == "DistilBERT":
+				self.tokenizer = transformers.DistilBertTokenizer.from_pretrained(base_model_name)
 		else:
 			create_vocab = True
 			self.tokenizer = None
@@ -292,7 +296,6 @@ class SegmenterTrainer:
 			eval_lines, delimiter = utils.json_corpus_to_lines(test_path, keep_punct=True, return_delimiter=True)
 			if self.data_augmentation:
 				train_lines = utils.augment_data([train_lines])[0]
-			print(self.tokenizer)
 			train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=self.tokenizer,
 																			   delimiter=delimiter)
 
@@ -460,8 +463,7 @@ class SegmenterTrainer:
 				from transformers import AutoModelForTokenClassification
 				self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
 			elif architecture == "DistilBERT":
-				from transformers import DistilBertTokenizer, DistilBertForTokenClassification
-				self.tokenizer = DistilBertTokenizer.from_pretrained(base_model_name)
+				from transformers import DistilBertForTokenClassification
 				self.model = DistilBertForTokenClassification.from_pretrained(base_model_name, num_labels=3)
 			elif architecture == "SaT":
 				import aquilign.segmenter.sat_models as SaT

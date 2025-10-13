@@ -552,9 +552,8 @@ class SegmenterTrainer:
 
 		)
 
+		print(f"{self.train_dataset.__len__()} examples in train set.")
 		print("Starting training")
-		print(self.train_dataset.__len__())
-		exit(0)
 		self.trainer.train()
 		print("End of training")
 

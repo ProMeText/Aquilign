@@ -100,14 +100,13 @@ def compute_metrics(predictions,
     predictions_as_probs = copy.deepcopy(predictions)
     if bert_training and labels is None:
         predictions, labels = predictions
-        predictions = np.argmax(predictions, axis=2)
     elif bert_training and labels is not None:
         predictions = predictions.cpu()
         labels = labels.cpu()
     else:
         predictions = predictions.cpu()
         labels = labels.cpu()
-        predictions = np.argmax(predictions, axis=2)
+    predictions = np.argmax(predictions, axis=2)
 
     # On teste un exemple pour voir si tout est OK.
     if last_epoch:
@@ -204,9 +203,6 @@ def compute_metrics(predictions,
     labels = np.array(labels, dtype='int32').flatten()
 
     # On supprime le padding des données
-    print(predictions.shape)
-    print(labels.shape)
-    exit(0)
     mask = labels != 2
     predictions = predictions[mask]
     labels = labels[mask]

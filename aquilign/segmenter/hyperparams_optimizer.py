@@ -101,13 +101,13 @@ def objective(trial,
 			cnn_scale = trial.suggest_float("cnn_scale", 0, 0.8)
 			linear_dropout = trial.suggest_float("linear_dropout", 0.0, 0.5)
 
-		if architecture not in  ["transformers", "BERT", "DISTILBERT"]:
-			add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
-			batch_size = trial.suggest_int("batch_size", 16, 128, step=16)
-		else:
-			if architecture == "transformers":
-				num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
-			batch_size = trial.suggest_int("batch_size", 16, 64, step=16)
+	if architecture not in  ["transformers", "BERT", "DISTILBERT"]:
+		add_attention_layer = trial.suggest_categorical("attention_layer", [False, True])
+		batch_size = trial.suggest_int("batch_size", 16, 128, step=16)
+	else:
+		if architecture == "transformers":
+			num_transformers_layers = trial.suggest_int("num_transformers_layers", 1, 4)
+		batch_size = trial.suggest_int("batch_size", 16, 64, step=16)
 	if "BERT" not in architecture:
 		if use_pretrained_embeddings is True:
 			train_dataloader = bert_train_dataloader

@@ -550,7 +550,7 @@ class SegmenterTrainer:
 			eval_dataset=self.dev_dataset,
 			compute_metrics=eval.compute_metrics,
 			callbacks=[SaveEveryNEpochsCallback(save_every=1),
-					   EarlyStoppingCallback(early_stopping_patience=5)]
+					   EarlyStoppingCallback(early_stopping_patience=10)]
 
 		)
 

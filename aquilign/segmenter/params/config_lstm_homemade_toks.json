@@ -17,7 +17,7 @@
     "custom_class_weights": [1.0, 2.0, 0.0],
     "include_lang_metadata": true,
     "lang_emb_dim": 8,
-    "epochs": 20,
+    "epochs": 6,
     "use_pretrained_embeddings": false,
     "use_bert_tokenizer": false,
     "lr": 0.0009,

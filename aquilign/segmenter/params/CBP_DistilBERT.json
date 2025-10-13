@@ -7,7 +7,7 @@
     "out_dir": "/projects/users/mgillele/trash/test_segmenter",
     "device": "cuda:0",
     "base_model_name": "distilbert/distilbert-base-multilingual-cased",
-    "data_augmentation": false,
+    "data_augmentation": true,
     "freeze_embeddings": false,
     "emb_dim": 300,
     "freeze_lang_embeddings": false,
@@ -19,7 +19,7 @@
     "epochs": 4,
     "use_pretrained_embeddings": true,
     "use_bert_tokenizer": true,
-    "lr": 0.0002,
+    "lr": 0.0000964,
     "workers": 8,
     "batch_size": 32
   }

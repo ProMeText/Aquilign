@@ -7,7 +7,7 @@
     "base_model_name": "google-bert/bert-base-multilingual-cased",
     "out_dir": "/projects/users/mgillele/trash/test_segmenter",
     "device": "cuda:0",
-    "data_augmentation": false,
+    "data_augmentation": true,
     "freeze_embeddings": false,
     "emb_dim": 300,
     "freeze_lang_embeddings": false,
@@ -19,10 +19,10 @@
     "epochs": 4,
     "use_pretrained_embeddings": true,
     "use_bert_tokenizer": true,
-    "lr": 0.0002,
+    "lr": 0.000038,
     "workers": 8,
-    "batch_size": 64,
-    "eval_batch_size": 256,
+    "batch_size": 32,
+    "eval_batch_size": 32,
     "segments_max_length": 18
   }
 }

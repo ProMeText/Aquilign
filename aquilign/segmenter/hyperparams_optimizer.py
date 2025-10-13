@@ -68,16 +68,15 @@ def objective(trial,
 			  use_char_embeddings):
 	os.environ["TOKENIZERS_PARALLELISM"] = "false"
 	base_model_name = config_file["global"]["base_model_name"]
-	balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
+	# balance_class_weights = trial.suggest_categorical("balance_class_weights", [False, True])
+	balance_class_weights = False
 	if balance_class_weights:
 		weight_factor = trial.suggest_float("weight_factor", 1, 2, log=False)
 	if architecture == "BERT":
 		lr = trial.suggest_float("learning_rate", 0.0001, 0.00005, log=False)
-		batch_size = 32
 		base_model_name = "google-bert/bert-base-multilingual-cased"
 	elif architecture == "DISTILBERT":
 		lr = trial.suggest_float("learning_rate", 0.0001, 0.00005, log=False)
-		batch_size = 32
 		base_model_name = "distilbert/distilbert-base-multilingual-cased"
 	else:
 		lr = trial.suggest_float("learning_rate", 0.0001, 0.01, log=True)

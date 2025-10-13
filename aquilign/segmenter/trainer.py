@@ -336,7 +336,8 @@ class SegmenterTrainer:
 
 
         os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
-
+        print(self.output_dir)
+        exit(0)
         if "BERT" in architecture or "SaT" in architecture or self.use_pretrained_embeddings or self.use_bert_tokenizer:
             self.input_vocab = self.tokenizer.get_vocab()
         else:
@@ -953,21 +954,18 @@ if __name__ == '__main__':
         if "BERT" in architecture or "SaT" in architecture:
             trainer.Bert_Train()
             best_precision_step, best_step_metrics = utils.get_best_step(trainer.trainer.state.log_history)
-            save_every = 1
-            if save_every != 1:
-                # On s'assure de prendre le step le plus proche
-                all_checkpoints = glob.glob(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-*")
-                print(all_checkpoints)
-                as_ints = [
-                    int(checkpoint.replace(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-",
-                                           ""))
-                    for checkpoint in all_checkpoints]
 
-                all_diffs = [abs(best_precision_step - checkpoint) for checkpoint in as_ints]
-                min_index = all_diffs.index(min(all_diffs))
-                best_model_path = all_checkpoints[min_index]
-            else:
-                best_model_path = trainer.trainer.state.best_model_path
+            # On s'assure de prendre le step le plus proche
+            all_checkpoints = glob.glob(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-*")
+            print(all_checkpoints)
+            as_ints = [
+                int(checkpoint.replace(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-",
+                                       ""))
+                for checkpoint in all_checkpoints]
+
+            all_diffs = [abs(best_precision_step - checkpoint) for checkpoint in as_ints]
+            min_index = all_diffs.index(min(all_diffs))
+            best_model_path = all_checkpoints[min_index]
 
             # best_model_path = f"results_{out_name}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{nearest_model}"
             print(f"Best model path according to precision: {best_model_path}")

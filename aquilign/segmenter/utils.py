@@ -344,6 +344,7 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     sentencesList = []
     sentencesAsLabels = []
     for example in corpus:
+        print(example)
         text = example["example"]
         sentenceAsList = tokenize_words(text, delimiter)
         masks = []

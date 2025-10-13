@@ -336,8 +336,6 @@ class SegmenterTrainer:
 
 
         os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
-        print(self.output_dir)
-        exit(0)
         if "BERT" in architecture or "SaT" in architecture or self.use_pretrained_embeddings or self.use_bert_tokenizer:
             self.input_vocab = self.tokenizer.get_vocab()
         else:
@@ -631,7 +629,7 @@ class SegmenterTrainer:
     def Bert_Train(self):
 
         training_args = TrainingArguments(
-            output_dir=f"results_{self.output_dir}/epoch{self.epochs}_bs{self.batch_size}",
+            output_dir=f"{self.output_dir}/models/",
             num_train_epochs=self.epochs,
             logging_strategy="epoch",
             per_device_train_batch_size=self.batch_size,

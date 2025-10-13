@@ -204,6 +204,9 @@ def compute_metrics(predictions,
     labels = np.array(labels, dtype='int32').flatten()
 
     # On supprime le padding des données
+    print(predictions.shape)
+    print(labels.shape)
+    exit(0)
     mask = labels != 2
     predictions = predictions[mask]
     labels = labels[mask]

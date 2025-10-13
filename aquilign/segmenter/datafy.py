@@ -421,6 +421,10 @@ class Datafier:
                 for idx, token in enumerate(as_tokens):
                     if not token:
                         continue
+                    if token == self.delimiter:
+                        print("Oups.")
+                        print(as_tokens)
+                        continue
                     if self.delimiter in token:
                         target.append("[SB]")
                         if token == self.delimiter:
@@ -468,11 +472,14 @@ class Datafier:
                 for example in examples:
                     example_length = len(example)
                     example = example + [pad_value for _ in range(self.max_length_examples - example_length)]
+                    if "" in example:
+                        exit(0)
                     example = ["[PAD]"] + example
                     try:
                         example = [self.input_vocabulary[token] for token in example]
                     except KeyError:
                         print(example)
+                        print(len(example))
                         problem = next(item for item in example if item not in self.input_vocabulary)
                         print(f"|{problem}| Is not in vocabulary")
                         exit(0)

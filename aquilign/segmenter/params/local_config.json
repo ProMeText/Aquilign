@@ -7,7 +7,7 @@
     "import": "",
     "device": "cpu",
     "base_model_name": "google-bert/bert-base-multilingual-cased",
-    "data_augmentation": true,
+    "data_augmentation": false,
     "freeze_embeddings": true,
     "emb_dim": 768,
     "freeze_lang_embeddings": false,

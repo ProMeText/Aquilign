@@ -347,6 +347,8 @@ def objective(trial,
 	results = []
 	params_number = sum(p.numel() for p in model.parameters())
 	params_number_to_print = format(decimal.Decimal(params_number), '.4e')
+
+
 	for epoch in range(epochs):
 		model.train()
 		epoch_number = epoch + 1
@@ -500,7 +502,7 @@ if __name__ == '__main__':
 	output_dir = config_file["global"]["out_dir"] + f"/{date_hour}"
 	base_model_name = config_file["global"]["base_model_name"]
 	data_augmentation = config_file["global"]["data_augmentation"]
-	if use_pretrained_embeddings is True:
+	if "BERT" in architecture or use_pretrained_embeddings is True:
 		not_pretrained_train_dataloader = None
 		not_pretrained_dev_dataloader = None
 		pretrained_train_dataloader = datafy.CustomTextDataset("train",
@@ -532,7 +534,7 @@ if __name__ == '__main__':
 													architecture=architecture,
 															   tuning_mode=True)
 
-	if use_pretrained_embeddings is False:
+	else:
 		pretrained_train_dataloader = None
 		pretrained_dev_dataloader = None
 		not_pretrained_train_dataloader = datafy.CustomTextDataset("train",
@@ -570,6 +572,8 @@ if __name__ == '__main__':
 		study = optuna.create_study(directions=['maximize', 'minimize'])
 	else:
 		study = optuna.create_study(direction='maximize')
+	# assert pretrained_dev_dataloader is not None, "Dev dataloader is none."
+	# assert pretrained_train_dataloader is not None, "Train dataloader is none."
 	objective = partial(objective,
 						bert_train_dataloader=pretrained_train_dataloader,
 						bert_dev_dataloader=pretrained_dev_dataloader,

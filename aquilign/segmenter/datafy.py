@@ -405,10 +405,10 @@ class Datafier:
             if self.use_pretrained_embeddings or self.use_bert_tokenizer or self.architecture in ["BERT", "DISTILBERT"]:
                 try:
                     if "BERT" in self.architecture:
-                        example, masks, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380, output_masks=True)
+                        example, masks, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=400, output_masks=True)
                         attention_masks.append(masks.tolist())
                     else:
-                        example, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=380)
+                        example, idents, target = utils.convertSentenceToSubWordsAndLabels(text, self.tokenizer, self.delimiter, max_length=400)
                     ids.append(idents)
                 except TypeError as e:
                     print("Passing.")

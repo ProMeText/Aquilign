@@ -951,25 +951,27 @@ if __name__ == '__main__':
     if mode != "test":
         if "BERT" in architecture or "SaT" in architecture:
             trainer.Bert_Train()
-            best_precision_step, best_step_metrics = utils.get_best_step(trainer.trainer.state.log_history)
+            best_step, best_step_metrics = utils.get_best_step(trainer.trainer.state.log_history)
+			save_every = 1
+			if save_every > 1:
+				# On s'assure de prendre le step le plus proche
+				all_checkpoints = glob.glob(f"{trainer.output_dir}/models/checkpoint-*")
+				print(all_checkpoints)
+				as_ints = [
+					int(checkpoint.replace(f"{trainer.output_dir}/models/checkpoint-",
+										   ""))
+					for checkpoint in all_checkpoints]
 
-            # On s'assure de prendre le step le plus proche
-            all_checkpoints = glob.glob(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-*")
-            print(all_checkpoints)
-            as_ints = [
-                int(checkpoint.replace(f"results_{trainer.output_dir}/epoch{trainer.epochs}_bs{trainer.batch_size}/checkpoint-",
-                                       ""))
-                for checkpoint in all_checkpoints]
-
-            all_diffs = [abs(best_precision_step - checkpoint) for checkpoint in as_ints]
-            min_index = all_diffs.index(min(all_diffs))
-            best_model_path = all_checkpoints[min_index]
+				all_diffs = [abs(best_precision_step - checkpoint) for checkpoint in as_ints]
+				min_index = all_diffs.index(min(all_diffs))
+				best_step = all_checkpoints[min_index]
+			best_model_path = f"{trainer.output_dir}/models/checkpoint-{int(best_step)}"
 
             # best_model_path = f"results_{out_name}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{nearest_model}"
             print(f"Best model path according to precision: {best_model_path}")
             print(f"Full metrics: {best_step_metrics}")
             eval_results = trainer.evaluate_best_model(best_model_path)
-            trainer.trainer.save_model(output_dir=trainer.output_dir)
+            trainer.trainer.save_model(output_dir=f"{trainer.output_dir}/models/best")
             # trainer.evaluate_best_model_per_lang()
         else:
             trainer.train()

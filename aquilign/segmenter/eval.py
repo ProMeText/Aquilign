@@ -6,6 +6,8 @@ import statistics
 import evaluate
 import numpy as np
 import torch
+import tqdm
+
 import aquilign.segmenter.utils as utils
 
 
@@ -18,7 +20,11 @@ def compute_ambiguity_metrics(tokens,
                               id_to_word,
                               word_to_id,
                               log_dir,
-                              name=None):
+                              name=None,
+                              accuracy=None,
+                              recall=None,
+                              precision=None,
+                              f1=None):
     """
     This function produces a confusion matrix for the ambiguous tokens.
     """
@@ -31,17 +37,13 @@ def compute_ambiguity_metrics(tokens,
     tokens = np.array(tokens, dtype='int32').flatten()
     labels = np.array(labels, dtype='int32').flatten()
     ambiguous_tokens = utils.identify_ambiguous_tokens(tokens.tolist(), labels.tolist(), id_to_word, word_to_id)
+    print("OK")
 
-    accuracy = evaluate.load("accuracy")
-    recall = evaluate.load("recall")
-    precision = evaluate.load("precision")
-    f1 = evaluate.load("f1")
     results_per_token = []
 
-    for target_token in ambiguous_tokens:
+    for target_token in tqdm.tqdm(ambiguous_tokens):
         target_labels = np.array([label for token, label in zip(tokens, labels) if token == target_token])
         target_predictions = np.array([pred for token, pred in zip(tokens, predictions) if token == target_token])
-
         current_accuracy = accuracy.compute(predictions=target_predictions, references=target_labels)
         current_recall = recall.compute(predictions=target_predictions, references=target_labels, average=None, zero_division=False)["recall"]
         current_recall_sc = current_recall.tolist()[0]
@@ -84,7 +86,11 @@ def compute_metrics(predictions,
                     tokenizer=None,
                     bert_training=True,
                     mode="BertTokenizer",
-                    log_file=None
+                    log_file=None,
+                      accuracy=None,
+                      recall=None,
+                      precision=None,
+                      f1=None
                     ):
     """
     This function evaluates the model against the targets.
@@ -191,12 +197,6 @@ def compute_metrics(predictions,
 
 
 
-    # load the metrics we want to evaluate
-
-    accuracy = evaluate.load("accuracy")
-    recall = evaluate.load("recall")
-    precision = evaluate.load("precision")
-    f1 = evaluate.load("f1")
 
     # We flatten the 2 vectors to get a 1d vector of shape [num_examples*max_length]
     predictions = np.array(predictions, dtype='int32').flatten()

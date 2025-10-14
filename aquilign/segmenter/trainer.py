@@ -579,6 +579,12 @@ class SegmenterTrainer:
         all_targets = []
         all_examples = []
         eval_device = self.device
+        print("Loading metrics")
+        accuracy = evaluate.load("aquilign/segmenter/metrics/accuracy.py")
+        recall = evaluate.load("aquilign/segmenter/metrics/recall.py")
+        precision = evaluate.load("aquilign/segmenter/metrics/precision.py")
+        f1 = evaluate.load("aquilign/segmenter/metrics/f1.py")
+        print("Loaded.")
         if "BERT" in self.architecture:
             self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
         else:
@@ -632,26 +638,31 @@ class SegmenterTrainer:
         cat_preds = torch.cat(all_preds, dim=0)
         cat_targets = torch.cat(all_targets, dim=0)
         cat_examples = torch.cat(all_examples, dim=0)
-        # eval.compute_ambiguity_metrics(tokens=cat_examples,
-        # 										   labels=cat_targets,
-        # 										   predictions=cat_preds,
-        # 										   id_to_word=self.reverse_input_vocab,
-        # 										   word_to_id=self.input_vocab,
-        # 										   log_dir = self.logs_dir,
-        # 										   name="global")
+        eval.compute_ambiguity_metrics(tokens=cat_examples,
+        										   labels=cat_targets,
+        										   predictions=cat_preds,
+        										   id_to_word=self.reverse_input_vocab,
+        										   word_to_id=self.input_vocab,
+        										   log_dir = self.logs_dir,
+        										   name="global",
+                                                   accuracy=accuracy,
+                                                   precision=precision,
+                                                   recall=recall,
+                                                   f1=f1)
 
         results = eval.compute_metrics(predictions=cat_preds,
                                        labels=cat_targets,
                                        examples=cat_examples,
                                        id_to_word=self.reverse_input_vocab,
-                                       # idx_to_class=self.reverse_target_classes,
-                                       # padding_idx=self.tgt_PAD_IDX,
-                                       # batch_size=self.batch_size,
                                        last_epoch=True,
                                        bert_training=False,
                                        tokenizer=self.tokenizer,
                                        log_file=self.final_results_file,
-                                       mode=self.eval_mode)
+                                       mode=self.eval_mode,
+                                       accuracy=accuracy,
+                                       precision=precision,
+                                       recall=recall,
+                                       f1=f1)
 
         recall = ["Recall", results["recall"][0], results["recall"][1]]
         precision = ["Precision", results["precision"][0], results["precision"][1]]
@@ -723,8 +734,11 @@ class SegmenterTrainer:
 
     def eval_bert_model(self):
         self.evaluate_best_model(self.best_model_path)
-        os.rename(self.best_model_path, self.best_dir)
-        os.rename(trainer.final_results_file, f"{self.best_dir}/results.txt")
+
+        # Si on teste un modèle directement tiré de huggingface
+        if len(self.best_model_path.split()) == 2:
+            os.rename(self.best_model_path, self.best_dir)
+            os.rename(trainer.final_results_file, f"{self.best_dir}/results.txt")
 
 
     def train(self, clip=0.1):
@@ -827,6 +841,12 @@ class SegmenterTrainer:
 
         # On crée un dernier dataloader: un dictionnaire avec division des langues pour avoir des résultats par langue.
         loaded_test_data_per_lang = {}
+        print("Loading metrics.")
+        accuracy_function = evaluate.load("aquilign/segmenter/metrics/accuracy.py")
+        recall_function = evaluate.load("aquilign/segmenter/metrics/recall.py")
+        precision_function = evaluate.load("aquilign/segmenter/metrics/precision.py")
+        f1_function = evaluate.load("aquilign/segmenter/metrics/f1.py")
+        print("Loaded.")
         # We change the batch size for really small sub-corpuses (ex. english for now)
         if "BERT" not in self.architecture:
             self.model.load_state_dict(torch.load(self.best_model, weights_only=True, map_location=torch.device(self.device)))
@@ -933,14 +953,22 @@ class SegmenterTrainer:
                                                        id_to_word=self.reverse_input_vocab,
                                                        word_to_id=self.input_vocab,
                                                        log_dir=self.logs_dir,
-                                                       name=lang)
+                                                       name=lang,
+                                                       accuracy=accuracy_function,
+                                                       precision=precision_function,
+                                                       recall=recall_function,
+                                                       f1=f1_function)
             results = eval.compute_metrics(predictions=cat_preds,
                                            labels=cat_targets,
                                            examples=cat_examples,
                                            id_to_word=self.reverse_input_vocab,
                                            last_epoch=False,
                                            bert_training=False,
-                                           tokenizer=self.tokenizer)
+                                           tokenizer=self.tokenizer,
+                                           accuracy=accuracy_function,
+                                           precision=precision_function,
+                                           recall=recall_function,
+                                            f1=f1_function)
             results_per_lang[lang] = results
 
             recall = ["Recall", results["recall"][0], results["recall"][1]]
@@ -1012,9 +1040,6 @@ class SegmenterTrainer:
                                        labels=cat_targets,
                                        examples=cat_examples,
                                        id_to_word=self.reverse_input_vocab,
-                                       # idx_to_class=self.reverse_target_classes,
-                                       # padding_idx=self.tgt_PAD_IDX,
-                                       # batch_size=self.batch_size,
                                        last_epoch=last_epoch,
                                        tokenizer=self.tokenizer,
                                        bert_training=False)
@@ -1059,3 +1084,4 @@ if __name__ == '__main__':
         else:
             trainer.best_model = model
         trainer.evaluate_best_model_per_lang()
+        trainer.eval_bert_model()

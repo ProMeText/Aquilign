@@ -895,9 +895,9 @@ class SegmenterTrainer:
             for data in tqdm.tqdm(loaded_test_data_per_lang[lang]):
                 if "BERT" in self.architecture:
                     examples = data["input_ids"]
-                    examples.to(self.device)
+                    examples = examples.to(self.device)
                     masks = data["attention_mask"]
-                    masks.to(self.device)
+                    masks = masks.to(self.device)
                     targets = data["labels"]
                     # examples = examples.unsqueeze(0)
                     # masks = masks.unsqueeze(0)

@@ -60,7 +60,8 @@ class CustomTextDataset(Dataset):
                                use_char_embeddings=use_char_embeddings,
                                architecture=architecture,
                                tuning_mode=tuning_mode,
-                               weight_factor=weight_factor)
+                               weight_factor=weight_factor,
+                               mode=mode)
         self.use_char_embeddings = use_char_embeddings
         self.architecture = architecture
         self.mode = mode
@@ -89,7 +90,7 @@ class CustomTextDataset(Dataset):
             return len(self.datafy.dev_padded_examples)
 
     def __getitem__(self, idx):
-        if self.architecture in ["BERT", "DISTILBERT"]:
+        if "BERT" in self.architecture:
             if self.mode == "train":
                 examples = self.datafy.train_padded_examples[idx]
                 masks = self.datafy.train_attention_masks[idx]
@@ -138,7 +139,8 @@ class Datafier:
                  use_char_embeddings=False,
                  architecture="lstm",
                  tuning_mode=False,
-                 weight_factor=2
+                 weight_factor=2,
+                 mode="train"
                  ):
         self.max_length_examples = 0
         self.frequency_dict = {}
@@ -159,9 +161,11 @@ class Datafier:
         self.dev_path = dev_path
         self.delimiter = delimiter
         self.data_augmentation = data_augmentation
-        self.train_data = self.import_json_corpus(train_path)
+        self.mode = mode
+        if self.mode == "train":
+            self.train_data = self.import_json_corpus(train_path)
+            self.dev_data = self.import_json_corpus(dev_path)
         self.test_data = self.import_json_corpus(test_path)
-        self.dev_data = self.import_json_corpus(dev_path)
         self.previous_model_vocab = input_vocab
         self.use_pretrained_embeddings = use_pretrained_embeddings
         self.use_bert_tokenizer = use_bert_tokenizer
@@ -179,26 +183,33 @@ class Datafier:
         if self.data_augmentation:
             # full_corpus = self.train_data + self.remove_punctuation(self.train_data) + utils.apply_noise()
             self.train_data = utils.augment_data([self.train_data])[0]
-        full_corpus = self.train_data + self.test_data + self.dev_data
-        assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
+        if mode == "train":
+            full_corpus = self.train_data + self.test_data + self.dev_data
+            assert len(self.train_data) != len(self.test_data) != 0, "Some error here."
         self.architecture = architecture
         self.use_char_embeddings = use_char_embeddings
         self.weight_factor = weight_factor
         if self.architecture in ["BERT", "DISTILBERT"]:
             self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-            self.create_lang_vocab(full_corpus)
+            if mode == "train":
+                self.create_lang_vocab(full_corpus)
+            else:
+                self.lang_vocabulary = lang_vocab
             self.input_vocabulary = self.tokenizer.get_vocab()
         else:
-            if self.use_char_embeddings:
-                self.get_max_length(full_corpus)
-            if create_vocab:
-                self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus, use_char_embeddings)
-                self.create_lang_vocab(full_corpus)
+            if mode == "train":
+                if self.use_char_embeddings:
+                    self.get_max_length(full_corpus)
+                if create_vocab:
+                    self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus, use_char_embeddings)
+                    self.create_lang_vocab(full_corpus)
             elif self.use_pretrained_embeddings or self.use_bert_tokenizer:
                 self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
                 self.create_lang_vocab(full_corpus)
                 self.input_vocabulary = self.tokenizer.get_vocab()
             else:
+                if self.use_char_embeddings:
+                    self.get_max_length(self.test_data)
                 self.input_vocabulary = input_vocab
                 self.lang_vocabulary = lang_vocab
 
@@ -435,7 +446,7 @@ class Datafier:
                 assert len(example) == len(target), "Length inconsistency"
             examples.append(example)
             targets.append(target)
-            if not self.architecture in ["BERT", "DISTILBERT"]:
+            if not self.architecture in ["BERT", "DISTILBERT"] and self.lang_vocabulary != None:
                 langs.append(self.lang_vocabulary[lang])
 
 

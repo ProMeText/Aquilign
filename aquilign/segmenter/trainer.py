@@ -9,8 +9,10 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument("-m", "--mode", default="train",
                     help="Mode (test, train)")
-parser.add_argument("-md", "--model", default="train",
+parser.add_argument("-md", "--model", default=None,
                         help="Model path")
+parser.add_argument("-v", "--vocab", default=None,
+                        help="Vocab path")
 parser.add_argument("-a", "--architecture", default="lstm",
                     help="Architecture to be tested")
 parser.add_argument("-p", "--parameters", default=None,
@@ -24,6 +26,7 @@ architecture = args.architecture
 parameters = args.parameters
 mode = args.mode
 model = args.model
+vocab = args.vocab
 debug = args.debug
 out_dir_suffix = args.out_name
 with open(parameters, "r") as input_json:
@@ -33,7 +36,8 @@ with open(parameters, "r") as input_json:
 if config_file["global"]["import"] != "":
     sys.path.append(config_file["global"]["import"])
 
-from transformers import AutoTokenizer,  Trainer, TrainingArguments, AutoModelForTokenClassification, set_seed, TrainerCallback, EarlyStoppingCallback
+from transformers import AutoTokenizer, Trainer, TrainingArguments, AutoModelForTokenClassification, set_seed, \
+    TrainerCallback, EarlyStoppingCallback, DistilBertForTokenClassification
 import transformers
 import aquilign.segmenter.utils as utils
 import aquilign.segmenter.models as models
@@ -62,12 +66,16 @@ class SaveEveryNEpochsCallback(TrainerCallback):
 class SegmenterTrainer:
     def  __init__(self,
                   config_file,
-                  out_dir_suffix):
+                  out_dir_suffix,
+                  mode = "train",
+                  vocab=None,
+                  model=None):
         """
         Main Class trainer
         """
         self.date_hour = datetime.datetime.now().isoformat()
         self.debug = debug
+        self.mode = mode
         fine_tune = False
         epochs = config_file["global"]["epochs"]
         batch_size = config_file["global"]["batch_size"]
@@ -165,9 +173,11 @@ class SegmenterTrainer:
         self.test_path = test_path
         self.dev_path = dev_path
         self.fine_tune = fine_tune
+        self.best_model_path = ""
         if out_dir_suffix != "":
             out_dir_suffix = f"_{out_dir_suffix}"
         self.output_dir = output_dir + f"/{self.date_hour}" + out_dir_suffix
+        self.best_dir = f"{self.output_dir}/best"
         self.logs_dir = f"{self.output_dir}/logs"
         self.vocab_dir = f"{self.output_dir}/vocab"
         self.config_dir = f"{self.output_dir}/config"
@@ -184,12 +194,14 @@ class SegmenterTrainer:
         os.makedirs(self.vocab_dir, exist_ok=True)
         self.use_pretrained_embeddings = use_pretrained_embeddings
         self.base_model_name = base_model_name
-
-
+        if mode == "test":
+            self.vocabulary_path = vocab
+            self.model = model
         self.data_augmentation = data_augmentation
         print(f"Creating vocab is {create_vocab}")
         if "BERT" not in architecture and "SaT" not in architecture:
-            self.train_dataloader = datafy.CustomTextDataset("train",
+            if self.mode == "train":
+                self.train_dataloader = datafy.CustomTextDataset("train",
                                                         train_path=train_path,
                                                         test_path=test_path,
                                                         dev_path=dev_path,
@@ -203,6 +215,27 @@ class SegmenterTrainer:
                                                         use_bert_tokenizer=use_bert_tokenizer,
                                                         use_char_embeddings=self.use_char_embeddings,
                                                         architecture=architecture)
+                input_vocab = self.train_dataloader.datafy.input_vocabulary
+                lang_vocab = self.train_dataloader.datafy.lang_vocabulary
+                self.dev_dataloader = datafy.CustomTextDataset(mode="dev",
+                                                               train_path=train_path,
+                                                               test_path=test_path,
+                                                               dev_path=dev_path,
+                                                               delimiter="£",
+                                                               output_dir=self.output_dir,
+                                                               create_vocab=False,
+                                                               input_vocab=input_vocab,
+                                                               lang_vocab=lang_vocab,
+                                                               use_pretrained_embeddings=use_pretrained_embeddings,
+                                                               debug=self.debug,
+                                                               data_augmentation=False,
+                                                               tokenizer_name=base_model_name,
+                                                               use_bert_tokenizer=use_bert_tokenizer,
+                                                               use_char_embeddings=self.use_char_embeddings,
+                                                               architecture=architecture)
+            else:
+                input_vocab = utils.read_to_dict(f"{self.vocabulary_path}/input_vocab.json")
+                lang_vocab = utils.read_to_dict(f"{self.vocabulary_path}/lang_vocab.json")
             self.test_dataloader = datafy.CustomTextDataset(mode="test",
                                                        train_path=train_path,
                                                        test_path=test_path,
@@ -210,8 +243,8 @@ class SegmenterTrainer:
                                                        delimiter="£",
                                                        output_dir=self.output_dir,
                                                        create_vocab=False,
-                                                       input_vocab=self.train_dataloader.datafy.input_vocabulary,
-                                                       lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
+                                                       input_vocab=input_vocab,
+                                                       lang_vocab=lang_vocab,
                                                         use_pretrained_embeddings=use_pretrained_embeddings,
                                                         debug=self.debug,
                                                         data_augmentation=False,
@@ -220,22 +253,6 @@ class SegmenterTrainer:
                                                         use_char_embeddings=self.use_char_embeddings,
                                                            architecture=architecture)
 
-            self.dev_dataloader = datafy.CustomTextDataset(mode="dev",
-                                                       train_path=train_path,
-                                                       test_path=test_path,
-                                                        dev_path=dev_path,
-                                                       delimiter="£",
-                                                       output_dir=self.output_dir,
-                                                       create_vocab=False,
-                                                       input_vocab=self.train_dataloader.datafy.input_vocabulary,
-                                                       lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
-                                                        use_pretrained_embeddings=use_pretrained_embeddings,
-                                                        debug=self.debug,
-                                                        data_augmentation=False,
-                                                        tokenizer_name=base_model_name,
-                                                        use_bert_tokenizer=use_bert_tokenizer,
-                                                        use_char_embeddings=self.use_char_embeddings,
-                                                           architecture=architecture)
 
             self.loaded_test_data = DataLoader(self.test_dataloader,
                                                batch_size=batch_size,
@@ -243,31 +260,38 @@ class SegmenterTrainer:
                                                num_workers=self.workers,
                                                pin_memory=False,
                                                drop_last=True)
-            self.loaded_train_data = DataLoader(self.train_dataloader,
-                                                batch_size=batch_size,
-                                                shuffle=True,
-                                                num_workers=self.workers,
-                                                pin_memory=False,
-                                               drop_last=True)
-            self.loaded_dev_data = DataLoader(self.dev_dataloader,
-                                                batch_size=batch_size,
-                                                shuffle=True,
-                                                num_workers=self.workers,
-                                                pin_memory=False,
-                                               drop_last=True)
-            print(f"Train data: {len(self.train_dataloader)}")
-            print(f"Dev data: {len(self.dev_dataloader)}")
+            if self.mode == "train":
+                self.loaded_train_data = DataLoader(self.train_dataloader,
+                                                    batch_size=batch_size,
+                                                    shuffle=True,
+                                                    num_workers=self.workers,
+                                                    pin_memory=False,
+                                                   drop_last=True)
+                self.loaded_dev_data = DataLoader(self.dev_dataloader,
+                                                    batch_size=batch_size,
+                                                    shuffle=True,
+                                                    num_workers=self.workers,
+                                                    pin_memory=False,
+                                                   drop_last=True)
+                print(f"Train data: {len(self.train_dataloader)}")
+                print(f"Dev data: {len(self.dev_dataloader)}")
+                print(f"Number of train examples: {len(self.train_dataloader.datafy.train_padded_examples)}")
+                print(f"Total length of examples (with padding): {self.train_dataloader.datafy.max_length_examples}")
             print(f"Test data: {len(self.test_dataloader)}")
 
-            print(f"Number of train examples: {len(self.train_dataloader.datafy.train_padded_examples)}")
             print(f"Number of test examples: {len(self.test_dataloader.datafy.test_padded_examples)}")
-            print(f"Total length of examples (with padding): {self.train_dataloader.datafy.max_length_examples}")
-            self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary
-            self.target_classes = self.train_dataloader.datafy.target_classes
-            self.reverse_target_classes = self.train_dataloader.datafy.reverse_target_classes
+            if include_lang_metadata and mode == "train":
+                self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary
+                lang_vocab_len = len(self.lang_vocab)
+            else:
+                self.lang_vocab = lang_vocab
+                lang_vocab_len = 0
+            self.target_classes = self.test_dataloader.datafy.target_classes
+            self.reverse_target_classes = self.test_dataloader.datafy.reverse_target_classes
 
-            self.corpus_size = self.train_dataloader.__len__()
-            self.steps = self.corpus_size // batch_size
+            if mode == "train":
+                self.corpus_size = self.train_dataloader.__len__()
+                self.steps = self.corpus_size // batch_size
 
             self.test_steps = self.test_dataloader.__len__() // batch_size
             # Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
@@ -291,26 +315,39 @@ class SegmenterTrainer:
 
         # If we use bert
         else:
-            train_lines = utils.json_corpus_to_lines(train_path, keep_punct=True)
-            dev_lines = utils.json_corpus_to_lines(dev_path, keep_punct=True)
             eval_lines, delimiter = utils.json_corpus_to_lines(test_path, keep_punct=True, return_delimiter=True)
-            if self.data_augmentation:
-                train_lines = utils.augment_data([train_lines])[0]
-            if self.debug:
-                train_lines = train_lines[:100]
-                eval_lines = eval_lines[:100]
-                dev_lines = dev_lines[:100]
-            train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=self.tokenizer,
+            if mode == "train":
+                train_lines = utils.json_corpus_to_lines(train_path, keep_punct=True)
+                dev_lines = utils.json_corpus_to_lines(dev_path, keep_punct=True)
+                if self.data_augmentation:
+                    train_lines = utils.augment_data([train_lines])[0]
+                if self.debug:
+                    train_lines = train_lines[:100]
+                    dev_lines = dev_lines[:100]
+                train_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(train_lines, tokenizer=self.tokenizer,
                                                                                delimiter=delimiter)
 
-            self.train_dataset = utils.SentenceBoundaryDataset(train_texts_and_labels)
-            assert self.train_dataset.texts_and_labels is not None, f"Error with dataset production: {self.train_dataset.texts_and_labels}"
+                self.train_dataset = utils.SentenceBoundaryDataset(train_texts_and_labels)
+                assert self.train_dataset.texts_and_labels is not None, f"Error with dataset production: {self.train_dataset.texts_and_labels}"
+                # Dev corpus
+                print("Dev corpus preparation")
+                dev_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(dev_lines, tokenizer=self.tokenizer,
+                                                                                 delimiter=delimiter)
+                self.dev_dataset = utils.SentenceBoundaryDataset(dev_texts_and_labels)
 
-            # Dev corpus
-            print("Dev corpus preparation")
-            dev_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(dev_lines, tokenizer=self.tokenizer,
-                                                                             delimiter=delimiter)
-            self.dev_dataset = utils.SentenceBoundaryDataset(dev_texts_and_labels)
+
+            if mode == "train":
+                self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary
+                lang_vocab_len = len(self.lang_vocab)
+            else:
+                lang_vocab = utils.read_to_dict(f"{self.vocabulary_path}/lang_vocab.json")
+                self.lang_vocab = lang_vocab
+
+
+
+            if self.debug:
+                eval_lines = eval_lines[:100]
+
 
 
             # Dev corpus
@@ -339,9 +376,12 @@ class SegmenterTrainer:
         if "BERT" in architecture or "SaT" in architecture or self.use_pretrained_embeddings or self.use_bert_tokenizer:
             self.input_vocab = self.tokenizer.get_vocab()
         else:
-            self.input_vocab = self.train_dataloader.datafy.input_vocabulary
-        assert self.input_vocab != {}, "Error with input vocabulary"
-        utils.serialize_dict(self.input_vocab, f"{self.vocab_dir}/input_vocab.json")
+            if mode == "train":
+                self.input_vocab = self.train_dataloader.datafy.input_vocabulary
+                assert self.input_vocab != {}, "Error with input vocabulary"
+                utils.serialize_dict(self.input_vocab, f"{self.vocab_dir}/input_vocab.json")
+            else:
+                self.input_vocab = input_vocab
         self.reverse_input_vocab = {v: k for k, v in self.input_vocab.items()}
 
 
@@ -385,7 +425,7 @@ class SegmenterTrainer:
                                              device=self.device,
                                              lstm_hidden_size=lstm_hidden_size,
                                              batch_size=batch_size,
-                                             num_langs=len(self.lang_vocab),
+                                             num_langs=lang_vocab_len,
                                              num_lstm_layers=num_lstm_layers,
                                              include_lang_metadata=include_lang_metadata,
                                              out_classes=self.output_dim,
@@ -659,6 +699,31 @@ class SegmenterTrainer:
         self.trainer.train()
         print("End of training")
 
+    def get_bert_best_step(self):
+        best_step, best_step_metrics = utils.get_best_step(trainer.trainer.state.log_history)
+        save_every = 1
+        if save_every > 1:
+            # On s'assure de prendre le step le plus proche
+            all_checkpoints = glob.glob(f"{self.output_dir}/models/checkpoint-*")
+            print(all_checkpoints)
+            as_ints = [
+                int(checkpoint.replace(f"{self.output_dir}/models/checkpoint-",
+                                       ""))
+                for checkpoint in all_checkpoints]
+
+            all_diffs = [abs(best_step - checkpoint) for checkpoint in as_ints]
+            min_index = all_diffs.index(min(all_diffs))
+            best_step = all_checkpoints[min_index]
+        self.best_model_path = f"{trainer.output_dir}/models/checkpoint-{int(best_step)}"
+
+        # best_model_path = f"results_{out_name}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{nearest_model}"
+        print(f"Best model path according to precision: {self.best_model_path}")
+        print(f"Full metrics: {best_step_metrics}")
+
+    def eval_bert_model(self):
+        self.evaluate_best_model(self.best_model_path)
+        os.rename(self.best_model_path, self.best_dir)
+        os.rename(trainer.final_results_file, f"{self.best_dir}/results.txt")
 
 
     def train(self, clip=0.1):
@@ -678,7 +743,6 @@ class SegmenterTrainer:
         utils.remove_files(f"{self.output_dir}/models/.tmp/model_segmenter_{self.architecture}_*.pt")
         print("Starting training")
         os.makedirs(f"{self.output_dir}/models/best", exist_ok=True)
-        torch.save(self.input_vocab, f"{self.output_dir}/models/best/vocab.voc")
         loss, recall, precision, f1 = self.evaluate(loss_calculation=True, last_epoch=False, append_to_results=False)
         print(f"Evaluating randomly initiated model. Dev loss: {loss}")
         utils.append_to_file(
@@ -763,20 +827,28 @@ class SegmenterTrainer:
         # On crée un dernier dataloader: un dictionnaire avec division des langues pour avoir des résultats par langue.
         loaded_test_data_per_lang = {}
         # We change the batch size for really small sub-corpuses (ex. english for now)
+        if "BERT" not in self.architecture:
+            self.model.load_state_dict(torch.load(self.best_model, weights_only=True, map_location=torch.device(self.device)))
+        else:
+            if self.architecture == "BERT":
+                self.model = AutoModelForTokenClassification.from_pretrained(self.best_model_path)
+            elif self.architecture == "DistilBERT":
+                # Check if automodel resolves to distilbert too
+                self.model = DistilBertForTokenClassification.from_pretrained(self.best_model_path)
+        print(self.lang_vocab)
         for lang in self.lang_vocab:
             if lang == "[UNK]":
                 continue
-            if self.architecture not in "BERT":
+            if "BERT" not in self.architecture:
                 current_dataloader = datafy.CustomTextDataset(mode="test",
                                                               train_path=self.train_path,
                                                               test_path=self.test_path,
                                                               dev_path=self.dev_path,
-                                                              device=self.device,
                                                               delimiter="£",
                                                               output_dir=self.output_dir,
                                                               create_vocab=False,
-                                                              input_vocab=self.train_dataloader.datafy.input_vocabulary,
-                                                              lang_vocab=self.train_dataloader.datafy.lang_vocabulary,
+                                                              input_vocab=self.input_vocab,
+                                                              lang_vocab=self.lang_vocab,
                                                               use_pretrained_embeddings=self.use_pretrained_embeddings,
                                                               debug=self.debug,
                                                               data_augmentation=self.data_augmentation,
@@ -790,15 +862,16 @@ class SegmenterTrainer:
                                                                   num_workers=self.workers,
                                                                   pin_memory=False,
                                                                   drop_last=True)
-                self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
             else:
 
                 test_lines, delimiter = utils.json_corpus_to_lines(self.test_path, keep_punct=True, return_delimiter=True)
+                if debug:
+                    test_lines = test_lines[:100]
                 text_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(test_lines,
                                                                                    tokenizer=self.tokenizer,
                                                                                    delimiter=delimiter)
-                self.test_dataset = utils.SentenceBoundaryDataset(text_texts_and_labels)
-                self.model = AutoModelForTokenClassification.from_pretrained(self.best_model_name)
+                test_dataset = utils.SentenceBoundaryDataset(text_texts_and_labels)
+                loaded_test_data_per_lang[lang] = test_dataset
 
 
 
@@ -811,21 +884,27 @@ class SegmenterTrainer:
             all_preds = []
             all_targets = []
             all_examples = []
-            for data in tqdm.tqdm(loaded_test_data_per_lang[lang], unit_scale=self.batch_size):
+            for data in tqdm.tqdm(loaded_test_data_per_lang[lang]):
                 if "BERT" in self.architecture:
-                    examples, masks, targets = data
-                    masks = masks.to(self.device)
+                    examples = data["input_ids"]
+                    masks = data["attention_mask"]
+                    targets = data["labels"]
+                    examples = examples.unsqueeze(0)
+                    masks = masks.unsqueeze(0)
+                    # examples, masks, targets = data
+                     # masks = masks.to(self.device)
                 else:
                     examples, langs, targets = data
                     langs = langs.to(self.device)
-                examples = examples.to(self.device)
-                targets = targets.to(self.device)
+                    examples = examples.to(self.device)
+                    targets = targets.to(self.device)
                 with torch.no_grad():
                     # On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
                     if self.architecture != "BERT":
                         preds = self.model(examples, langs)
                     else:
-                        preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
+                        preds = self.model(input_ids=examples, attention_mask=masks).logits
+                        # preds = self.model(input_ids=examples, attention_mask=masks, labels=targets).logits
                     all_preds.append(preds)
                     all_targets.append(targets)
                     all_examples.append(examples)
@@ -947,42 +1026,26 @@ class SegmenterTrainer:
 if __name__ == '__main__':
     random.seed(1234)
     trainer = SegmenterTrainer(config_file=config_file,
-                      out_dir_suffix=out_dir_suffix)
+                                out_dir_suffix=out_dir_suffix,
+                               mode=mode,
+                               model=model,
+                               vocab=vocab)
     if mode != "test":
         if "BERT" in architecture or "SaT" in architecture:
             trainer.Bert_Train()
-            best_step, best_step_metrics = utils.get_best_step(trainer.trainer.state.log_history)
-            save_every = 1
-            if save_every > 1:
-                # On s'assure de prendre le step le plus proche
-                all_checkpoints = glob.glob(f"{trainer.output_dir}/models/checkpoint-*")
-                print(all_checkpoints)
-                as_ints = [
-                    int(checkpoint.replace(f"{trainer.output_dir}/models/checkpoint-",
-                                           ""))
-                    for checkpoint in all_checkpoints]
-
-                all_diffs = [abs(best_step - checkpoint) for checkpoint in as_ints]
-                min_index = all_diffs.index(min(all_diffs))
-                best_step = all_checkpoints[min_index]
-            best_model_path = f"{trainer.output_dir}/models/checkpoint-{int(best_step)}"
-
-            # best_model_path = f"results_{out_name}/epoch{num_train_epochs}_bs{batch_size}/checkpoint-{nearest_model}"
-            print(f"Best model path according to precision: {best_model_path}")
-            print(f"Full metrics: {best_step_metrics}")
-            eval_results = trainer.evaluate_best_model(best_model_path)
-            best_dir = f"{trainer.output_dir}/best"
-            os.rename(best_model_path, best_dir)
-            os.rename(trainer.final_results_file, f"{best_dir}/results.txt")
-
-            print(f"\n\nBest model can be found at : {best_dir} ")
+            trainer.get_bert_best_step()
+            trainer.eval_bert_model()
+            trainer.evaluate_best_model_per_lang()
+            print(f"\n\nBest model can be found at : {trainer.best_dir} ")
             print(
                 f"You should remove the following directories by using `rm -r {trainer.output_dir}/models/checkpoint-*`")
 
-        # trainer.evaluate_best_model_per_lang()
         else:
             trainer.train()
 
     else:
-        trainer.best_model = model
+        if "BERT" in architecture:
+            trainer.best_model_path = model
+        else:
+            trainer.best_model = model
         trainer.evaluate_best_model_per_lang()

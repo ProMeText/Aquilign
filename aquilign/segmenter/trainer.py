@@ -936,7 +936,7 @@ class SegmenterTrainer:
                     targets = targets.to(self.device)
                 with torch.no_grad():
                     # On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
-                    if self.architecture != "BERT":
+                    if "BERT" not in self.architecture:
                         preds = self.model(examples, langs)
                     else:
                         preds = self.model(input_ids=examples, attention_mask=masks).logits

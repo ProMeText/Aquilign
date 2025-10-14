@@ -421,6 +421,14 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
 
     return out_toks_and_labels
 
+def filter_examples_by_lang(examples, codelang):
+    filtered_examples = []
+    for example in examples:
+        if example['lang'] == codelang:
+            filtered_examples.append(example)
+
+    return filtered_examples
+
 
 def json_corpus_to_lines(corpus: str, keep_punct, return_delimiter=False) -> list[dict]:
     """

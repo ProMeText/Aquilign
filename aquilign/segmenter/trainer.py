@@ -20,11 +20,14 @@ parser.add_argument("-p", "--parameters", default=None,
 parser.add_argument("-d", "--debug", default=False,
                     help="Debug mode")
 parser.add_argument("-n", "--out_name", default="",
-                    help="Debug mode")
+                    help="Out dir name")
+parser.add_argument("-o", "--out_dir", default="",
+                    help="Output dir")
 args = parser.parse_args()
 architecture = args.architecture
 parameters = args.parameters
 mode = args.mode
+output_dir = args.out_dir
 model = args.model
 vocab = args.vocab
 debug = args.debug
@@ -69,7 +72,8 @@ class SegmenterTrainer:
                   out_dir_suffix,
                   mode = "train",
                   vocab=None,
-                  model=None):
+                  model=None,
+                  output_dir=None):
         """
         Main Class trainer
         """
@@ -85,7 +89,8 @@ class SegmenterTrainer:
         train_path = config_file["global"]["train"]
         test_path = config_file["global"]["test"]
         dev_path = config_file["global"]["dev"]
-        output_dir = config_file["global"]["out_dir"]
+        if mode == "train":
+            output_dir = config_file["global"]["out_dir"]
         base_model_name = config_file["global"]["base_model_name"]
         use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
         use_bert_tokenizer = config_file["global"]["use_bert_tokenizer"]
@@ -176,22 +181,29 @@ class SegmenterTrainer:
         self.best_model_path = ""
         if out_dir_suffix != "":
             out_dir_suffix = f"_{out_dir_suffix}"
-        self.output_dir = output_dir + f"/{self.date_hour}" + out_dir_suffix
-        self.best_dir = f"{self.output_dir}/best"
-        self.logs_dir = f"{self.output_dir}/logs"
-        self.vocab_dir = f"{self.output_dir}/vocab"
-        self.config_dir = f"{self.output_dir}/config"
-        os.makedirs(self.config_dir, exist_ok=True)
-        out_conf_dict = copy.deepcopy(config_file)
-        if "BERT" not in architecture and "SaT" not in architecture:
-            out_conf_dict["architecture"] = out_conf_dict["architectures"][architecture]
-            out_conf_dict["architecture"]["name"] = architecture
+        if mode == "train":
+            self.output_dir = output_dir + f"/{self.date_hour}" + out_dir_suffix
+            self.best_dir = f"{self.output_dir}/best"
+            self.logs_dir = f"{self.output_dir}/logs"
+            self.vocab_dir = f"{self.output_dir}/vocab"
+            self.config_dir = f"{self.output_dir}/config"
+            os.makedirs(self.config_dir, exist_ok=True)
+            out_conf_dict = copy.deepcopy(config_file)
+
+            if "BERT" not in architecture and "SaT" not in architecture:
+                out_conf_dict["architecture"] = out_conf_dict["architectures"][architecture]
+                out_conf_dict["architecture"]["name"] = architecture
+            else:
+                out_conf_dict["architecture"] = {"name": architecture}
+            out_conf_dict["global"]["model_path"] = "models/best/best.pt"
+            utils.serialize_dict(out_conf_dict, f"{self.config_dir}/config.json")
+            os.makedirs(self.vocab_dir, exist_ok=True)
+            os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
         else:
-            out_conf_dict["architecture"] = {"name": architecture}
-        out_conf_dict["global"]["model_path"] = "models/best/best.pt"
-        utils.serialize_dict(out_conf_dict, f"{self.config_dir}/config.json")
+            self.output_dir = output_dir
+            self.logs_dir = f"{self.output_dir}/logs"
+
         os.makedirs(self.logs_dir, exist_ok=True)
-        os.makedirs(self.vocab_dir, exist_ok=True)
         self.use_pretrained_embeddings = use_pretrained_embeddings
         self.base_model_name = base_model_name
         if mode == "test":
@@ -373,7 +385,7 @@ class SegmenterTrainer:
 
 
 
-        os.makedirs(f"{self.output_dir}/models/.tmp", exist_ok=True)
+
         if "BERT" in architecture or "SaT" in architecture or self.use_pretrained_embeddings or self.use_bert_tokenizer:
             self.input_vocab = self.tokenizer.get_vocab()
         else:
@@ -392,11 +404,14 @@ class SegmenterTrainer:
         self.best_model = None
         self.input_dim = len(self.input_vocab)
         self.architecture = architecture
-
-        self.epochs_log_file = f"{self.logs_dir}/train_logs.txt"
+        if mode == "train":
+            self.epochs_log_file = f"{self.logs_dir}/train_logs.txt"
+            utils.remove_files(
+                [self.epochs_log_file]
+            )
         self.final_results_file = f"{self.logs_dir}/best_model.txt"
         utils.remove_files(
-            [self.epochs_log_file, self.final_results_file]
+            [self.final_results_file]
         )
 
 
@@ -580,10 +595,10 @@ class SegmenterTrainer:
         all_examples = []
         eval_device = self.device
         print("Loading metrics")
-        accuracy = evaluate.load("aquilign/segmenter/metrics/accuracy.py")
-        recall = evaluate.load("aquilign/segmenter/metrics/recall.py")
-        precision = evaluate.load("aquilign/segmenter/metrics/precision.py")
-        f1 = evaluate.load("aquilign/segmenter/metrics/f1.py")
+        accuracy_metric = evaluate.load("aquilign/segmenter/metrics/accuracy.py")
+        recall_metric = evaluate.load("aquilign/segmenter/metrics/recall.py")
+        precision_metric = evaluate.load("aquilign/segmenter/metrics/precision.py")
+        f1_metric = evaluate.load("aquilign/segmenter/metrics/f1.py")
         print("Loaded.")
         if "BERT" in self.architecture:
             self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
@@ -638,18 +653,6 @@ class SegmenterTrainer:
         cat_preds = torch.cat(all_preds, dim=0)
         cat_targets = torch.cat(all_targets, dim=0)
         cat_examples = torch.cat(all_examples, dim=0)
-        eval.compute_ambiguity_metrics(tokens=cat_examples,
-        										   labels=cat_targets,
-        										   predictions=cat_preds,
-        										   id_to_word=self.reverse_input_vocab,
-        										   word_to_id=self.input_vocab,
-        										   log_dir = self.logs_dir,
-        										   name="global",
-                                                   accuracy=accuracy,
-                                                   precision=precision,
-                                                   recall=recall,
-                                                   f1=f1)
-
         results = eval.compute_metrics(predictions=cat_preds,
                                        labels=cat_targets,
                                        examples=cat_examples,
@@ -659,10 +662,10 @@ class SegmenterTrainer:
                                        tokenizer=self.tokenizer,
                                        log_file=self.final_results_file,
                                        mode=self.eval_mode,
-                                       accuracy=accuracy,
-                                       precision=precision,
-                                       recall=recall,
-                                       f1=f1)
+                                       accuracy=accuracy_metric,
+                                       precision=precision_metric,
+                                       recall=recall_metric,
+                                       f1=f1_metric)
 
         recall = ["Recall", results["recall"][0], results["recall"][1]]
         precision = ["Precision", results["precision"][0], results["precision"][1]]
@@ -887,9 +890,10 @@ class SegmenterTrainer:
             else:
 
                 test_lines, delimiter = utils.json_corpus_to_lines(self.test_path, keep_punct=True, return_delimiter=True)
+                test_filtered_lines = utils.filter_examples_by_lang(test_lines, lang)
                 if debug:
-                    test_lines = test_lines[:100]
-                text_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(test_lines,
+                    test_filtered_lines = test_filtered_lines[:100]
+                text_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(test_filtered_lines,
                                                                                    tokenizer=self.tokenizer,
                                                                                    delimiter=delimiter)
                 test_dataset = utils.SentenceBoundaryDataset(text_texts_and_labels)
@@ -992,9 +996,11 @@ class SegmenterTrainer:
         Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
         """
         print("Evaluating model on dev data")
-        debug = False
-        epoch_accuracy = []
-        epoch_loss = []
+
+        accuracy_metric = evaluate.load("aquilign/segmenter/metrics/accuracy.py")
+        recall_metric = evaluate.load("aquilign/segmenter/metrics/recall.py")
+        precision_metric = evaluate.load("aquilign/segmenter/metrics/precision.py")
+        f1_metric = evaluate.load("aquilign/segmenter/metrics/f1.py")
         # Timer = utils.Timer()
         all_preds = []
         all_targets = []
@@ -1042,7 +1048,11 @@ class SegmenterTrainer:
                                        id_to_word=self.reverse_input_vocab,
                                        last_epoch=last_epoch,
                                        tokenizer=self.tokenizer,
-                                       bert_training=False)
+                                       bert_training=False,
+                                       accuracy=accuracy_metric,
+                                       precision=precision_metric,
+                                       recall=recall_metric,
+                                       f1=f1_metric)
         if append_to_results:
             self.results.append(results)
 
@@ -1064,7 +1074,8 @@ if __name__ == '__main__':
                                 out_dir_suffix=out_dir_suffix,
                                mode=mode,
                                model=model,
-                               vocab=vocab)
+                               vocab=vocab,
+                               output_dir=output_dir)
     if mode != "test":
         if "BERT" in architecture or "SaT" in architecture:
             trainer.Bert_Train()

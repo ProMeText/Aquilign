@@ -103,6 +103,11 @@ def compute_metrics(predictions,
     # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
     # This way the out shape is [num_example, max_length]
     print("Producing results.")
+    if accuracy is None:
+        accuracy = evaluate.load("accuracy")
+        f1 = evaluate.load("f1")
+        recall = evaluate.load("recall")
+        precision = evaluate.load("precision")
     predictions_as_probs = copy.deepcopy(predictions)
     if bert_training and labels is None:
         predictions, labels = predictions

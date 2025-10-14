@@ -40,7 +40,7 @@ class CustomTextDataset(Dataset):
                  debug=False,
                  filter_by_lang=None,
                  use_bert_tokenizer=False,
-                 use_char_embeddings=True,
+                 use_char_embeddings=False,
                  architecture="lstm",
                  tuning_mode=False,
                  weight_factor=2):
@@ -472,7 +472,8 @@ class Datafier:
             print(max_length_targets)
             exit(0)
         if "BERT" not in self.architecture:
-            if self.use_char_embeddings:
+            print(self.use_char_embeddings)
+            if self.use_char_embeddings is True:
                 pad_value = "[PAD]"
                 padded_examples = []
                 padded_targets = []

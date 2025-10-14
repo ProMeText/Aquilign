@@ -150,13 +150,12 @@ class SegmenterTrainer:
             num_heads = config_file["architectures"][architecture]["num_heads"]
             num_cnn_layers = config_file["architectures"][architecture]["num_cnn_layers"]
 
-        if self.use_char_embeddings:
+        if self.use_char_embeddings is True:
             self.eval_mode = "CharTokenizer"
         elif "BERT" in architecture or use_bert_tokenizer:
             self.eval_mode = "BertTokenizer"
         else:
             self.eval_mode = "WordTokenizer"
-
         # First we prepare the corpus
         self.device = device
         if self.device != "cpu":
@@ -879,6 +878,7 @@ class SegmenterTrainer:
                                                               create_vocab=False,
                                                               input_vocab=self.input_vocab,
                                                               lang_vocab=self.lang_vocab,
+                                                              use_char_embeddings=self.use_char_embeddings,
                                                               use_pretrained_embeddings=self.use_pretrained_embeddings,
                                                               debug=self.debug,
                                                               data_augmentation=self.data_augmentation,

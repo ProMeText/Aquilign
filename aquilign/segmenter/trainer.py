@@ -837,6 +837,7 @@ class SegmenterTrainer:
                 # Check if automodel resolves to distilbert too
                 self.model = DistilBertForTokenClassification.from_pretrained(self.best_model_path)
         print(self.lang_vocab)
+        self.model.to(device=self.device)
         for lang in self.lang_vocab:
             if lang == "[UNK]":
                 continue
@@ -894,7 +895,9 @@ class SegmenterTrainer:
             for data in tqdm.tqdm(loaded_test_data_per_lang[lang]):
                 if "BERT" in self.architecture:
                     examples = data["input_ids"]
+                    examples.to(self.device)
                     masks = data["attention_mask"]
+                    masks.to(self.device)
                     targets = data["labels"]
                     # examples = examples.unsqueeze(0)
                     # masks = masks.unsqueeze(0)

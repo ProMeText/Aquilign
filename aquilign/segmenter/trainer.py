@@ -340,8 +340,11 @@ class SegmenterTrainer:
                 self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary
                 lang_vocab_len = len(self.lang_vocab)
             else:
-                lang_vocab = utils.read_to_dict(f"{self.vocabulary_path}/lang_vocab.json")
-                self.lang_vocab = lang_vocab
+                if "BERT" not in architecture:
+                    lang_vocab = utils.read_to_dict(f"{self.vocabulary_path}/lang_vocab.json")
+                else:
+                    self.test_dataloader.datafy.create_lang_vocab(self.test_data)
+                    self.lang_vocab = self.test_dataloader.datafy.lang_vocabulary
 
 
 

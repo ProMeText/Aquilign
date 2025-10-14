@@ -24,6 +24,7 @@ class SentenceBoundaryDataset(torch.utils.data.Dataset):
 # https://pytorch.org/tutorials/beginner/basics/data_tutorial.html
 class CustomTextDataset(Dataset):
     def __init__(self,
+                 set_type,
                  mode,
                  train_path,
                  test_path,
@@ -43,7 +44,10 @@ class CustomTextDataset(Dataset):
                  architecture="lstm",
                  tuning_mode=False,
                  weight_factor=2):
-        self.datafy = Datafier(train_path,
+        print(f"Loading new dataset: {set_type}")
+        self.datafy = Datafier(
+                                set_type,
+                                train_path,
                                test_path,
                                dev_path,
                                delimiter,
@@ -65,7 +69,8 @@ class CustomTextDataset(Dataset):
         self.use_char_embeddings = use_char_embeddings
         self.architecture = architecture
         self.mode = mode
-        if mode == "train":
+        self.set_type = set_type
+        if self.set_type == "train":
             print("Creating train corpus")
             self.datafy.create_train_corpus()
             print("Train corpus created.")
@@ -74,28 +79,29 @@ class CustomTextDataset(Dataset):
             assert self.datafy.train_padded_examples.shape[1] == self.datafy.train_padded_targets.shape[1] , (f"Something went wrong with corpus creation.\n"
              f"Padded examples shape: {self.datafy.train_padded_examples.shape}\n"
              f"Padded targets shape: {self.datafy.train_padded_targets.shape}.")
-        elif mode == "test":
+        elif self.set_type == "test":
             print("Creating test corpus")
             self.datafy.create_test_corpus()
         else:
             print("Creating dev corpus")
             self.datafy.create_dev_corpus()
+            print(self.datafy.dev_padded_examples)
 
     def __len__(self):
-        if self.mode == "train":
+        if self.set_type == "train":
             return len(self.datafy.train_padded_examples)
-        elif self.mode == "test":
+        elif self.set_type == "test":
             return len(self.datafy.test_padded_examples)
         else:
             return len(self.datafy.dev_padded_examples)
 
     def __getitem__(self, idx):
         if "BERT" in self.architecture:
-            if self.mode == "train":
+            if self.set_type == "train":
                 examples = self.datafy.train_padded_examples[idx]
                 masks = self.datafy.train_attention_masks[idx]
                 labels = self.datafy.train_padded_targets[idx]
-            elif self.mode == "test":
+            elif self.set_type == "test":
                 examples = self.datafy.test_padded_examples[idx]
                 masks = self.datafy.test_attention_masks[idx]
                 labels = self.datafy.test_padded_targets[idx]
@@ -105,11 +111,11 @@ class CustomTextDataset(Dataset):
                 labels = self.datafy.dev_padded_targets[idx]
             return examples, masks, labels
         else:
-            if self.mode == "train":
+            if self.set_type == "train":
                 examples = self.datafy.train_padded_examples[idx]
                 labels = self.datafy.train_padded_targets[idx]
                 langs = self.datafy.train_langs[idx]
-            elif self.mode == "test":
+            elif self.set_type == "test":
                 examples = self.datafy.test_padded_examples[idx]
                 labels = self.datafy.test_padded_targets[idx]
                 langs = self.datafy.test_langs[idx]
@@ -122,6 +128,7 @@ class CustomTextDataset(Dataset):
 
 class Datafier:
     def __init__(self,
+                 set_type,
                  train_path,
                  test_path,
                  dev_path,
@@ -129,11 +136,11 @@ class Datafier:
                  output_dir,
                  create_vocab,
                  input_vocab,
-                 lang_vocab,
-                 use_pretrained_embeddings,
-                 debug,
-                 data_augmentation,
-                 tokenizer_name,
+                 lang_vocab=None,
+                 use_pretrained_embeddings=False,
+                 debug=False,
+                 data_augmentation=False,
+                 tokenizer_name="",
                  filter_by_lang=None,
                  use_bert_tokenizer=False,
                  use_char_embeddings=False,
@@ -162,6 +169,7 @@ class Datafier:
         self.delimiter = delimiter
         self.data_augmentation = data_augmentation
         self.mode = mode
+        self.set_type = set_type
         if self.mode == "train":
             self.train_data = self.import_json_corpus(train_path)
             self.dev_data = self.import_json_corpus(dev_path)
@@ -177,10 +185,10 @@ class Datafier:
         self.filter_by_lang = filter_by_lang
         self.reverse_target_classes = {idx:token for token, idx in self.target_classes.items()}
         self.tuning_mode = tuning_mode
-        if self.tuning_mode is False:
-            utils.serialize_dict(self.target_classes, f"{self.vocab_dir}/target_classes.json")
+        # if self.tuning_mode is False:
+            # utils.serialize_dict(self.target_classes, f"{self.vocab_dir}/target_classes.json")
         self.delimiters_regex = re.compile(r"\s+|([\.“\?\'!—\"/:;,\-¿«\[\]»])")
-        if self.data_augmentation:
+        if self.data_augmentation and self.mode == "train":
             # full_corpus = self.train_data + self.remove_punctuation(self.train_data) + utils.apply_noise()
             self.train_data = utils.augment_data([self.train_data])[0]
         if mode == "train":
@@ -197,21 +205,30 @@ class Datafier:
                 self.lang_vocabulary = lang_vocab
             self.input_vocabulary = self.tokenizer.get_vocab()
         else:
-            if mode == "train":
+            if set_type == "train":
                 if self.use_char_embeddings:
                     self.get_max_length(full_corpus)
                 if create_vocab:
+                    print("Creating vocabulary.")
                     self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus, use_char_embeddings)
+                    print(self.input_vocabulary)
                     self.create_lang_vocab(full_corpus)
+                else:
+                    self.lang_vocabulary = None
+
+            # Si on utilise un tokéniseur BERT
             elif self.use_pretrained_embeddings or self.use_bert_tokenizer:
                 self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
                 self.create_lang_vocab(full_corpus)
                 self.input_vocabulary = self.tokenizer.get_vocab()
+
+            # Dans tous les autres cas
             else:
                 if self.use_char_embeddings:
                     self.get_max_length(self.test_data)
                 self.input_vocabulary = input_vocab
                 self.lang_vocabulary = lang_vocab
+        assert self.input_vocabulary != {}, "Error with input vocab"
 
 
     def create_lang_vocab(self, data):
@@ -329,10 +346,7 @@ class Datafier:
         This function creates the dev corpus, and uses the vocabulary of the train set to do so.
         Outputs: tensorized input, tensorized target, formatted input to ease accuracy computation.
         """
-        if self.data_augmentation:
-            full_corpus = self.dev_data + self.remove_punctuation(self.dev_data)
-        else:
-            full_corpus = self.dev_data
+        full_corpus = self.dev_data
         if self.architecture in ["BERT", "DISTILBERT"]:
             dev_padded_examples, dev_attention_masks, dev_langs, dev_padded_targets = self.produce_corpus(full_corpus, debug=self.debug)
             self.dev_attention_masks = utils.tensorize(dev_attention_masks)
@@ -446,7 +460,7 @@ class Datafier:
                 assert len(example) == len(target), "Length inconsistency"
             examples.append(example)
             targets.append(target)
-            if not self.architecture in ["BERT", "DISTILBERT"] and self.lang_vocabulary != None:
+            if not "BERT" in self.architecture and self.lang_vocabulary is not None:
                 langs.append(self.lang_vocabulary[lang])
 
 

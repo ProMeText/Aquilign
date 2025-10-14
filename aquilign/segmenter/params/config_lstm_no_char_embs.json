@@ -25,7 +25,7 @@
     "batch_size": 96,
     "segments_max_length": 25,
     "eval_batch_size": 48,
-    "use_char_embeddings": falsec
+    "use_char_embeddings": false
   },
   "architectures": {
     "lstm": {

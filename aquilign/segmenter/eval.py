@@ -141,6 +141,7 @@ def compute_metrics(predictions,
 
                 probs_no_padding = predictions_as_probs[idx].tolist()[1:position_first_left_padding + 1]
                 corresp_prediction = predictions[idx].tolist()[1:position_first_left_padding + 1]
+                assert len(corresp_prediction) != 0
                 corresp_prediction_as_classes = [item for item in corresp_prediction]
                 corresp_label_as_classes = [item for item in label_no_padding]
                 corresp_tokens_as_str = [id_to_word[item] for item in example_no_padding]
@@ -157,7 +158,14 @@ def compute_metrics(predictions,
                         else:
                             correct.append("")
 
-                assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str) == len(correct)
+                assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str) == len(correct), (
+                    f"Something went wrong during testing."
+                 f"Predictions length: {len(corresp_prediction)}. "
+                 f"Examples no padding: {len(example_no_padding)}. "
+                 f"Corresp tokens as string: {len(corresp_tokens_as_str)}. "
+                 f"Correct data: {len(correct)}. "
+                    f"This problem might happen with a randomly initiated model. "
+                )
                 for ex, token, prediction, target, correct, prob in list(
                         zip(example_no_padding,
                             corresp_tokens_as_str,

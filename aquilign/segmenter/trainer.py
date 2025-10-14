@@ -215,7 +215,8 @@ class SegmenterTrainer:
         print(f"Creating vocab is {create_vocab}")
         if "BERT" not in architecture and "SaT" not in architecture:
             if self.mode == "train":
-                self.train_dataloader = datafy.CustomTextDataset("train",
+                self.train_dataloader = datafy.CustomTextDataset(set_type="train",
+                                                            mode=mode,
                                                         train_path=train_path,
                                                         test_path=test_path,
                                                         dev_path=dev_path,
@@ -231,7 +232,8 @@ class SegmenterTrainer:
                                                         architecture=architecture)
                 input_vocab = self.train_dataloader.datafy.input_vocabulary
                 lang_vocab = self.train_dataloader.datafy.lang_vocabulary
-                self.dev_dataloader = datafy.CustomTextDataset(mode="dev",
+                self.dev_dataloader = datafy.CustomTextDataset(set_type="dev",
+                                                               mode=mode,
                                                                train_path=train_path,
                                                                test_path=test_path,
                                                                dev_path=dev_path,
@@ -250,7 +252,8 @@ class SegmenterTrainer:
             else:
                 input_vocab = utils.read_to_dict(f"{self.vocabulary_path}/input_vocab.json")
                 lang_vocab = utils.read_to_dict(f"{self.vocabulary_path}/lang_vocab.json")
-            self.test_dataloader = datafy.CustomTextDataset(mode="test",
+            self.test_dataloader = datafy.CustomTextDataset(set_type="test",
+                                                            mode=mode,
                                                        train_path=train_path,
                                                        test_path=test_path,
                                                         dev_path=dev_path,
@@ -281,6 +284,7 @@ class SegmenterTrainer:
                                                     num_workers=self.workers,
                                                     pin_memory=False,
                                                    drop_last=True)
+                print(self.dev_dataloader)
                 self.loaded_dev_data = DataLoader(self.dev_dataloader,
                                                     batch_size=batch_size,
                                                     shuffle=True,
@@ -613,7 +617,7 @@ class SegmenterTrainer:
             with torch.no_grad():
                 # On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
                 if "BERT" not in self.architecture:
-                    preds = self.model(examples, langs)
+                    emissions = self.model(examples, langs)
                 else:
                     emissions = self.model(input_ids=examples, attention_mask=masks).logits
                     C = emissions.size(-1)
@@ -865,7 +869,8 @@ class SegmenterTrainer:
             if lang == "[UNK]":
                 continue
             if "BERT" not in self.architecture:
-                current_dataloader = datafy.CustomTextDataset(mode="test",
+                current_dataloader = datafy.CustomTextDataset(set_type="test",
+                                                              mode="test",
                                                               train_path=self.train_path,
                                                               test_path=self.test_path,
                                                               dev_path=self.dev_path,

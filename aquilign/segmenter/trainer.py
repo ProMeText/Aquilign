@@ -732,10 +732,16 @@ class SegmenterTrainer:
     def eval_bert_model(self):
         self.evaluate_best_model(self.best_model_path)
 
-        # Si on teste un modèle directement tiré de huggingface
+        # Si on teste un modèle directement tiré de huggingface, on ne bouge pas les fichiers
         if len(self.best_model_path.split()) != 2:
-            os.rename(self.best_model_path, self.best_dir)
-            os.rename(trainer.final_results_file, f"{self.best_dir}/results.txt")
+            if self.mode == "train":
+                os.rename(self.best_model_path, self.best_dir)
+                self.best_model_path = self.best_dir
+                os.rename(self.final_results_file, f"{self.best_dir}/results.txt")
+            else:
+                os.rename(self.final_results_file, f"{self.logs_dir}/results.txt")
+
+
 
 
     def train(self, clip=0.1):
@@ -844,7 +850,7 @@ class SegmenterTrainer:
         precision_function = evaluate.load("aquilign/segmenter/metrics/precision.py")
         f1_function = evaluate.load("aquilign/segmenter/metrics/f1.py")
         print("Loaded.")
-        # We change the batch size for really small sub-corpuses (ex. english for now)
+
         if "BERT" not in self.architecture:
             self.model.load_state_dict(torch.load(self.best_model, weights_only=True, map_location=torch.device(self.device)))
         else:

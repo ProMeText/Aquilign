@@ -341,11 +341,9 @@ class SegmenterTrainer:
                 lang_vocab_len = len(self.lang_vocab)
             else:
                 if "BERT" not in architecture:
-                    lang_vocab = utils.read_to_dict(f"{self.vocabulary_path}/lang_vocab.json")
+                    self.lang_vocab = utils.read_to_dict(f"{self.vocabulary_path}/lang_vocab.json")
                 else:
-                    self.test_dataloader.datafy.create_lang_vocab(self.test_data)
-                    self.lang_vocab = self.test_dataloader.datafy.lang_vocabulary
-
+                    self.lang_vocab = list(set([example['lang'] for example in eval_lines]))
 
 
             if self.debug:
@@ -874,7 +872,13 @@ class SegmenterTrainer:
                                                                                    tokenizer=self.tokenizer,
                                                                                    delimiter=delimiter)
                 test_dataset = utils.SentenceBoundaryDataset(text_texts_and_labels)
-                loaded_test_data_per_lang[lang] = test_dataset
+                loaded_test_data_per_lang[lang] = DataLoader(test_dataset,
+                                                             batch_size=self.batch_size,
+                                                             shuffle=False,
+                                                             num_workers=self.workers,
+                                                             pin_memory=False,
+                                                             drop_last=True)
+                # loaded_test_data_per_lang[lang] = test_dataset
 
 
 
@@ -892,8 +896,8 @@ class SegmenterTrainer:
                     examples = data["input_ids"]
                     masks = data["attention_mask"]
                     targets = data["labels"]
-                    examples = examples.unsqueeze(0)
-                    masks = masks.unsqueeze(0)
+                    # examples = examples.unsqueeze(0)
+                    # masks = masks.unsqueeze(0)
                     # examples, masks, targets = data
                      # masks = masks.to(self.device)
                 else:

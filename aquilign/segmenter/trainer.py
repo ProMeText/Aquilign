@@ -349,16 +349,8 @@ class SegmenterTrainer:
                                                                                  delimiter=delimiter)
                 self.dev_dataset = utils.SentenceBoundaryDataset(dev_texts_and_labels)
 
-
-            if mode == "train":
-                self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary
-                lang_vocab_len = len(self.lang_vocab)
-            else:
-                if "BERT" not in architecture:
-                    self.lang_vocab = utils.read_to_dict(f"{self.vocabulary_path}/lang_vocab.json")
-                else:
-                    self.lang_vocab = list(set([example['lang'] for example in eval_lines]))
-
+            self.lang_vocab = list(set([example['lang'] for example in eval_lines]))
+            lang_vocab_len = len(self.lang_vocab)
 
             if self.debug:
                 eval_lines = eval_lines[:100]

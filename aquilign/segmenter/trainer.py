@@ -733,7 +733,7 @@ class SegmenterTrainer:
         self.evaluate_best_model(self.best_model_path)
 
         # Si on teste un modèle directement tiré de huggingface
-        if len(self.best_model_path.split()) == 2:
+        if len(self.best_model_path.split()) != 2:
             os.rename(self.best_model_path, self.best_dir)
             os.rename(trainer.final_results_file, f"{self.best_dir}/results.txt")
 

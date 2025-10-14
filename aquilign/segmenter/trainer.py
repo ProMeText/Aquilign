@@ -19,9 +19,9 @@ parser.add_argument("-p", "--parameters", default=None,
                     help="Path to parameters file")
 parser.add_argument("-d", "--debug", default=False,
                     help="Debug mode")
-parser.add_argument("-n", "--out_name", default="",
+parser.add_argument("-n", "--out_name", default=None,
                     help="Out dir name")
-parser.add_argument("-o", "--out_dir", default="",
+parser.add_argument("-o", "--out_dir", default=None,
                     help="Output dir")
 args = parser.parse_args()
 architecture = args.architecture
@@ -32,6 +32,8 @@ model = args.model
 vocab = args.vocab
 debug = args.debug
 out_dir_suffix = args.out_name
+if mode == "test":
+    assert output_dir is not None, "An output dir should be indicated for evaluation logging."
 with open(parameters, "r") as input_json:
     config_file = json.load(input_json)
 

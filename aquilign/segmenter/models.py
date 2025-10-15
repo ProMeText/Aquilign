@@ -415,11 +415,11 @@ class LSTM_Encoder(nn.Module):
         if use_character_embeddings:
             # if self.include_lang_metadata is False:
             #    lang_emb_dim = None
-            lang_emb_dim = None
+            current_lang_emb_dim = None
             self.character_embeddings = BertCharacterEmbeddings(embeddings_output_dim=768,
                                                                 dropout_prob=char_dropout_prob,
                                                                 char_embedding_dim=char_embedding_dim,
-                                                                lang_emb_dim=lang_emb_dim)
+                                                                lang_emb_dim=current_lang_emb_dim)
 
         if load_pretrained_embeddings or use_bert_tokenizer:
             # Hard-codé, il vaudrait mieux récupérer à partir des données des embeddings
@@ -518,7 +518,8 @@ class LSTM_Encoder(nn.Module):
                 input_ids=src, position_ids=None,
                 token_type_ids=None, langs=lang
             )
-        if self.include_lang_metadata and self.use_character_embeddings is False:
+        # if self.include_lang_metadata and self.use_character_embeddings is False:
+        if self.include_lang_metadata:
             # Shape: [batch_size, lang_metadata_dimensions]
             lang_embedding = self.lang_embedding(lang)
             # On augmente de dimension pour pouvoir concaténer chaque token et la langue:

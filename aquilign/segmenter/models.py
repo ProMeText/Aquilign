@@ -516,8 +516,7 @@ class LSTM_Encoder(nn.Module):
                 input_ids=src, position_ids=None,
                 token_type_ids=None, langs=lang
             )
-        if self.include_lang_metadata:
-
+        if self.include_lang_metadata and self.use_character_embeddings is False:
             # Shape: [batch_size, lang_metadata_dimensions]
             lang_embedding = self.lang_embedding(lang)
             # On augmente de dimension pour pouvoir concaténer chaque token et la langue:

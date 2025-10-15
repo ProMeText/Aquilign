@@ -413,8 +413,9 @@ class LSTM_Encoder(nn.Module):
         # On peut utiliser des embeddings pré-entraînés pour vérifier si ça améliore les résultats
 
         if use_character_embeddings:
-            if include_lang_metadata is False:
-                lang_emb_dim = None
+            # if self.include_lang_metadata is False:
+            #    lang_emb_dim = None
+            lang_emb_dim = None
             self.character_embeddings = BertCharacterEmbeddings(embeddings_output_dim=768,
                                                                 dropout_prob=char_dropout_prob,
                                                                 char_embedding_dim=char_embedding_dim,
@@ -440,7 +441,8 @@ class LSTM_Encoder(nn.Module):
         self.linear_layers = linear_layers
 
         # Possibilité de produire des embeddings de langue que l'on va concaténer aux plongements de mots
-        if self.include_lang_metadata and use_character_embeddings is False:
+        # if self.include_lang_metadata is True and use_character_embeddings is False:
+        if self.include_lang_metadata is True:
             self.lang_embedding = nn.Embedding(self.num_langs, lang_emb_dim)  # * self.scale
             # Si on concatène les embeddings, la dimension de sortie après concaténation est la somme de
             # la dimension des deux types de plongements

@@ -15,7 +15,7 @@
     "linear_layers_hidden_size": 128,
     "balance_class_weights": true,
     "custom_class_weights": [1.0, 2.0, 0.0],
-    "include_lang_metadata": false,
+    "include_lang_metadata": true,
     "lang_emb_dim": 16,
     "epochs": 1,
     "use_pretrained_embeddings": false,

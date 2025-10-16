@@ -305,7 +305,7 @@ def test_data(data: dict, label: str, schema: dict) -> None:
         exit(0)
 
     delimiter = data['metadata']["delimiter"]
-    regexp = re.compile(rf"{delimiter}([^A-Za-zẽ\d+çÇÉÁÍòãÓȝïÈèÚéçáíƷàÞóúýþ&\(\)\[\].·,,;¿?¦“…/’‘>«»'¡\-—–―\"])\s?")
+    regexp = re.compile(rf"{delimiter}([^A-Za-zẽ\d+çÇÉÁÍòãÓȝïÈèÚéçáíƷà¶Þóúýþ&\(\)\[\].·,,;¿?¦“…/’‘>«»'¡\-—–―\"])\s?")
     valid_list = []
     for idx, example in enumerate(data["examples"]):
         example_text = example["example"]
@@ -319,8 +319,6 @@ def test_data(data: dict, label: str, schema: dict) -> None:
 
     if any([item is False for item in valid_list]):
         print(f"Test on {label} failed. Exiting")
-    else:
-        print(f"Test on {label} passed.")
 
 # dataset class which fits the requirements
 class SentenceBoundaryDataset(torch.utils.data.Dataset):

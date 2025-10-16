@@ -3,6 +3,8 @@ import random
 import sys
 import json
 import argparse
+from decimal import Decimal
+
 import evaluate
 import numpy as np
 
@@ -23,11 +25,14 @@ parser.add_argument("-n", "--out_name", default=None,
                     help="Out dir name")
 parser.add_argument("-o", "--out_dir", default=None,
                     help="Output dir")
+parser.add_argument("-t", "--test_file", default=None,
+                    help="File to test the model against")
 args = parser.parse_args()
 architecture = args.architecture
 parameters = args.parameters
 mode = args.mode
 output_dir = args.out_dir
+test_file = args.test_file
 model = args.model
 vocab = args.vocab
 debug = args.debug
@@ -75,7 +80,8 @@ class SegmenterTrainer:
                   mode = "train",
                   vocab=None,
                   model=None,
-                  output_dir=None):
+                  output_dir=None,
+                  test_file=None):
         """
         Main Class trainer
         """
@@ -89,7 +95,10 @@ class SegmenterTrainer:
         device = config_file["global"]["device"]
         workers = config_file["global"]["workers"]
         train_path = config_file["global"]["train"]
-        test_path = config_file["global"]["test"]
+        if test_file is not None:
+            test_path = test_file
+        else:
+            test_path = config_file["global"]["test"]
         dev_path = config_file["global"]["dev"]
         if mode == "train":
             output_dir = config_file["global"]["out_dir"]
@@ -171,6 +180,8 @@ class SegmenterTrainer:
                 self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
             elif architecture == "DistilBERT":
                 self.tokenizer = transformers.DistilBertTokenizer.from_pretrained(base_model_name)
+            elif architecture == "SaT":
+                self.tokenizer = transformers.RobertaTokenizer.from_pretrained(base_model_name)
         else:
             create_vocab = True
             self.tokenizer = None
@@ -271,7 +282,7 @@ class SegmenterTrainer:
 
 
             self.loaded_test_data = DataLoader(self.test_dataloader,
-                                               batch_size=batch_size,
+                                               batch_size=self.eval_batch_size,
                                                shuffle=False,
                                                num_workers=self.workers,
                                                pin_memory=False,
@@ -300,6 +311,11 @@ class SegmenterTrainer:
             if include_lang_metadata and mode == "train":
                 self.lang_vocab = self.train_dataloader.datafy.lang_vocabulary
                 lang_vocab_len = len(self.lang_vocab)
+            elif mode == "test":
+                eval_lines, _ = utils.json_corpus_to_lines(self.test_path, keep_punct=True, return_delimiter=True)
+                langs_in_corpus = list(set([example['lang'] for example in eval_lines]))
+                self.lang_vocab = {key:value for key, value in lang_vocab.items() if key in langs_in_corpus}
+                lang_vocab_len = len(lang_vocab)
             else:
                 self.lang_vocab = lang_vocab
                 lang_vocab_len = 0
@@ -309,8 +325,8 @@ class SegmenterTrainer:
             if mode == "train":
                 self.corpus_size = self.train_dataloader.__len__()
                 self.steps = self.corpus_size // batch_size
-
-            self.test_steps = self.test_dataloader.__len__() // batch_size
+            print(self.test_dataloader.__len__())
+            self.test_steps = self.test_dataloader.__len__() // self.eval_batch_size
             # Ici on choisit quelle architecture on veut tester. À faire: CNN et RNN
             if self.use_pretrained_embeddings:
                 weights = torch.load("aquilign/segmenter/embeddings.npy")
@@ -357,7 +373,6 @@ class SegmenterTrainer:
 
             if self.debug:
                 eval_lines = eval_lines[:100]
-
 
 
             # Dev corpus
@@ -515,26 +530,28 @@ class SegmenterTrainer:
                                              keep_bert_dimensions=keep_bert_dimensions,
                                              linear_dropout=linear_dropout)
         else:
-            if architecture in ["BERT", "TinyBERT"]:
-                from transformers import AutoModelForTokenClassification
-                self.model = AutoModelForTokenClassification.from_pretrained(base_model_name, num_labels=3)
-            elif architecture == "DistilBERT":
-                from transformers import DistilBertForTokenClassification
-                self.model = DistilBertForTokenClassification.from_pretrained(base_model_name, num_labels=3)
-            elif architecture == "SaT":
-                import aquilign.segmenter.sat_models as SaT
-                config = SaT.SubwordXLMConfig.from_pretrained(base_model_name)
-                config.num_labels = 3
-                config.num_hidden_layers = 12
-                config.lookahead = 48
-                config.lookahead_split_layers = 6
-                self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
-                self.model = SaT.SubwordXLMForTokenClassification.from_pretrained(base_model_name, config=config)
-                print("SaT model loaded.")
+            if mode != "test":
+                if architecture in ["BERT", "TinyBERT"]:
+                    from transformers import AutoModelForTokenClassification, BertForTokenClassification
+                    print(base_model_name)
+                    self.model = BertForTokenClassification.from_pretrained(base_model_name, num_labels=3)
+                elif architecture == "DistilBERT":
+                    from transformers import DistilBertForTokenClassification
+                    self.model = DistilBertForTokenClassification.from_pretrained(base_model_name, num_labels=3)
+                elif architecture == "SaT":
+                    import aquilign.segmenter.sat_models as SaT
+                    config = SaT.SubwordXLMConfig.from_pretrained(base_model_name)
+                    config.num_labels = 3
+                    config.num_hidden_layers = 12
+                    config.lookahead = 48
+                    config.lookahead_split_layers = 6
+                    self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
+                    self.model = SaT.SubwordXLMForTokenClassification.from_pretrained(base_model_name, config=config)
+                    print("SaT model loaded.")
+                self.model.to(self.device)
+                self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
+                self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
         self.architecture = architecture
-        self.model.to(self.device)
-        self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
-        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
         self.use_pretrained_embeddings = use_pretrained_embeddings
 
         # Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
@@ -599,8 +616,13 @@ class SegmenterTrainer:
         print("Loaded.")
         if "BERT" in self.architecture:
             self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
+            # print(self.model)
         else:
-            self.model.load_state_dict(torch.load(self.best_model, weights_only=True))
+            self.model.load_state_dict(torch.load(self.best_model, weights_only=True, map_location=torch.device(eval_device)))
+        print(best_model_path)
+        print(self.best_model)
+        num_params = sum(p.numel() for p in self.model.parameters())
+        print('%.2E' % Decimal(num_params))
         print("Model loaded.")
         self.model.to(eval_device)
         self.model.eval()
@@ -717,7 +739,6 @@ class SegmenterTrainer:
         if save_every > 1:
             # On s'assure de prendre le step le plus proche
             all_checkpoints = glob.glob(f"{self.output_dir}/models/checkpoint-*")
-            print(all_checkpoints)
             as_ints = [
                 int(checkpoint.replace(f"{self.output_dir}/models/checkpoint-",
                                        ""))
@@ -862,9 +883,9 @@ class SegmenterTrainer:
             elif self.architecture == "DistilBERT":
                 # Check if automodel resolves to distilbert too
                 self.model = DistilBertForTokenClassification.from_pretrained(self.best_model_path)
-        print(self.lang_vocab)
         self.model.to(device=self.device)
         for lang in self.lang_vocab:
+            print(lang)
             if lang == "[UNK]":
                 continue
             if "BERT" not in self.architecture:
@@ -936,6 +957,9 @@ class SegmenterTrainer:
                     examples, langs, targets = data
                     langs = langs.to(self.device)
                     examples = examples.to(self.device)
+
+                    eval_lines, _ = utils.json_corpus_to_lines(self.test_path, keep_punct=True, return_delimiter=True)
+                    self.lang_vocab = list(set([example['lang'] for example in eval_lines]))
                     targets = targets.to(self.device)
                 with torch.no_grad():
                     # On prédit. La langue est toujours envoyée même si elle n'est pas traitée par le modèle, pour des raisons de simplicité
@@ -1080,7 +1104,8 @@ if __name__ == '__main__':
                                mode=mode,
                                model=model,
                                vocab=vocab,
-                               output_dir=output_dir)
+                               output_dir=output_dir,
+                               test_file=test_file)
     if mode != "test":
         if "BERT" in architecture or "SaT" in architecture:
             trainer.Bert_Train()
@@ -1097,7 +1122,9 @@ if __name__ == '__main__':
     else:
         if "BERT" in architecture:
             trainer.best_model_path = model
+            trainer.eval_bert_model()
         else:
             trainer.best_model = model
+            trainer.evaluate_best_model()
         trainer.evaluate_best_model_per_lang()
-        trainer.eval_bert_model()
+

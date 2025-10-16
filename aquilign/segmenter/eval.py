@@ -82,7 +82,7 @@ def compute_metrics(predictions,
                     labels=None,
                     examples=None,
                     id_to_word=None,
-                    last_epoch=False,
+                    last_epoch=True,
                     tokenizer=None,
                     bert_training=True,
                     mode="BertTokenizer",
@@ -102,6 +102,7 @@ def compute_metrics(predictions,
     # the predictions are of shape [num_example, max_length, out_classes]
     # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
     # This way the out shape is [num_example, max_length]
+    last_epoch = True
     print("Producing results.")
     if accuracy is None:
         accuracy = evaluate.load("accuracy")
@@ -126,6 +127,7 @@ def compute_metrics(predictions,
         examples_number = 10
         random_number = random.randint(0, len(examples) - examples_number)
         example_range = range(random_number, random_number + examples_number)
+        example_range = range(0, 5)
         print(f"Showing example {random_number} to {random_number + examples_number}:")
         for idx in example_range:
             example = examples[idx].tolist()[1:]
@@ -141,7 +143,8 @@ def compute_metrics(predictions,
 
                 probs_no_padding = predictions_as_probs[idx].tolist()[1:position_first_left_padding + 1]
                 corresp_prediction = predictions[idx].tolist()[1:position_first_left_padding + 1]
-                assert len(corresp_prediction) != 0
+                if len(corresp_prediction) == 0:
+                    continue
                 corresp_prediction_as_classes = [item for item in corresp_prediction]
                 corresp_label_as_classes = [item for item in label_no_padding]
                 corresp_tokens_as_str = [id_to_word[item] for item in example_no_padding]

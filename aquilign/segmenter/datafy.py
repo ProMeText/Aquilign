@@ -74,8 +74,6 @@ class CustomTextDataset(Dataset):
             print("Creating train corpus")
             self.datafy.create_train_corpus()
             print("Train corpus created.")
-            print(self.datafy.train_padded_examples.shape)
-            print(self.datafy.train_padded_targets.shape)
             assert self.datafy.train_padded_examples.shape[1] == self.datafy.train_padded_targets.shape[1] , (f"Something went wrong with corpus creation.\n"
              f"Padded examples shape: {self.datafy.train_padded_examples.shape}\n"
              f"Padded targets shape: {self.datafy.train_padded_targets.shape}.")
@@ -85,7 +83,6 @@ class CustomTextDataset(Dataset):
         else:
             print("Creating dev corpus")
             self.datafy.create_dev_corpus()
-            print(self.datafy.dev_padded_examples)
 
     def __len__(self):
         if self.set_type == "train":
@@ -211,7 +208,6 @@ class Datafier:
                 if create_vocab:
                     print("Creating vocabulary.")
                     self.create_vocab(self.remove_punctuation(full_corpus) + full_corpus, use_char_embeddings)
-                    print(self.input_vocabulary)
                     self.create_lang_vocab(full_corpus)
                 else:
                     self.lang_vocabulary = None
@@ -463,7 +459,6 @@ class Datafier:
             if not "BERT" in self.architecture and self.lang_vocabulary is not None:
                 langs.append(self.lang_vocabulary[lang])
 
-
         self.max_length_examples = max([len(example) for example in examples])
         max_length_targets = max([len(target) for target in targets])
         if max_length_targets > 500:
@@ -472,7 +467,6 @@ class Datafier:
             print(max_length_targets)
             exit(0)
         if "BERT" not in self.architecture:
-            print(self.use_char_embeddings)
             if self.use_char_embeddings is True:
                 pad_value = "[PAD]"
                 padded_examples = []
@@ -500,7 +494,7 @@ class Datafier:
                         exit(0)
                     example = ["[PAD]"] + example
                     try:
-                        example = [self.input_vocabulary[token] for token in example]
+                        example = [self.input_vocabulary[token] if token in self.input_vocabulary else self.input_vocabulary["[UNK]"] for token in example]
                     except KeyError:
                         print(example)
                         print(len(example))

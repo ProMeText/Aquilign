@@ -1035,6 +1035,7 @@ class SegmenterTrainer:
         all_targets = []
         all_examples = []
         all_losses = []
+        self.model.to(self.device)
         self.model.eval()
         with torch.no_grad():
             for data in tqdm.tqdm(self.loaded_dev_data, unit_scale=self.batch_size):

@@ -271,7 +271,7 @@ if __name__ == '__main__':
 	model_dir = sys.argv[1]
 	with open("data/DeRegiminePrincipum/cat_3_3_11.txt", "r") as input_txt:
 		text_as_string = input_txt.read()
-	lang = "ca"
+	lang = sys.argv[2]
 	tagger = Tagger(model_dir=model_dir)
 	segmented_text = tagger.tag(text_as_string, lang)
 

@@ -1,8 +1,8 @@
 {
   "global": {
-    "train": "../multilingual-segmentation-dataset/data/segmented/split/multilingual/train.json",
-    "test": "../multilingual-segmentation-dataset/data/segmented/split/multilingual/test.json",
-    "dev": "../multilingual-segmentation-dataset/data/segmented/split/multilingual/dev.json",
+    "train": "../multilingual-segmentation-dataset/data/training_data/segmented/split/multilingual/train.json",
+    "test": "../multilingual-segmentation-dataset/data/training_data/segmented/split/multilingual/test.json",
+    "dev": "../multilingual-segmentation-dataset/data/training_data/segmented/split/multilingual/dev.json",
     "out_dir": "/home/mgl/Documents/test_working",
     "import": "",
     "device": "cpu",

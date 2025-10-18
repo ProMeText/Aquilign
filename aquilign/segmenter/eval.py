@@ -76,7 +76,164 @@ def compute_ambiguity_metrics(tokens,
                   f"\n\n\n")
 
 
+def compute_word_metrics(predictions,
+                    labels=None,
+                    examples=None,
+                    id_to_word=None,
+                    last_epoch=True,
+                    tokenizer=None,
+                    bert_training=True,
+                    mode="BertTokenizer",
+                    log_file=None,
+                      accuracy=None,
+                      recall=None,
+                      precision=None,
+                      f1=None
+                    ):
+    """
+    This function evaluates the model against the targets.
+    :TODO: ignore padding classes?
+    :param predictions:
+    :param labels:
+    :return:
+    """
+    # the predictions are of shape [num_example, max_length, out_classes]
+    # We reduce the dimensionality of the vector by selecting the higher prob class, on dimension 2
+    # This way the out shape is [num_example, max_length]
+    last_epoch = False
+    print("Producing results.")
+    if accuracy is None:
+        accuracy = evaluate.load("accuracy")
+        f1 = evaluate.load("f1")
+        recall = evaluate.load("recall")
+        precision = evaluate.load("precision")
+    predictions_as_probs = copy.deepcopy(predictions)
+    if bert_training and labels is None:
+        predictions, labels = predictions
+    elif bert_training and labels is not None:
+        predictions = predictions.cpu()
+        labels = labels.cpu()
+    else:
+        predictions = predictions.cpu()
+        labels = labels.cpu()
+    predictions = np.argmax(predictions, axis=2)
 
+    # On teste un exemple pour voir si tout est OK.
+    if last_epoch:
+        if tokenizer:
+            id_to_word = {ident: value for value, ident in tokenizer.get_vocab().items()}
+        examples_number = 10
+        random_number = random.randint(0, len(examples) - examples_number)
+        example_range = range(random_number, random_number + examples_number)
+        example_range = range(0, 5)
+        print(f"Showing example {random_number} to {random_number + examples_number}:")
+        for idx in example_range:
+            example = examples[idx].tolist()[1:]
+            label = labels[idx].tolist()[1:]
+            if mode != "CharTokenizer":
+                # example_as_string = " ".join([id_to_word[ident] for ident in example]).replace(" ##", "")
+                try:
+                    position_first_left_padding = next(index for index, ident in enumerate(example) if ident == 0)
+                except StopIteration:
+                    position_first_left_padding = -1
+                example_no_padding = example[:position_first_left_padding]
+                label_no_padding = label[:position_first_left_padding]
+
+                probs_no_padding = predictions_as_probs[idx].tolist()[1:position_first_left_padding + 1]
+                corresp_prediction = predictions[idx].tolist()[1:position_first_left_padding + 1]
+                if len(corresp_prediction) == 0:
+                    continue
+                corresp_prediction_as_classes = [item for item in corresp_prediction]
+                corresp_label_as_classes = [item for item in label_no_padding]
+                corresp_tokens_as_str = [id_to_word[item] for item in example_no_padding]
+                correct = []
+                for pred, label in zip(corresp_prediction_as_classes, corresp_label_as_classes):
+                    if label == 1:
+                        if pred == label:
+                            correct.append(True)
+                        else:
+                            correct.append(False)
+                    else:
+                        if pred == 1:
+                            correct.append(False)
+                        else:
+                            correct.append("")
+
+                assert len(corresp_prediction) == len(example_no_padding) == len(corresp_tokens_as_str) == len(correct), (
+                    f"Something went wrong during testing."
+                 f"Predictions length: {len(corresp_prediction)}. "
+                 f"Examples no padding: {len(example_no_padding)}. "
+                 f"Corresp tokens as string: {len(corresp_tokens_as_str)}. "
+                 f"Correct data: {len(correct)}. "
+                    f"This problem might happen with a randomly initiated model. "
+                )
+                for ex, token, prediction, target, correct, prob in list(
+                        zip(example_no_padding,
+                            corresp_tokens_as_str,
+                            corresp_prediction_as_classes,
+                            corresp_label_as_classes,
+                            correct,
+                            probs_no_padding)
+                ):
+                    print(f"{ex}\t{token}\t{prediction}\t{target}\t{correct}\t{prob}")
+                print("---")
+            else:
+                decoded_example = ["".join([id_to_word[char] for char in token if char not in [0, 1, 2, 3]]) for token in example]
+                decoded_example = [item for item in decoded_example if item != ""]
+                probs_no_padding = predictions_as_probs[idx].tolist()[1:]
+                corresp_prediction = predictions[idx].tolist()[1:]
+                corresp_prediction_as_classes = [item for item in corresp_prediction]
+                corresp_label_as_classes = [item for item in label]
+                correct = []
+                for pred, label in zip(corresp_prediction_as_classes, corresp_label_as_classes):
+                    if label == 1:
+                        if pred == label:
+                            correct.append("True")
+                        else:
+                            correct.append("False")
+                    else:
+                        if pred == 1:
+                            correct.append("False")
+                        else:
+                            correct.append("")
+
+
+                res = list(
+                        zip(decoded_example,
+                            corresp_prediction_as_classes,
+                            corresp_label_as_classes,
+                            correct,
+                            probs_no_padding)
+                )
+                formatted = utils.format_results(results=res, header=["Token", "Prediction", "Target", "Correct", "Probability"],
+                                     print_to_term=False)
+                utils.append_to_file(formatted, log_file)
+
+
+
+
+    # We flatten the 2 vectors to get a 1d vector of shape [num_examples*max_length]
+    predictions = np.array(predictions, dtype='int32').flatten()
+    labels = np.array(labels, dtype='int32').flatten()
+
+    # On supprime le padding des données
+    mask = labels != 2
+    predictions = predictions[mask]
+    labels = labels[mask]
+
+    accuracy = accuracy.compute(predictions=predictions, references=labels)
+    recall = recall.compute(predictions=predictions, references=labels, average=None)
+    recall_l = []
+    [recall_l.extend(v) for k, v in recall.items()]
+    precision = precision.compute(predictions=predictions, references=labels, average=None)
+    precision_l = []
+    [precision_l.extend(v) for k, v in precision.items()]
+    f1 = f1.compute(predictions=predictions, references=labels, average=None)
+    f1_l = []
+    [f1_l.extend(v) for k, v in f1.items()]
+
+    results = {"accuracy": accuracy, "recall": recall_l, "precision": precision_l, "f1": f1_l}
+    return results
 
 def compute_metrics(predictions,
                     labels=None,

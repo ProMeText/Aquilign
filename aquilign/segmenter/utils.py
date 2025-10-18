@@ -529,6 +529,7 @@ def tokenize_words(sentence:str, delimiter) -> list:
         print(sentence)
         print("---")
         sentence = sentence.replace(f"{delimiter} ", delimiter)
+        sentence = sentence.replace(delimiter, f" {delimiter}")
     words_delimiters = re.compile(r"[\.,;—:\?\!’'”«»“/\-]|[^\.,;—”:\?\!’'«»“/\-\s]+")
     sentenceAsList = re.findall(words_delimiters, sentence)
     if delimiter in sentenceAsList:

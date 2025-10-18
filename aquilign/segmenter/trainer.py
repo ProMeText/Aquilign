@@ -548,9 +548,9 @@ class SegmenterTrainer:
                     self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
                     self.model = SaT.SubwordXLMForTokenClassification.from_pretrained(base_model_name, config=config)
                     print("SaT model loaded.")
-        self.model.to(self.device)
-        self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
-        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
+                self.model.to(self.device)
+                self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
+                self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
         self.architecture = architecture
         self.use_pretrained_embeddings = use_pretrained_embeddings
 
@@ -700,6 +700,119 @@ class SegmenterTrainer:
             ),
             self.final_results_file)
 
+    def evaluate_best_model_subwords(self, best_model_path=None, max_length=None):
+        """
+                Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
+                """
+        print("Evaluating best model on test data")
+        all_preds = []
+        all_targets = []
+        all_examples = []
+        eval_device = self.device
+        print("Loading metrics")
+        accuracy_metric = evaluate.load("aquilign/segmenter/metrics/accuracy.py")
+        recall_metric = evaluate.load("aquilign/segmenter/metrics/recall.py")
+        precision_metric = evaluate.load("aquilign/segmenter/metrics/precision.py")
+        f1_metric = evaluate.load("aquilign/segmenter/metrics/f1.py")
+        print("Loaded.")
+        self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
+        print(best_model_path)
+        print(self.best_model)
+        num_params = sum(p.numel() for p in self.model.parameters())
+        print('%.2E' % Decimal(num_params))
+        print("Model loaded.")
+        self.model.to(eval_device)
+        self.model.eval()
+        print("Starting evaluation")
+        for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.eval_batch_size):
+            examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
+            masks = masks.to(eval_device)
+            examples = examples.to(eval_device)
+            with torch.no_grad():
+                emissions = self.model(input_ids=examples, attention_mask=masks).logits
+                    # C = emissions.size(-1)
+                    # device = "cpu"
+                    # emissions = emissions.to(device)
+                    # masks = masks.to(device)
+                    # transitions = torch.zeros(C, C, device=device)
+                    # start_transitions = torch.zeros(C, device=device)
+                    # end_transitions = torch.zeros(C, device=device)
+                    # mask = data["attention_mask"].bool()
+                    # L_O, L_B, L_I = 2, 1, 0
+                    # if max_length is None:
+                    #     preds = emissions
+                    # else:
+                    #     preds = utils.constrained_viterbi(emissions,
+                    #                                       transitions,
+                    #                                       start_transitions,
+                    #                                       end_transitions,
+                    #                                       mask,
+                    #                                       device,
+                    #                                       ideal_segments_length=max_length,
+                    #                                       L_O=L_O,
+                    #                                       L_B=L_B,
+                    #                                       L_I=L_I)
+                preds = emissions
+                all_preds.append(preds)
+                all_targets.append(targets)
+                examples = examples.to(self.device)
+                all_examples.append(examples)
+                print(examples.shape)
+                print(preds.shape)
+                print(targets.shape)
+                print("Targets:")
+                targ = targets.tolist()[0]
+                print(targ)
+                print("---")
+                as_text = [self.reverse_input_vocab[token] for token in examples.tolist()[0] if token not in [101, 102, 0]]
+                corresp_labels = targets.tolist()[0][1:len(as_text) + 1]
+                print(list(zip(as_text, corresp_labels)))
+                bert_labels = np.argmax(preds, axis=2).tolist()[0]
+                assert targets.tolist()[0][len(as_text) + 1] == 2, "Something went wrong with padding in targets."
+                text = " ".join(as_text).replace(" ##", "")
+                splitted = [item for item in text.split() if item != ""]
+                human_to_bert, bert_to_human = utils.get_correspondence(splitted,
+                                                                        self.tokenizer)
+                new_labels = utils.unalign_labels(human_to_bert=human_to_bert,
+                                                  predicted_labels=bert_labels,
+                                                  splitted_text=splitted)
+                print(new_labels)
+                exit(0)
+        print(all_examples)
+
+        exit(0)
+        # On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
+        cat_preds = torch.cat(all_preds, dim=0)
+        cat_targets = torch.cat(all_targets, dim=0)
+        cat_examples = torch.cat(all_examples, dim=0)
+        results = eval.compute_metrics(predictions=cat_preds,
+                                       labels=cat_targets,
+                                       examples=cat_examples,
+                                       id_to_word=self.reverse_input_vocab,
+                                       last_epoch=True,
+                                       bert_training=False,
+                                       tokenizer=self.tokenizer,
+                                       log_file=self.final_results_file,
+                                       mode=self.eval_mode,
+                                       accuracy=accuracy_metric,
+                                       precision=precision_metric,
+                                       recall=recall_metric,
+                                       f1=f1_metric)
+
+        recall = ["Recall", results["recall"][0], results["recall"][1]]
+        precision = ["Precision", results["precision"][0], results["precision"][1]]
+        f1 = ["F1", results["f1"][0], results["f1"][1]]
+        header = ["", "Segment Content", "Segment Boundary"]
+        print(f"Results for all langs:")
+        utils.format_results(results=[precision, recall, f1], header=header)
+        utils.append_to_file(
+            "Best model on test data\n" +
+            utils.format_results(
+                results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"],
+                print_to_term=False
+            ),
+            self.final_results_file)
+
     def Bert_Train(self):
 
         training_args = TrainingArguments(
@@ -754,7 +867,7 @@ class SegmenterTrainer:
         print(f"Full metrics: {best_step_metrics}")
 
     def eval_bert_model(self):
-        self.evaluate_best_model(self.best_model_path)
+        self.evaluate_best_model_subwords(self.best_model_path)
 
         # Si on teste un modèle directement tiré de huggingface, on ne bouge pas les fichiers
         if len(self.best_model_path.split()) != 2:
@@ -1121,6 +1234,8 @@ if __name__ == '__main__':
             trainer.train()
 
     else:
+        trainer.batch_size = 2
+        trainer.eval_batch_size = 2
         if "BERT" in architecture:
             trainer.best_model_path = model
             trainer.eval_bert_model()

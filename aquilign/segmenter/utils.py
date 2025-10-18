@@ -366,6 +366,8 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     sentencesAsLabels = []
     for example in corpus:
         text = example["example"]
+        text = text.replace(delimiter, f" {delimiter}")
+        text = re.sub(r"\s+", " ", text)
         sentenceAsList = tokenize_words(text, delimiter)
         masks = []
         for token in sentenceAsList:
@@ -529,7 +531,6 @@ def tokenize_words(sentence:str, delimiter) -> list:
         print(sentence)
         print("---")
         sentence = sentence.replace(f"{delimiter} ", delimiter)
-        sentence = sentence.replace(delimiter, f" {delimiter}")
     words_delimiters = re.compile(r"[\.,;—:\?\!’'”«»“/\-]|[^\.,;—”:\?\!’'«»“/\-\s]+")
     sentenceAsList = re.findall(words_delimiters, sentence)
     if delimiter in sentenceAsList:

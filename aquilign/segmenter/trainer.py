@@ -771,6 +771,9 @@ class SegmenterTrainer:
                 assert targets.tolist()[0][len(as_text) + 1] == 2, "Something went wrong with padding in targets."
                 text = " ".join(as_text).replace(" ##", "")
                 splitted = [item for item in text.split() if item != ""]
+                print(splitted)
+                print("STOPPING")
+                exit(0)
                 human_to_bert, bert_to_human = utils.get_correspondence(splitted,
                                                                         self.tokenizer)
                 new_labels = utils.unalign_labels(human_to_bert=human_to_bert,

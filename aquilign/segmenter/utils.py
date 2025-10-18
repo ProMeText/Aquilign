@@ -30,7 +30,7 @@ def get_best_step(results):
 
     all_metrics = {}
     for key, value in result_dict.items():
-        metric = (value['eval_precision'][1] + value['eval_recall'][1]*1.5)/3
+        metric = (value['eval_precision'][1] + value['eval_recall'][1]*1.5)/2.5
         all_metrics[key] = metric
 
     best_step = next(step for step, metric in all_metrics.items() if metric == max(all_metrics.values()))

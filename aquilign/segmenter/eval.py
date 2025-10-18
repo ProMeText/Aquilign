@@ -24,7 +24,8 @@ def compute_ambiguity_metrics(tokens,
                               accuracy=None,
                               recall=None,
                               precision=None,
-                              f1=None):
+                              f1=None,
+                              tokens_as_words=False):
     """
     This function produces a confusion matrix for the ambiguous tokens.
     """
@@ -32,7 +33,8 @@ def compute_ambiguity_metrics(tokens,
     predictions = predictions.cpu()
     labels = labels.cpu()
     tokens = tokens.cpu()
-    predictions = np.argmax(predictions, axis=2)
+    if tokens_as_words is False:
+        predictions = np.argmax(predictions, axis=2)
     predictions = np.array(predictions, dtype='int32').flatten()
     tokens = np.array(tokens, dtype='int32').flatten()
     labels = np.array(labels, dtype='int32').flatten()
@@ -247,7 +249,8 @@ def compute_metrics(predictions,
                       accuracy=None,
                       recall=None,
                       precision=None,
-                      f1=None
+                      f1=None,
+                    tokens_as_words=False
                     ):
     """
     This function evaluates the model against the targets.
@@ -275,7 +278,8 @@ def compute_metrics(predictions,
     else:
         predictions = predictions.cpu()
         labels = labels.cpu()
-    predictions = np.argmax(predictions, axis=2)
+    if tokens_as_words is False:
+        predictions = np.argmax(predictions, axis=2)
 
     # On teste un exemple pour voir si tout est OK.
     if last_epoch:
@@ -393,3 +397,5 @@ def compute_metrics(predictions,
 
     results = {"accuracy": accuracy, "recall": recall_l, "precision": precision_l, "f1": f1_l}
     return results
+
+

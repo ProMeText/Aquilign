@@ -30,7 +30,7 @@ def get_best_step(results):
 
     all_metrics = {}
     for key, value in result_dict.items():
-        metric = (value['eval_precision'][1] + value['eval_recall'][1]*2)/3
+        metric = (value['eval_precision'][1] + value['eval_recall'][1]*1.5)/3
         all_metrics[key] = metric
 
     best_step = next(step for step, metric in all_metrics.items() if metric == max(all_metrics.values()))
@@ -367,7 +367,7 @@ def convertToSubWordsSentencesAndLabels(corpus, tokenizer, delimiter="£",  verb
     for example in corpus:
         text = example["example"]
         text = text.replace(delimiter, f" {delimiter}")
-        text = re.sub(r"\s+", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
         sentenceAsList = tokenize_words(text, delimiter)
         masks = []
         for token in sentenceAsList:
@@ -728,7 +728,7 @@ def apply_labels(text:list, labels:list):
     tokenized_sentence = " ".join([element if labels[index] != 1 else f"\n{element}" for index, element in enumerate(text)]).split("\n")
     return tokenized_sentence
 
-def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False):
+def unalign_labels(human_to_bert, predicted_labels, splitted_text, bert_tokens_as_text, verbose=False, convert_to_word_labels=False):
     predicted_labels = predicted_labels[1:-1]
     if verbose:
         print(f"Prediction: {predicted_labels}")
@@ -744,15 +744,17 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False
         if len(predicted) == 1:
             correct_label = predicted_labels[predicted[0]]
             if verbose:
+                print("---")
                 print(f"Position {index}")
-                print(predicted_labels)
-                print(predicted[0])
-                print(correct_label)
+                # print(predicted_labels)
+                print(f"Bert token: {bert_tokens_as_text[index]}")
+                print(f"Predicted: {predicted[0]}")
+                print(f"Correct: {correct_label}")
         # mismatch
         else:
             correct_label = [predicted_labels[predicted[n]] for n in range(len(predicted))]
             if verbose:
-                print(f"predicted labels mismatch :{predicted_labels}")
+                # print(f"predicted labels mismatch :{predicted_labels}")
                 print(f"len predicted mismatch {len(predicted)}")
                 print(f"Corresponding labels in prediction: {correct_label}")
             # Dans ce cas on regarde s'il y a 1 dans n'importe quelle position des rangs correspondants:
@@ -762,13 +764,29 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, verbose=False
         final_prediction.append(correct_label)
 
     assert len(final_prediction) == len(splitted_text), "List mismatch"
-
+    as_labels = []
+    for word in final_prediction:
+        if word in [0, 1]:
+            as_labels.append(word)
+        if isinstance(word, list):
+            if any(subtoken == 1 for subtoken in word):
+                as_labels.append(1)
+            else:
+                as_labels.append(0)
+    assert len(as_labels) == len(splitted_text), "List mismatch"
     tokenized_sentence = " ".join(
-        [element if final_prediction[index] != 1 else f"\n{element}" for index, element in enumerate(splitted_text)]).split("\n")
+        [element if as_labels[index] != 1 else f"\n{element}" for index, element in enumerate(splitted_text)]).split("\n")
     if verbose:
-        print(f'final prediction {final_prediction}')
+        print(f'final prediction {as_labels}')
         print(tokenized_sentence)
-    return tokenized_sentence
+    # print(tokenized_sentence)
+    if convert_to_word_labels is True:
+        return as_labels
+    else:
+        return tokenized_sentence
+
+def compute_recall(predictions, labels):
+    pass
 
 def format_examples(text, tokens_per_example, regexp, lang):
     regexp = re.compile(regexp)

@@ -729,7 +729,7 @@ class SegmenterTrainer:
             masks = masks.to(eval_device)
             examples = examples.to(eval_device)
             with torch.no_grad():
-                emissions = self.model(input_ids=examples, attention_mask=masks).logits
+                preds = self.model(input_ids=examples, attention_mask=masks).logits
                     # C = emissions.size(-1)
                     # device = "cpu"
                     # emissions = emissions.to(device)
@@ -752,38 +752,32 @@ class SegmenterTrainer:
                     #                                       L_O=L_O,
                     #                                       L_B=L_B,
                     #                                       L_I=L_I)
-                preds = emissions
-                all_preds.append(preds)
-                all_targets.append(targets)
-                examples = examples.to(self.device)
-                all_examples.append(examples)
-                print(examples.shape)
-                print(preds.shape)
-                print(targets.shape)
-                print("Targets:")
-                targ = targets.tolist()[0]
-                print(targ)
-                print("---")
-                as_text = [self.reverse_input_vocab[token] for token in examples.tolist()[0] if token not in [101, 102, 0]]
-                corresp_labels = targets.tolist()[0][1:len(as_text) + 1]
-                print(list(zip(as_text, corresp_labels)))
-                bert_labels = np.argmax(preds, axis=2).tolist()[0]
-                assert targets.tolist()[0][len(as_text) + 1] == 2, "Something went wrong with padding in targets."
+            all_examples.append(examples)
+            for example, target, prediction in zip(examples.tolist(), targets.tolist(), np.argmax(preds, axis=2).tolist()):
+                # print("---\nNew example")
+                as_text = [self.reverse_input_vocab[token] for token in example if token not in [101, 102, 0]]
+                stripped_labels = target
+                orig_bert_labels = prediction
                 text = " ".join(as_text).replace(" ##", "")
                 splitted = [item for item in text.split() if item != ""]
-                print(splitted)
-                print("STOPPING")
-                exit(0)
                 human_to_bert, bert_to_human = utils.get_correspondence(splitted,
                                                                         self.tokenizer)
-                new_labels = utils.unalign_labels(human_to_bert=human_to_bert,
-                                                  predicted_labels=bert_labels,
-                                                  splitted_text=splitted)
-                print(new_labels)
-                exit(0)
-        print(all_examples)
 
-        exit(0)
+                # print("---")
+                model_preds_as_words = utils.unalign_labels(human_to_bert=human_to_bert,
+                                                  predicted_labels=orig_bert_labels,
+                                                  splitted_text=splitted,
+                                                  bert_tokens_as_text=as_text,
+                                                  convert_to_word_labels=True)
+
+                targets_as_words = utils.unalign_labels(human_to_bert=human_to_bert,
+                                                  predicted_labels=stripped_labels,
+                                                  splitted_text=splitted,
+                                                  bert_tokens_as_text=as_text,
+                                                  convert_to_word_labels=True)
+                assert len(model_preds_as_words) == len(targets_as_words), "Error with list."
+                all_preds.append(torch.tensor(model_preds_as_words))
+                all_targets.append(torch.tensor(targets_as_words))
         # On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
         cat_preds = torch.cat(all_preds, dim=0)
         cat_targets = torch.cat(all_targets, dim=0)
@@ -800,7 +794,8 @@ class SegmenterTrainer:
                                        accuracy=accuracy_metric,
                                        precision=precision_metric,
                                        recall=recall_metric,
-                                       f1=f1_metric)
+                                       f1=f1_metric,
+                                       tokens_as_words=True)
 
         recall = ["Recall", results["recall"][0], results["recall"][1]]
         precision = ["Precision", results["precision"][0], results["precision"][1]]
@@ -1134,6 +1129,143 @@ class SegmenterTrainer:
                 self.final_results_file.replace(".txt", f".{lang}.txt"))
 
 
+    def evaluate_best_bert_model_per_lang(self):
+        """
+                Cette fonction produit les métriques d'évaluation (justesse, précision, rappel)
+                """
+        print("Evaluating best model on test data")
+
+        # On crée un dernier dataloader: un dictionnaire avec division des langues pour avoir des résultats par langue.
+        loaded_test_data_per_lang = {}
+        print("Loading metrics.")
+        accuracy_function = evaluate.load("aquilign/segmenter/metrics/accuracy.py")
+        recall_function = evaluate.load("aquilign/segmenter/metrics/recall.py")
+        precision_function = evaluate.load("aquilign/segmenter/metrics/precision.py")
+        f1_function = evaluate.load("aquilign/segmenter/metrics/f1.py")
+        print("Loaded.")
+
+        if self.architecture == "BERT":
+            self.model = AutoModelForTokenClassification.from_pretrained(self.best_model_path)
+        elif self.architecture == "DistilBERT":
+            # Check if automodel resolves to distilbert too
+            self.model = DistilBertForTokenClassification.from_pretrained(self.best_model_path)
+        self.model.to(device=self.device)
+        for lang in self.lang_vocab:
+            print(lang)
+            if lang == "[UNK]":
+                continue
+
+            test_lines, delimiter = utils.json_corpus_to_lines(self.test_path, keep_punct=True, return_delimiter=True)
+            test_filtered_lines = utils.filter_examples_by_lang(test_lines, lang)
+            if debug:
+                test_filtered_lines = test_filtered_lines[:100]
+            text_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(test_filtered_lines,
+                                                                               tokenizer=self.tokenizer,
+                                                                               delimiter=delimiter)
+            test_dataset = utils.SentenceBoundaryDataset(text_texts_and_labels)
+            loaded_test_data_per_lang[lang] = DataLoader(test_dataset,
+                                                         batch_size=self.batch_size,
+                                                         shuffle=False,
+                                                         num_workers=self.workers,
+                                                         pin_memory=False,
+                                                         drop_last=True)
+            # loaded_test_data_per_lang[lang] = test_dataset
+
+
+
+        self.model.eval()
+        results_per_lang = {}
+        for lang in self.lang_vocab:
+            if lang == "[UNK]":
+                continue
+            print(f"Testing {lang}")
+            all_preds = []
+            all_targets = []
+            all_examples = []
+
+            for data in tqdm.tqdm(loaded_test_data_per_lang[lang]):
+                examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
+                masks = masks.to(self.device)
+                examples = examples.to(self.device)
+                with torch.no_grad():
+                    preds = self.model(input_ids=examples, attention_mask=masks).logits
+                all_examples.append(examples)
+                for example, target, prediction in zip(examples.tolist(), targets.tolist(),
+                                                       np.argmax(preds, axis=2).tolist()):
+                    # print("---\nNew example")
+                    as_text = [self.reverse_input_vocab[token] for token in example if token not in [101, 102, 0]]
+                    stripped_labels = target
+                    orig_bert_labels = prediction
+                    text = " ".join(as_text).replace(" ##", "")
+                    splitted = [item for item in text.split() if item != ""]
+                    human_to_bert, bert_to_human = utils.get_correspondence(splitted,
+                                                                            self.tokenizer)
+
+                    # print("---")
+                    model_preds_as_words = utils.unalign_labels(human_to_bert=human_to_bert,
+                                                                predicted_labels=orig_bert_labels,
+                                                                splitted_text=splitted,
+                                                                bert_tokens_as_text=as_text,
+                                                                convert_to_word_labels=True)
+
+                    targets_as_words = utils.unalign_labels(human_to_bert=human_to_bert,
+                                                            predicted_labels=stripped_labels,
+                                                            splitted_text=splitted,
+                                                            bert_tokens_as_text=as_text,
+                                                            convert_to_word_labels=True)
+                    assert len(model_preds_as_words) == len(targets_as_words), "Error with list."
+                    all_preds.append(torch.tensor(model_preds_as_words))
+                    all_targets.append(torch.tensor(targets_as_words))
+
+            # On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
+            try:
+                cat_preds = torch.cat(all_preds, dim=0)
+            except RuntimeError:
+                print(f"Not enough data for lang {lang}")
+                continue
+            cat_targets = torch.cat(all_targets, dim=0)
+            cat_examples = torch.cat(all_examples, dim=0)
+            eval.compute_ambiguity_metrics(tokens=cat_examples,
+                                                       labels=cat_targets,
+                                                       predictions=cat_preds,
+                                                       id_to_word=self.reverse_input_vocab,
+                                                       word_to_id=self.input_vocab,
+                                                       log_dir=self.logs_dir,
+                                                       name=lang,
+                                                       accuracy=accuracy_function,
+                                                       precision=precision_function,
+                                                       recall=recall_function,
+                                                       f1=f1_function,
+                                                       tokens_as_words=True)
+            results = eval.compute_metrics(predictions=cat_preds,
+                                           labels=cat_targets,
+                                           examples=cat_examples,
+                                           id_to_word=self.reverse_input_vocab,
+                                           last_epoch=False,
+                                           bert_training=False,
+                                           tokenizer=self.tokenizer,
+                                           accuracy=accuracy_function,
+                                           precision=precision_function,
+                                           recall=recall_function,
+                                            f1=f1_function,
+                                           tokens_as_words=True)
+            results_per_lang[lang] = results
+
+            recall = ["Recall", results["recall"][0], results["recall"][1]]
+            precision = ["Precision", results["precision"][0], results["precision"][1]]
+            f1 = ["F1", results["f1"][0], results["f1"][1]]
+            header = ["", "Segment Content", "Segment Boundary"]
+            print(f"Results for {lang}:")
+            utils.format_results(results=[precision, recall, f1], header=header)
+            utils.append_to_file(
+                f"Best model on test data for {lang}:\n" +
+                utils.format_results(
+                    results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"], print_to_term=False
+                ),
+                self.final_results_file.replace(".txt", f".{lang}.txt"))
+
+
+
 
 
     def evaluate(self, loss_calculation:bool=False, last_epoch:bool=False, append_to_results:bool=True):
@@ -1242,8 +1374,9 @@ if __name__ == '__main__':
         if "BERT" in architecture:
             trainer.best_model_path = model
             trainer.eval_bert_model()
+            trainer.evaluate_best_bert_model_per_lang()
         else:
             trainer.best_model = model
             trainer.evaluate_best_model()
-        trainer.evaluate_best_model_per_lang()
+            trainer.evaluate_best_model_per_lang()
 

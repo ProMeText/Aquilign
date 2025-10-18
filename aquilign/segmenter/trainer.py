@@ -753,6 +753,7 @@ class SegmenterTrainer:
                     #                                       L_B=L_B,
                     #                                       L_I=L_I)
             all_examples.append(examples)
+            preds = preds.cpu()
             for example, target, prediction in zip(examples.tolist(), targets.tolist(), np.argmax(preds, axis=2).tolist()):
                 # print("---\nNew example")
                 as_text = [self.reverse_input_vocab[token] for token in example if token not in [101, 102, 0]]
@@ -1190,6 +1191,7 @@ class SegmenterTrainer:
                 with torch.no_grad():
                     preds = self.model(input_ids=examples, attention_mask=masks).logits
                 all_examples.append(examples)
+                preds = preds.cpu()
                 for example, target, prediction in zip(examples.tolist(), targets.tolist(),
                                                        np.argmax(preds, axis=2).tolist()):
                     # print("---\nNew example")

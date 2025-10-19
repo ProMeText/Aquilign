@@ -30,7 +30,7 @@ def get_best_step(results):
 
     all_metrics = {}
     for key, value in result_dict.items():
-        metric = (value['eval_precision'][1] + value['eval_recall'][1]*1.5)/2.5
+        metric = (value['eval_precision'][1] + value['eval_recall'][1]*1.3)/2.3
         all_metrics[key] = metric
 
     best_step = next(step for step, metric in all_metrics.items() if metric == max(all_metrics.values()))
@@ -734,7 +734,6 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, bert_tokens_a
         print(f"Prediction: {predicted_labels}")
         print(human_to_bert)
         print(splitted_text)
-    realigned_list = []
 
     # itering on original text
     final_prediction = []
@@ -761,27 +760,20 @@ def unalign_labels(human_to_bert, predicted_labels, splitted_text, bert_tokens_a
             # on considère que BERT ne propose qu'une tokénisation plus importante que nous
             if any([n == 1 for n in correct_label]):
                 correct_label = 1
-        final_prediction.append(correct_label)
-
-    assert len(final_prediction) == len(splitted_text), "List mismatch"
-    as_labels = []
-    for word in final_prediction:
-        if word in [0, 1]:
-            as_labels.append(word)
-        if isinstance(word, list):
-            if any(subtoken == 1 for subtoken in word):
-                as_labels.append(1)
+            elif any([n == 2 for n in correct_label]):
+                correct_label = 0
             else:
-                as_labels.append(0)
-    assert len(as_labels) == len(splitted_text), "List mismatch"
+                correct_label = 0
+        final_prediction.append(correct_label)
+    assert len(final_prediction) == len(splitted_text), "List mismatch"
     tokenized_sentence = " ".join(
-        [element if as_labels[index] != 1 else f"\n{element}" for index, element in enumerate(splitted_text)]).split("\n")
+        [element if final_prediction[index] != 1 else f"\n{element}" for index, element in enumerate(splitted_text)]).split("\n")
     if verbose:
-        print(f'final prediction {as_labels}')
+        print(f'final prediction {final_prediction}')
         print(tokenized_sentence)
     # print(tokenized_sentence)
     if convert_to_word_labels is True:
-        return as_labels
+        return final_prediction
     else:
         return tokenized_sentence
 

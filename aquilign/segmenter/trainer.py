@@ -549,8 +549,9 @@ class SegmenterTrainer:
                     self.model = SaT.SubwordXLMForTokenClassification.from_pretrained(base_model_name, config=config)
                     print("SaT model loaded.")
                 self.model.to(self.device)
-                self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
-                self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
+        if mode != "test":
+            self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
+            self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
         self.architecture = architecture
         self.use_pretrained_embeddings = use_pretrained_embeddings
 

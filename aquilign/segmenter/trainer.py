@@ -21,6 +21,10 @@ parser.add_argument("-p", "--parameters", default=None,
                     help="Path to parameters file")
 parser.add_argument("-d", "--debug", default=False,
                     help="Debug mode")
+parser.add_argument("-dv", "--device", default=None,
+                    help="Device (overwrites config file)")
+parser.add_argument("-be", "--batch_eval", default=None,
+                    help="Eval batch (overwrites config file)")
 parser.add_argument("-n", "--out_name", default=None,
                     help="Out dir name")
 parser.add_argument("-o", "--out_dir", default=None,
@@ -35,6 +39,8 @@ output_dir = args.out_dir
 test_file = args.test_file
 model = args.model
 vocab = args.vocab
+batch_eval = int(args.batch_eval) if args.batch_eval is not None else None
+device = args.device
 debug = args.debug
 out_dir_suffix = args.out_name
 if mode == "test":
@@ -81,7 +87,9 @@ class SegmenterTrainer:
                   vocab=None,
                   model=None,
                   output_dir=None,
-                  test_file=None):
+                  test_file=None,
+                  batch_eval=None,
+                  device=None):
         """
         Main Class trainer
         """
@@ -92,7 +100,8 @@ class SegmenterTrainer:
         epochs = config_file["global"]["epochs"]
         batch_size = config_file["global"]["batch_size"]
         lr = config_file["global"]["lr"]
-        device = config_file["global"]["device"]
+        if device is None:
+            device = config_file["global"]["device"]
         workers = config_file["global"]["workers"]
         train_path = config_file["global"]["train"]
         if test_file is not None:
@@ -115,7 +124,10 @@ class SegmenterTrainer:
             self.custom_class_weights = config_file["global"]["custom_class_weights"]
         else:
             self.custom_class_weights = None
-        self.eval_batch_size = config_file["global"]["eval_batch_size"]
+        if batch_eval is None:
+            self.eval_batch_size = config_file["global"]["eval_batch_size"]
+        else:
+            self.eval_batch_size = batch_eval
         include_lang_metadata = config_file["global"]["include_lang_metadata"]
         lang_emb_dim = config_file["global"]["lang_emb_dim"]
         linear_layers = config_file["global"]["linear_layers"]
@@ -166,6 +178,7 @@ class SegmenterTrainer:
         else:
             self.eval_mode = "WordTokenizer"
         # First we prepare the corpus
+
         self.device = device
         if self.device != "cpu":
             device_name = torch.cuda.get_device_name(self.device)
@@ -280,7 +293,6 @@ class SegmenterTrainer:
                                                         use_char_embeddings=self.use_char_embeddings,
                                                            architecture=architecture)
 
-
             self.loaded_test_data = DataLoader(self.test_dataloader,
                                                batch_size=self.eval_batch_size,
                                                shuffle=False,
@@ -380,7 +392,6 @@ class SegmenterTrainer:
             test_texts_and_labels = utils.convertToSubWordsSentencesAndLabels(eval_lines, tokenizer=self.tokenizer,
                                                                              delimiter=delimiter)
             self.test_data = utils.SentenceBoundaryDataset(test_texts_and_labels)
-
             self.loaded_test_data = DataLoader(self.test_data,
                                                batch_size=self.eval_batch_size,
                                                shuffle=False,
@@ -411,7 +422,10 @@ class SegmenterTrainer:
 
 
         self.epochs = epochs
-        self.batch_size = batch_size
+        if mode != "test":
+            self.batch_size = batch_size
+        else:
+            self.batch_size = self.eval_batch_size
         self.include_lang_metadata = include_lang_metadata
         self.best_model = None
         self.input_dim = len(self.input_vocab)
@@ -452,7 +466,7 @@ class SegmenterTrainer:
                                              positional_embeddings=False,
                                              device=self.device,
                                              lstm_hidden_size=lstm_hidden_size,
-                                             batch_size=batch_size,
+                                             batch_size=self.batch_size,
                                              num_langs=lang_vocab_len,
                                              num_lstm_layers=num_lstm_layers,
                                              include_lang_metadata=include_lang_metadata,
@@ -628,6 +642,8 @@ class SegmenterTrainer:
         self.model.to(eval_device)
         self.model.eval()
         print("Starting evaluation")
+        print(self.eval_batch_size)
+        print(self.batch_size)
         for data in tqdm.tqdm(self.loaded_test_data, unit_scale=self.eval_batch_size):
             if "BERT" in self.architecture:
                 examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
@@ -1181,9 +1197,10 @@ class SegmenterTrainer:
             if lang == "[UNK]":
                 continue
             print(f"Testing {lang}")
-            all_preds = []
-            all_targets = []
+            all_preds, all_preds_for_ambiguity = [], []
+            all_targets, all_targets_for_ambiguity = [], []
             all_examples = []
+
 
             for data in tqdm.tqdm(loaded_test_data_per_lang[lang]):
                 examples, masks, targets = data['input_ids'], data['attention_mask'], data['labels']
@@ -1191,6 +1208,8 @@ class SegmenterTrainer:
                 examples = examples.to(self.device)
                 with torch.no_grad():
                     preds = self.model(input_ids=examples, attention_mask=masks).logits
+                all_preds_for_ambiguity.append(preds)
+                all_targets_for_ambiguity.append(targets)
                 all_examples.append(examples)
                 preds = preds.cpu()
                 for example, target, prediction in zip(examples.tolist(), targets.tolist(),
@@ -1223,14 +1242,17 @@ class SegmenterTrainer:
             # On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
             try:
                 cat_preds = torch.cat(all_preds, dim=0)
+                cat_preds_for_ambiguity = torch.cat(all_preds_for_ambiguity, dim=0)
             except RuntimeError:
                 print(f"Not enough data for lang {lang}")
                 continue
+            cat_targets_for_ambiguity = torch.cat(all_targets_for_ambiguity, dim=0)
+            cat_targets_for_ambiguity = torch.cat(all_targets_for_ambiguity, dim=0)
             cat_targets = torch.cat(all_targets, dim=0)
             cat_examples = torch.cat(all_examples, dim=0)
             eval.compute_ambiguity_metrics(tokens=cat_examples,
-                                                       labels=cat_targets,
-                                                       predictions=cat_preds,
+                                                       labels=cat_targets_for_ambiguity,
+                                                       predictions=cat_preds_for_ambiguity,
                                                        id_to_word=self.reverse_input_vocab,
                                                        word_to_id=self.input_vocab,
                                                        log_dir=self.logs_dir,
@@ -1357,7 +1379,9 @@ if __name__ == '__main__':
                                model=model,
                                vocab=vocab,
                                output_dir=output_dir,
-                               test_file=test_file)
+                               test_file=test_file,
+                               device=device,
+                               batch_eval=batch_eval)
     if mode != "test":
         if "BERT" in architecture or "SaT" in architecture:
             trainer.Bert_Train()

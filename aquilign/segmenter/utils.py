@@ -670,10 +670,10 @@ def serialize_dict(dictionnary, path):
         json.dump(dictionnary, f, indent=3)
 
 def encode_text(input_text:str, token_to_idx:dict, delimiters):
-	return [token_to_idx[item.lower()] for item in re.split(delimiters, input_text) if item not in [None, '']]
+    return [token_to_idx[item.lower()] for item in re.split(delimiters, input_text) if item not in [None, '']]
 
 def decode_text():
-	pass
+    pass
 
 def identify_ambiguous_tokens(tokens,
                               labels,

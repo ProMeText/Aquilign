@@ -35,14 +35,13 @@ def compute_ambiguity_metrics(tokens,
     tokens = tokens.cpu()
     if tokens_as_words is False:
         predictions = np.argmax(predictions, axis=2)
-    print(tokens_as_words)
-    print(predictions)
+    assert predictions.shape == labels.shape, (f"Predictions and labels must have the same shape.\n"
+                                               f"Prediction: {predictions.shape}\n"
+                                               f" Labels: {labels.shape}")
     predictions = np.array(predictions, dtype='int32').flatten()
     tokens = np.array(tokens, dtype='int32').flatten()
     labels = np.array(labels, dtype='int32').flatten()
     ambiguous_tokens = utils.identify_ambiguous_tokens(tokens.tolist(), labels.tolist(), id_to_word, word_to_id)
-    print(ambiguous_tokens)
-
     results_per_token = []
 
     for target_token in tqdm.tqdm(ambiguous_tokens):
@@ -79,8 +78,6 @@ def compute_ambiguity_metrics(tokens,
                   f"{utils.format_results(results=[precision, recall, f1], header=header, print_to_term=False)}"
                   f"\n\n\n")
 
-    exit(0)
-    print("OK")
 
 
 def compute_word_metrics(predictions,

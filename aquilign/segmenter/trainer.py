@@ -1242,11 +1242,10 @@ class SegmenterTrainer:
             # On crée une seul vecteur, en concaténant tous les exemples sur la dimension 0 (= chaque exemple individuel)
             try:
                 cat_preds = torch.cat(all_preds, dim=0)
-                cat_preds_for_ambiguity = torch.cat(all_preds_for_ambiguity, dim=0)
             except RuntimeError:
                 print(f"Not enough data for lang {lang}")
                 continue
-            cat_targets_for_ambiguity = torch.cat(all_targets_for_ambiguity, dim=0)
+            cat_preds_for_ambiguity = torch.cat(all_preds_for_ambiguity, dim=0)
             cat_targets_for_ambiguity = torch.cat(all_targets_for_ambiguity, dim=0)
             cat_targets = torch.cat(all_targets, dim=0)
             cat_examples = torch.cat(all_examples, dim=0)
@@ -1261,7 +1260,7 @@ class SegmenterTrainer:
                                                        precision=precision_function,
                                                        recall=recall_function,
                                                        f1=f1_function,
-                                                       tokens_as_words=True)
+                                                       tokens_as_words=False)
             results = eval.compute_metrics(predictions=cat_preds,
                                            labels=cat_targets,
                                            examples=cat_examples,
@@ -1285,7 +1284,8 @@ class SegmenterTrainer:
             utils.append_to_file(
                 f"Best model on test data for {lang}:\n" +
                 utils.format_results(
-                    results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"], print_to_term=False
+                    results=[precision, recall, f1], header=["", "Segment Content", "Segment Boundary"],
+                    print_to_term=False
                 ),
                 self.final_results_file.replace(".txt", f".{lang}.txt"))
 
@@ -1400,10 +1400,10 @@ if __name__ == '__main__':
         trainer.eval_batch_size = 2
         if "BERT" in architecture:
             trainer.best_model_path = model
-            trainer.eval_bert_model()
+            # trainer.eval_bert_model()
             trainer.evaluate_best_bert_model_per_lang()
         else:
             trainer.best_model = model
-            trainer.evaluate_best_model()
+            # trainer.evaluate_best_model()
             trainer.evaluate_best_model_per_lang()
 

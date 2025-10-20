@@ -96,6 +96,7 @@ class SegmenterTrainer:
         self.date_hour = datetime.datetime.now().isoformat()
         self.debug = debug
         self.mode = mode
+        # Global params
         fine_tune = False
         epochs = config_file["global"]["epochs"]
         batch_size = config_file["global"]["batch_size"]
@@ -112,69 +113,70 @@ class SegmenterTrainer:
         if mode == "train":
             output_dir = config_file["global"]["out_dir"]
         base_model_name = config_file["global"]["base_model_name"]
-        use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
-        use_bert_tokenizer = config_file["global"]["use_bert_tokenizer"]
-        if use_pretrained_embeddings or use_bert_tokenizer or "BERT" in architecture or "SaT" in architecture:
-            os.environ["TOKENIZERS_PARALLELISM"] = "false"
         data_augmentation = config_file["global"]["data_augmentation"]
-        self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
-        self.freeze_lang_embeddings = config_file["global"]["freeze_lang_embeddings"]
-        self.balance_class_weights = config_file["global"]["balance_class_weights"]
-        if "custom_class_weights" in config_file["global"]:
-            self.custom_class_weights = config_file["global"]["custom_class_weights"]
-        else:
-            self.custom_class_weights = None
         if batch_eval is None:
             self.eval_batch_size = config_file["global"]["eval_batch_size"]
         else:
             self.eval_batch_size = batch_eval
-        include_lang_metadata = config_file["global"]["include_lang_metadata"]
-        lang_emb_dim = config_file["global"]["lang_emb_dim"]
-        linear_layers = config_file["global"]["linear_layers"]
-        linear_layers_hidden_size = config_file["global"]["linear_layers_hidden_size"]
-        self.segments_max_length = config_file["global"]["segments_max_length"]
-        emb_dim = config_file["global"]["emb_dim"]
-        self.use_char_embeddings = False
-        if architecture == "lstm":
-            self.use_char_embeddings = config_file["global"]["use_char_embeddings"]
-            add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
-            lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
-            num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
-            lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
-            linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
-            char_dropout_prob = config_file["architectures"][architecture]["char_dropout_prob"]
-            char_embedding_dim = config_file["architectures"][architecture]["char_embedding_dim"]
-            bidirectional = config_file["architectures"][architecture]["bidirectional"]
-            keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
-        if architecture == "Baseline":
-            add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
-            linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
-            keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
-        elif architecture == "gru":
-            add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
-            hidden_size = config_file["architectures"][architecture]["hidden_size"]
-            num_layers = config_file["architectures"][architecture]["num_layers"]
-            dropout = config_file["architectures"][architecture]["dropout"]
-            bidirectional = config_file["architectures"][architecture]["bidirectional"]
-        elif architecture == "transformer":
-            num_heads = config_file["architectures"][architecture]["num_heads"]
-            num_transformers_layers = config_file["architectures"][architecture]["num_transformers_layers"]
-        elif architecture == "cnn":
-            dropout = config_file["architectures"][architecture]["dropout"]
-            cnn_scale = config_file["architectures"][architecture]["cnn_scale"]
-            add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
-            keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
-            hidden_size = config_file["architectures"][architecture]["hidden_size"]
-            kernel_size = config_file['architectures'][architecture]["kernel_size"]
-            linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
-            positional_embeddings = config_file['architectures'][architecture]["positional_embeddings"]
-            num_heads = config_file["architectures"][architecture]["num_heads"]
-            num_cnn_layers = config_file["architectures"][architecture]["num_cnn_layers"]
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
+        self.segments_max_length = 30
 
-        if self.use_char_embeddings is True:
-            self.eval_mode = "CharTokenizer"
-        elif "BERT" in architecture or use_bert_tokenizer:
+        if "BERT" not in architecture:
+            use_pretrained_embeddings = config_file["global"]["use_pretrained_embeddings"]
+            use_bert_tokenizer = config_file["global"]["use_bert_tokenizer"]
+            self.freeze_embeddings = config_file["global"]["freeze_embeddings"]
+            self.freeze_lang_embeddings = config_file["global"]["freeze_lang_embeddings"]
+            self.balance_class_weights = config_file["global"]["balance_class_weights"]
+            if "custom_class_weights" in config_file["global"]:
+                self.custom_class_weights = config_file["global"]["custom_class_weights"]
+            else:
+                self.custom_class_weights = None
+            include_lang_metadata = config_file["global"]["include_lang_metadata"]
+            lang_emb_dim = config_file["global"]["lang_emb_dim"]
+            linear_layers = config_file["global"]["linear_layers"]
+            linear_layers_hidden_size = config_file["global"]["linear_layers_hidden_size"]
+            emb_dim = config_file["global"]["emb_dim"]
+            self.use_char_embeddings = False
+            if architecture == "lstm":
+                self.use_char_embeddings = config_file["global"]["use_char_embeddings"]
+                add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+                lstm_hidden_size = config_file["architectures"][architecture]["lstm_hidden_size"]
+                num_lstm_layers = config_file["architectures"][architecture]["num_lstm_layers"]
+                lstm_dropout = config_file["architectures"][architecture]["lstm_dropout"]
+                linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
+                char_dropout_prob = config_file["architectures"][architecture]["char_dropout_prob"]
+                char_embedding_dim = config_file["architectures"][architecture]["char_embedding_dim"]
+                bidirectional = config_file["architectures"][architecture]["bidirectional"]
+                keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
+            if architecture == "Baseline":
+                add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+                linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
+                keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
+            elif architecture == "gru":
+                add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+                hidden_size = config_file["architectures"][architecture]["hidden_size"]
+                num_layers = config_file["architectures"][architecture]["num_layers"]
+                dropout = config_file["architectures"][architecture]["dropout"]
+                bidirectional = config_file["architectures"][architecture]["bidirectional"]
+            elif architecture == "transformer":
+                num_heads = config_file["architectures"][architecture]["num_heads"]
+                num_transformers_layers = config_file["architectures"][architecture]["num_transformers_layers"]
+            elif architecture == "cnn":
+                dropout = config_file["architectures"][architecture]["dropout"]
+                cnn_scale = config_file["architectures"][architecture]["cnn_scale"]
+                add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
+                keep_bert_dimensions = config_file["architectures"][architecture]["keep_bert_dimensions"]
+                hidden_size = config_file["architectures"][architecture]["hidden_size"]
+                kernel_size = config_file['architectures'][architecture]["kernel_size"]
+                linear_dropout = config_file["architectures"][architecture]["linear_dropout"]
+                positional_embeddings = config_file['architectures'][architecture]["positional_embeddings"]
+                num_heads = config_file["architectures"][architecture]["num_heads"]
+                num_cnn_layers = config_file["architectures"][architecture]["num_cnn_layers"]
+
+        if "BERT" in architecture or use_bert_tokenizer:
             self.eval_mode = "BertTokenizer"
+        elif self.use_char_embeddings is True:
+            self.eval_mode = "CharTokenizer"
         else:
             self.eval_mode = "WordTokenizer"
         # First we prepare the corpus
@@ -187,7 +189,7 @@ class SegmenterTrainer:
         self.all_dataset_on_device = False
         print("Loading data")
         self.use_bert_tokenizer = use_bert_tokenizer
-        if use_pretrained_embeddings or "BERT" in architecture or self.use_bert_tokenizer or "SaT" in architecture:
+        if "BERT" in architecture or "SaT" in architecture or use_pretrained_embeddings or self.use_bert_tokenizer:
             create_vocab = False
             if architecture == "BERT":
                 self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)

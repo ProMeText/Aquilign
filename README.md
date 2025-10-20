@@ -1,12 +1,10 @@
-# 📐 Multilingual Aligner and Collator
+# 📐 Multilingual Medieval Text Segmenter
 
-[![Issues](https://img.shields.io/github/issues/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/issues)
-[![Stars](https://img.shields.io/github/stars/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/stargazers)
-
-💡 *How can we computationally align medieval texts written in different languages and copied over centuries — without losing their philological depth?*
 
 **XXX** is a multilingual alignment and collation engine designed for **historical and philological corpora**.  
 It performs **clause-level alignment** of parallel texts using a combination of **regular-expression and BERT-based segmentation**, and supports multilingual workflows across medieval Romance, Latin, and Middle English texts.
+
+This repository 
 
 🧪 Developed by .  
 Originally presented at the *XXX Conference (CHR 2023)*.
@@ -16,18 +14,19 @@ Originally presented at the *XXX Conference (CHR 2023)*.
 
 ## 💡 Key Features
 
-- 🔀 **Multilingual clause-level alignment** using contextual embeddings  
-- ✂️ **Trainable segmentation module** (BERT-based or regex-based)  
-- 🧩 **Collation-ready architecture** (stemmatology support in development)  
-- 📚 Optimized for **premodern and historical corpora**
+- 🔀 **Multilingual clause-level segmentation** using contextual embeddings
 
-XXX builds on a fork of [Bertalign](https://github.com/bfsujason/bertalign), customized for historical languages and alignment evaluation.
+The segmenter is part of a larger project built on a fork of [Bertalign](https://github.com/bfsujason/bertalign), 
+customized for historical languages and alignment evaluation.
+
+It is an intermediary version made for the LREC2026 conference. The aligner works but is 
+not the main objective of this repository.
 
 ---
 
 ## ⚙️ Installation
 
-> ⚠️ **Caveat**: AQUILIGN is currently tested on **Python 3.9 and 3.10** due to certain library constraints.  
+> ⚠️ **Caveat**: The aligner is currently tested on **Python 3.9 and 3.10** due to certain library constraints.  
 > Compatibility with other versions is not guaranteed.
 
 ```bash
@@ -39,7 +38,7 @@ pip install -r aquilign/segmenter/requirements.txt
 
 The segmenter is based on a trainable `BertForTokenClassification` model from Hugging Face’s `transformers` library.
 
-We fine-tune this model to detect custom sentence delimiters (`£`) in historical texts from the **[Multilingual Segmentation Dataset](https://github.com/carolisteia/multilingual-segmentation-dataset)**.
+We fine-tune this model to detect custom sentence delimiters in historical texts from the **[Multilingual Segmentation Dataset](https://github.com/carolisteia/multilingual-segmentation-dataset)**.
 
 ```bash
 python3 aquilign/segmenter/trainer.py \
@@ -65,37 +64,13 @@ The config file should have the following shape:
     "workers": 8,
     "batch_size": 128,
     "eval_batch_size": 128
-  }z
+  }
 }
-
-
 ```
----
 
-### 🔧 Example Command
-
-```bash
-python3 train_tokenizer.py \
-  -m google-bert/bert-base-multilingual-cased \
-  -t multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/train.json \
-  -d multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/dev.json \
-  -e multilingual-segmentation-dataset/data/Multilingual_Aegidius/segmented/split/multilingual/test.json \
-  -ep 100 \
-  -b 128 \
-  --device cuda:0 \
-  -bf16 \
-  -n multilingual_model \
-  -s 2 \
-  -es 10
-```
-This command fine-tunes the `bert-base-multilingual-cased` model with the following configuration:
-
-- **Epochs**: `100`  
-- **Batch size**: `128`  
-- **Device**: `cuda:0` (GPU)  
-- **Precision**: `bf16` (bfloat16 mixed precision)  
-- **Checkpointing**: Saves the model every 2 epochs  
-- **Early stopping**: Stops after 10 epochs without improvement
+The training creates several files and result files. 
+The model config (epochs, batch sizes, learning rate) is written in the output directory (`./config/config.json`) 
+as a logging file.
 
 ---
 
@@ -116,7 +91,7 @@ Training data must follow a structured JSON format, including both metadata and 
       "lang": "es"
     },
     {
-      "example": "Per fé, disse Lion, £i v’andasse volentieri, £ma i vo veggio £qui",
+      "example": "£Per fé, disse Lion, £i v’andasse volentieri, £ma i vo veggio £qui",
       "lang": "it"
     }
   ]
@@ -135,147 +110,61 @@ Training data must follow a structured JSON format, including both metadata and 
 
 ---
 
-📖 For more details, see the full documentation:  
-➡️ [segmentation_model.md](https://github.com/carolisteia/multilingual-segmentation-dataset/blob/main/docs/segmentation_model.md)
 
+### Tests
 
-## 🧮 Using the Aligner
-
-To align a set of parallel texts using the BERT-based segmenter, run:
-
-```bash
-python3 main.py \
-  -o lancelot \
-  -i data/extraitsLancelot/ii-48/ \
-  -mw data/extraitsLancelot/ii-48/fr/micha-ii-48.txt \
-  -d cuda:0 \
-  -t bert-based
-```
-This will:
-
-- ✅ Align the multilingual files found in `data/extraitsLancelot/ii-48/`
-- 📚 Use the **Micha edition** (French) as the **base witness**
-- ⚙️ Run on the **GPU** (`cuda:0`)
-- 💾 Save results to: `result_dir/lancelot/`
-
-
-> 📂 Files must be sorted by language, using the ISO 639-1 language code  
-> as the **parent directory name** (`es/`, `fr/`, `it/`, `en/`, etc.).
-
-To view all available options:
+The `-m` flag should be used for testing. The model to test has to be indicated with the `-md` flag. It can be:
+- a huggingface name
+- a link to the BERT local model (link to the directory)
+- a link to the local LSTM model  (link to the model). In this case, the used vocabularies should 
+be indicated with the `-v` flag. As there is an input vocabulary and a lang vocabulary (for models trained with 
+- lang metadata info), the path should be to the vocab dir. 
 
 ```bash
-python3 main.py --help
+python3 aquilign/segmenter/trainer.py \
+        -m test \
+        -md paper_LREC/models/LSTM_WordEmbs/models/best/best.pt  \
+        -v /paper_LREC/models/LSTM_CharEmbs/vocab \
+        -a lstm \
+        -p  /paper_LREC/models/LSTM_CharEmbs/config/config.json \
+        -o /path/to/out/dir
 ```
+
+
+### Inference
+
 
 ---
 ## 🔗 Related Projects
 
-**Aquilign** is part of a broader ecosystem of tools and corpora developed for the computational study of medieval multilingual textual traditions. The following repositories provide aligned datasets, segmentation resources, and use cases for the Aquilign pipeline:
+**XXX** is part of a broader ecosystem of tools and corpora developed for the computational study of medieval multilingual textual traditions. The following repositories provide aligned datasets, segmentation resources, and use cases for the Aquilign pipeline:
 
-- [Multilingual Segmentation Dataset](https://github.com/carolisteia/multilingual-segmentation-dataset)
+- [Multilingual Segmentation Dataset](ANONYMOUS)
   Sentence and clause-level segmentation datasets in seven medieval languages, used to train and evaluate the segmentation model integrated into Aquilign.
-
-- [Parallelium – an aligned scriptures dataset](https://github.com/carolisteia/parallelium-scriptures-alignment-dataset)  
-  A multilingual dataset of aligned Biblical and Qur’anic texts (medieval and modern), used for benchmarking multilingual alignment in diverse historical settings.
-
-- [Lancelot par maints langages](https://github.com/carolisteia/lancelot-par-maints-langages)  
-  A parallel corpus of *Lancelot en prose* in French, Castilian, and Italian. First testbed for Aquilign’s multilingual alignment and stemmatological comparison.
-
-- [Multilingual Aegidius](https://github.com/ProMeText/Multilingual_Aegidius)  
-  A corpus of *De regimine principum* and its translations in Latin, Romance vernaculars, and Middle English. Built using the Aquilign segmentation and alignment workflow.
 
 ---
 
 ## 🚧 Project Status & Future Directions
 
-**Aquilign** is under active development and currently supports:
-
-- ✅ Sentence- and clause-level alignment across multiple languages  
-- ✅ Integration with BERT-based and regex-based segmenters  
-- ✅ Alignment evaluation and output export in tabular format  
-- ✅ Compatibility with multilingual historical corpora (e.g. *Lancelot*, *De Regimine Principum*)
-
 ---
 
-### 🔮 Planned Features
-
-- 🧬 **Collation Module**:  
-  Automatic generation of collation tables across aligned witnesses for textual variant analysis
-
-- 🏛️ **Stemmatic Analysis Integration**:  
-  Tools for stemmatological inference based on alignment structure and textual divergence
-
-- 📊 **Interactive Visualization Tools**:  
-  Visualization of alignment, variant graphs, and stemma hypotheses
-
-- 🌐 **Support for Additional Languages**:  
-  Extending tokenization and alignment capabilities to new premodern languages and scripts
-
----
-
-If you're interested in contributing to any of these areas or proposing enhancements, see [Contact & Contributions](#-contact--contributions).
 
 ---
 
 ## 📫 Contact & Contributions
 
-We welcome questions, feedback, and contributions to improve the Aquilign pipeline.
-
-- 🛠️ Found a bug or have a feature request?  
-  ➡️ [Open an issue](https://github.com/ProMeText/Aquilign/issues)
-
-- 🔄 Want to contribute code or improvements?  
-  ➡️ Fork the repo and submit a pull request
-
-- 🎓 For academic collaboration or project inquiries:  
-  ➡️ Reach out via [GitHub Discussions](https://github.com/ProMeText/Aquilign/discussions) or contact the authors directly
+We welcome questions, feedback, and contributions to improve the XXX pipeline.
 
 ---
 ## 📚 Citation
 
 If you use this tool in your research, please cite:
 
-Gille Levenson, M., Ing, L., & Camps, J.-B. (2024).  
-**Textual Transmission without Borders: Multiple Multilingual Alignment and Stemmatology of the _Lancelot en prose_ (Medieval French, Castilian, Italian).**  
-In W. Haverals, M. Koolen, & L. Thompson (Eds.), *Proceedings of the Computational Humanities Research Conference 2024* (Vol. 3834, pp. 65–92). CEUR.  
-🔗 [https://ceur-ws.org/Vol-3834/#paper104](https://ceur-ws.org/Vol-3834/#paper104)
 
 ### 📄 BibTeX
 
-```bibtex
-@inproceedings{gillelevenson_TextualTransmissionBorders_2024a,
-  title = {Textual Transmission without Borders: Multiple Multilingual Alignment and Stemmatology of the ``Lancelot En Prose'' (Medieval French, Castilian, Italian)},
-  shorttitle = {Textual Transmission without Borders},
-  booktitle = {Proceedings of the Computational Humanities Research Conference 2024},
-  author = {Gille Levenson, Matthias and Ing, Lucence and Camps, Jean-Baptiste},
-  editor = {Haverals, Wouter and Koolen, Marijn and Thompson, Laure},
-  date = {2024},
-  series = {CEUR Workshop Proceedings},
-  volume = {3834},
-  pages = {65--92},
-  publisher = {CEUR},
-  location = {Aarhus, Denmark},
-  issn = {1613-0073},
-  url = {https://ceur-ws.org/Vol-3834/#paper104},
-  urldate = {2024-12-09},
-  eventtitle = {Computational Humanities Research 2024},
-  langid = {english}
-}
-```
 --- 
 ## 💰 Funding
-
-This work benefited from national funding managed by the **Agence Nationale de la Recherche**  
-under the *Investissements d'avenir* programme with the reference:  
-**ANR-21-ESRE-0005 (Biblissima+)**
-
-> Ce travail a bénéficié d'une aide de l’État gérée par l’**Agence Nationale de la Recherche**  
-> au titre du programme d’**Investissements d’avenir**, référence **ANR-21-ESRE-0005 (Biblissima+)**.
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/915c871f-fbaa-45ea-8334-2bf3dde8252d" alt="Biblissima+ Logo" width="600"/>
-</p>
 
 ## ⚖️ License
 

@@ -138,6 +138,7 @@ class SegmenterTrainer:
             emb_dim = config_file["global"]["emb_dim"]
             self.use_bert_tokenizer = use_bert_tokenizer
             self.use_char_embeddings = False
+            self.use_pretrained_embeddings = use_pretrained_embeddings
             if architecture == "lstm":
                 self.use_char_embeddings = config_file["global"]["use_char_embeddings"]
                 add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
@@ -232,7 +233,6 @@ class SegmenterTrainer:
             self.logs_dir = f"{self.output_dir}/logs"
 
         os.makedirs(self.logs_dir, exist_ok=True)
-        self.use_pretrained_embeddings = use_pretrained_embeddings
         self.base_model_name = base_model_name
         if mode == "test":
             self.vocabulary_path = vocab

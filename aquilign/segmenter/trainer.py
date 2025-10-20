@@ -139,6 +139,8 @@ class SegmenterTrainer:
             self.use_bert_tokenizer = use_bert_tokenizer
             self.use_char_embeddings = False
             self.use_pretrained_embeddings = use_pretrained_embeddings
+            self.include_lang_metadata = include_lang_metadata
+            self.input_dim = len(self.input_vocab)
             if architecture == "lstm":
                 self.use_char_embeddings = config_file["global"]["use_char_embeddings"]
                 add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
@@ -429,9 +431,7 @@ class SegmenterTrainer:
             self.batch_size = batch_size
         else:
             self.batch_size = self.eval_batch_size
-        self.include_lang_metadata = include_lang_metadata
         self.best_model = None
-        self.input_dim = len(self.input_vocab)
         self.architecture = architecture
         if mode == "train":
             self.epochs_log_file = f"{self.logs_dir}/train_logs.txt"

@@ -1400,10 +1400,10 @@ if __name__ == '__main__':
         trainer.eval_batch_size = 2
         if "BERT" in architecture:
             trainer.best_model_path = model
-            # trainer.eval_bert_model()
+            trainer.eval_bert_model()
             trainer.evaluate_best_bert_model_per_lang()
         else:
             trainer.best_model = model
-            # trainer.evaluate_best_model()
+            trainer.evaluate_best_model()
             trainer.evaluate_best_model_per_lang()
 

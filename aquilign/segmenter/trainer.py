@@ -136,6 +136,7 @@ class SegmenterTrainer:
             linear_layers = config_file["global"]["linear_layers"]
             linear_layers_hidden_size = config_file["global"]["linear_layers_hidden_size"]
             emb_dim = config_file["global"]["emb_dim"]
+            self.use_bert_tokenizer = use_bert_tokenizer
             self.use_char_embeddings = False
             if architecture == "lstm":
                 self.use_char_embeddings = config_file["global"]["use_char_embeddings"]
@@ -188,7 +189,7 @@ class SegmenterTrainer:
         self.workers = workers
         self.all_dataset_on_device = False
         print("Loading data")
-        self.use_bert_tokenizer = use_bert_tokenizer
+
         if "BERT" in architecture or "SaT" in architecture or use_pretrained_embeddings or self.use_bert_tokenizer:
             create_vocab = False
             if architecture == "BERT":

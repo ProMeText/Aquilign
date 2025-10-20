@@ -385,7 +385,7 @@ class Datafier:
             try:
                 token_as_ids = [self.input_vocabulary[char] for char in token]
             except KeyError:
-                print("Error with token:", token)
+                print("Error with chars: ", [char for char in token if char not in self.input_vocabulary])
                 print("Tagging token as UNK")
                 token_as_ids = [self.input_vocabulary["[UNK]"] if char not in self.input_vocabulary else self.input_vocabulary[char] for char in token]
             token_as_ids = token_as_ids + [self.input_vocabulary["[EOT]"]]

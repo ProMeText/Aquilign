@@ -1,19 +1,15 @@
-# 📐 AQUILIGN – Multilingual Aligner and Collator
+# 📐 Multilingual Aligner and Collator
 
-[![codecov](https://codecov.io/github/ProMeText/Aquilign/graph/badge.svg?token=TY5HCBOOKL)](https://codecov.io/github/ProMeText/Aquilign)
-[![Last Commit](https://img.shields.io/github/last-commit/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/commits/main)
 [![Issues](https://img.shields.io/github/issues/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/issues)
-[![Paper: CHR 2024](https://img.shields.io/badge/📄_Paper-CHR%202024-blue)](https://ceur-ws.org/Vol-3834/paper104.pdf)
-[![Forks](https://img.shields.io/github/forks/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/network/members)
 [![Stars](https://img.shields.io/github/stars/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/stargazers)
 
 💡 *How can we computationally align medieval texts written in different languages and copied over centuries — without losing their philological depth?*
 
-**AQUILIGN** is a multilingual alignment and collation engine designed for **historical and philological corpora**.  
+**XXX** is a multilingual alignment and collation engine designed for **historical and philological corpora**.  
 It performs **clause-level alignment** of parallel texts using a combination of **regular-expression and BERT-based segmentation**, and supports multilingual workflows across medieval Romance, Latin, and Middle English texts.
 
-🧪 Developed by [Matthias Gille Levenson](https://github.com/matgille), [Lucence Ing](https://cv.hal.science/lucence-ing), and [Jean-Baptiste Camps](https://github.com/Jean-Baptiste-Camps).  
-Originally presented at the *Computational Humanities Research Conference (CHR 2023)* — see [citation](https://github.com/ProMeText/Aquilign/blob/main/README.md#-citation) for full reference.
+🧪 Developed by .  
+Originally presented at the *XXX Conference (CHR 2023)*.
 
 
 ---
@@ -25,7 +21,7 @@ Originally presented at the *Computational Humanities Research Conference (CHR 2
 - 🧩 **Collation-ready architecture** (stemmatology support in development)  
 - 📚 Optimized for **premodern and historical corpora**
 
-AQUILIGN builds on a fork of [Bertalign](https://github.com/bfsujason/bertalign), customized for historical languages and alignment evaluation.
+XXX builds on a fork of [Bertalign](https://github.com/bfsujason/bertalign), customized for historical languages and alignment evaluation.
 
 ---
 
@@ -35,9 +31,9 @@ AQUILIGN builds on a fork of [Bertalign](https://github.com/bfsujason/bertalign)
 > Compatibility with other versions is not guaranteed.
 
 ```bash
-git clone https://github.com/ProMeText/Aquilign.git
+git clone 
 cd Aquilign
-pip install -r requirements.txt
+pip install -r aquilign/segmenter/requirements.txt
 ```
 ## 🧠 Training the Segmenter
 
@@ -45,6 +41,35 @@ The segmenter is based on a trainable `BertForTokenClassification` model from Hu
 
 We fine-tune this model to detect custom sentence delimiters (`£`) in historical texts from the **[Multilingual Segmentation Dataset](https://github.com/carolisteia/multilingual-segmentation-dataset)**.
 
+```bash
+python3 aquilign/segmenter/trainer.py \
+        -m train \
+        -a BERT \
+        -p path/to/params/CBP_BERT.json \
+        -n training_session_name
+```
+
+The config file should have the following shape:
+```json
+{
+  "global": {
+     "train": "path/to/train.json",
+    "test": "path/to/test.json",
+    "dev": "path/to/dev.json",
+    "import": "/path/to/repo", 
+    "base_model_name": "google-bert/bert-base-multilingual-cased",
+    "out_dir": "/path/to/out/dir",  "device": "cuda:0",
+    "data_augmentation": true,
+    "epochs": 10,
+    "lr": 0.00001,
+    "workers": 8,
+    "batch_size": 128,
+    "eval_batch_size": 128
+  }z
+}
+
+
+```
 ---
 
 ### 🔧 Example Command

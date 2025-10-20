@@ -141,6 +141,7 @@ class SegmenterTrainer:
             self.use_pretrained_embeddings = use_pretrained_embeddings
             self.include_lang_metadata = include_lang_metadata
             self.input_dim = len(self.input_vocab)
+            self.use_pretrained_embeddings = use_pretrained_embeddings
             if architecture == "lstm":
                 self.use_char_embeddings = config_file["global"]["use_char_embeddings"]
                 add_attention_layer = config_file["architectures"][architecture]["add_attention_layer"]
@@ -570,7 +571,6 @@ class SegmenterTrainer:
             self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr)
             self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9)
         self.architecture = architecture
-        self.use_pretrained_embeddings = use_pretrained_embeddings
 
         # Les classes étant distribuées de façons déséquilibrée, on donne + d'importance à la classe <SB>
         # qu'aux deux autres pour le calcul de la loss. On désactive pour l'instant

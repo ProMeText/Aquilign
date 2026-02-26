@@ -630,7 +630,8 @@ class SegmenterTrainer:
         f1_metric = evaluate.load("aquilign/segmenter/metrics/f1.py")
         print("Loaded.")
         if "BERT" in self.architecture:
-            self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3)
+            print("evaluating 83043cd23826093fc63fc2c22b0c2747926c8242")
+            self.model = AutoModelForTokenClassification.from_pretrained(best_model_path, num_labels=3, revision="83043cd23826093fc63fc2c22b0c2747926c8242")
             # print(self.model)
         else:
             self.model.load_state_dict(torch.load(self.best_model, weights_only=True, map_location=torch.device(eval_device)))

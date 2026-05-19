@@ -1,4 +1,4 @@
-# 📐 AQUILIGN – Multilingual Aligner and Collator
+# AQUILIGN – Multilingual Aligner and Collator
 
 [![codecov](https://codecov.io/github/ProMeText/Aquilign/graph/badge.svg?token=TY5HCBOOKL)](https://codecov.io/github/ProMeText/Aquilign)
 [![Last Commit](https://img.shields.io/github/last-commit/ProMeText/Aquilign)](https://github.com/ProMeText/Aquilign/commits/main)
@@ -18,18 +18,18 @@ Originally presented at the *Computational Humanities Research Conference (CHR 2
 
 ---
 
-## 💡 Key Features
+## Key Features
 
-- 🔀 **Multilingual clause-level alignment** using contextual embeddings  
-- ✂️ **Trainable segmentation module** (BERT-based or regex-based)  
-- 🧩 **Collation-ready architecture** (stemmatology support in development)  
-- 📚 Optimized for **premodern and historical corpora**
+- **Multilingual clause-level alignment** using contextual embeddings  
+- **Trainable segmentation module** (BERT-based or regex-based)  
+- **Collation-ready architecture** (stemmatology support in development)  
+-  Optimized for **premodern and historical corpora**
 
 AQUILIGN builds on a fork of [Bertalign](https://github.com/bfsujason/bertalign), customized for historical languages and alignment evaluation.
 
 ---
 
-## ⚙️ Installation
+## Installation
 
 > ⚠️ **Caveat**: AQUILIGN is currently tested on **Python 3.9 and 3.10** due to certain library constraints.  
 > Compatibility with other versions is not guaranteed.
@@ -39,7 +39,7 @@ git clone https://github.com/ProMeText/Aquilign.git
 cd Aquilign
 pip install -r requirements.txt
 ```
-## 🧠 Training the Segmenter
+## Training the Segmenter
 
 The segmenter is based on a trainable `BertForTokenClassification` model from Hugging Face’s `transformers` library.
 
@@ -47,7 +47,7 @@ We fine-tune this model to detect custom sentence delimiters (`£`) in historica
 
 ---
 
-### 🔧 Example Command
+### Example Command
 
 ```bash
 python3 train_tokenizer.py \
@@ -74,7 +74,7 @@ This command fine-tunes the `bert-base-multilingual-cased` model with the follow
 
 ---
 
-### 🗂️ Input Format: JSON Schema
+### Input Format: JSON Schema
 
 Training data must follow a structured JSON format, including both metadata and examples.
 
@@ -110,11 +110,11 @@ Training data must follow a structured JSON format, including both metadata and 
 
 ---
 
-📖 For more details, see the full documentation:  
+For more details, see the full documentation:  
 ➡️ [segmentation_model.md](https://github.com/carolisteia/multilingual-segmentation-dataset/blob/main/docs/segmentation_model.md)
 
 
-## 🧮 Using the Aligner
+## Using the Aligner
 
 To align a set of parallel texts using the BERT-based segmenter, run:
 
@@ -128,13 +128,13 @@ python3 main.py \
 ```
 This will:
 
-- ✅ Align the multilingual files found in `data/extraitsLancelot/ii-48/`
-- 📚 Use the **Micha edition** (French) as the **base witness**
-- ⚙️ Run on the **GPU** (`cuda:0`)
-- 💾 Save results to: `result_dir/lancelot/`
+- Align the multilingual files found in `data/extraitsLancelot/ii-48/`
+- Use the **Micha edition** (French) as the **base witness**
+- Run on the **GPU** (`cuda:0`)
+- Save results to: `result_dir/lancelot/`
 
 
-> 📂 Files must be sorted by language, using the ISO 639-1 language code  
+> Files must be sorted by language, using the ISO 639-1 language code  
 > as the **parent directory name** (`es/`, `fr/`, `it/`, `en/`, etc.).
 
 To view all available options:
@@ -166,29 +166,29 @@ python3 main.py --help
 
 ---
 
-## 🚧 Project Status & Future Directions
+## Project Status & Future Directions
 
 **Aquilign** is under active development and currently supports:
 
-- ✅ Sentence- and clause-level alignment across multiple languages  
-- ✅ Integration with BERT-based and regex-based segmenters  
-- ✅ Alignment evaluation and output export in tabular format  
-- ✅ Compatibility with multilingual historical corpora (e.g. *Lancelot*, *De Regimine Principum*)
+- Sentence- and clause-level alignment across multiple languages  
+- Integration with BERT-based and regex-based segmenters  
+- Alignment evaluation and output export in tabular format  
+- Compatibility with multilingual historical corpora (e.g. *Lancelot*, *De Regimine Principum*)
 
 ---
 
-### 🔮 Planned Features
+### Planned Features
 
-- 🧬 **Collation Module**:  
+-  **Collation Module**:  
   Automatic generation of collation tables across aligned witnesses for textual variant analysis
 
-- 🏛️ **Stemmatic Analysis Integration**:  
+- **Stemmatic Analysis Integration**:  
   Tools for stemmatological inference based on alignment structure and textual divergence
 
-- 📊 **Interactive Visualization Tools**:  
+- **Interactive Visualization Tools**:  
   Visualization of alignment, variant graphs, and stemma hypotheses
 
-- 🌐 **Support for Additional Languages**:  
+- **Support for Additional Languages**:  
   Extending tokenization and alignment capabilities to new premodern languages and scripts
 
 ---
@@ -197,21 +197,21 @@ If you're interested in contributing to any of these areas or proposing enhancem
 
 ---
 
-## 📫 Contact & Contributions
+## Contact & Contributions
 
 We welcome questions, feedback, and contributions to improve the Aquilign pipeline.
 
-- 🛠️ Found a bug or have a feature request?  
+-  Found a bug or have a feature request?  
   ➡️ [Open an issue](https://github.com/ProMeText/Aquilign/issues)
 
-- 🔄 Want to contribute code or improvements?  
+-  Want to contribute code or improvements?  
   ➡️ Fork the repo and submit a pull request
 
-- 🎓 For academic collaboration or project inquiries:  
+- For academic collaboration or project inquiries:  
   ➡️ Reach out via [GitHub Discussions](https://github.com/ProMeText/Aquilign/discussions) or contact the authors directly
 
 ---
-## 📚 Citation
+## Citation
 
 If you use this tool in your research, please cite:
 
@@ -243,7 +243,7 @@ In W. Haverals, M. Koolen, & L. Thompson (Eds.), *Proceedings of the Computation
 }
 ```
 --- 
-## 💰 Funding and computing infrastructures
+## Funding and computing infrastructures
 
 This work benefited from national funding managed by the **Agence Nationale de la Recherche**  
 under the *Investissements d'avenir* programme with the reference:  
@@ -264,7 +264,7 @@ It has benefited from the CBP (Centre Blaise Pascal) computing infrastructure, h
 > Ce projet a également bénéficié des infrastructures de calcul du Centre Blaise Pascal, hébergé à l'École 
 > Normale Supérieure de Lyon.
 
-## ⚖️ License
+## License
 
 This project is released under the **[GNU General Public License v3.0](./LICENCE)**.  
 You are free to use, modify, and redistribute the code under the same license conditions.

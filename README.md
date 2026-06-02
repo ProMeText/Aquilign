@@ -2,9 +2,8 @@
 # AQUILIGN – Multilingual Aligner for Historical Corpora
 
 <p align="center">
-  <img src="img/aquilign_banner_transparent_cropped.png" alt="Aquilign banner" width="650">
+  <img src="img/aquilign_banner_clean.png" alt="Aquilign banner" width="550">
 </p>
-
 
 [![codecov](https://codecov.io/github/ProMeText/Aquilign/graph/badge.svg?token=TY5HCBOOKL)](https://codecov.io/github/ProMeText/Aquilign)
 [![Paper: CHR 2024](https://img.shields.io/badge/Paper-CHR%202024-blue)](https://ceur-ws.org/Vol-3834/paper104.pdf)

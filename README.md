@@ -2,7 +2,7 @@
 # AQUILIGN – Multilingual Aligner for Historical Corpora
 
 <p align="center">
-  <img src="img/aquilign_banner.png" alt="Aquilign banner" width="650">
+  <img src="img/aquilign_banner_transparent_cropped.png" alt="Aquilign banner" width="650">
 </p>
 
 

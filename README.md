@@ -1,15 +1,30 @@
 
-# AQUILIGN – Multilingual Aligner for Historical Corpora
+
 
 <p align="center">
-  <img src="img/aquilign_banner_final_transparent.png" alt="Aquilign banner" width="550">
+  <img src="img/aquilign_banner_final_transparent.png" alt="Aquilign banner" width="500">
 </p>
 
-[![codecov](https://codecov.io/github/ProMeText/Aquilign/graph/badge.svg?token=TY5HCBOOKL)](https://codecov.io/github/ProMeText/Aquilign)
-[![Paper: CHR 2024](https://img.shields.io/badge/Paper-CHR%202024-blue)](https://ceur-ws.org/Vol-3834/paper104.pdf)
-[![Paper: LREC 2026](https://img.shields.io/badge/Paper-LREC%202026-blue)](https://doi.org/10.63317/32HUZUUOKPFR)
-[![Dataset: Zenodo](https://img.shields.io/badge/Dataset-Zenodo-blue)](https://doi.org/10.5281/zenodo.16992629)
-[![Model: Segmenter](https://img.shields.io/badge/Model-Segmenter-yellow)](https://huggingface.co/ProMeText/aquilign-multilingual-segmenter)
+<h1 align="center">AQUILIGN</h1>
+
+<p align="center">
+  <strong>Multilingual Aligner for Historical Corpora</strong>
+</p>
+
+<p align="center">
+  <a href="https://ceur-ws.org/Vol-3834/paper104.pdf">
+    <img src="https://img.shields.io/badge/Paper-CHR%202024-blue" alt="Paper: CHR 2024">
+  </a>
+  <a href="https://doi.org/10.63317/32HUZUUOKPFR">
+    <img src="https://img.shields.io/badge/Paper-LREC%202026-blue" alt="Paper: LREC 2026">
+  </a>
+  <a href="https://doi.org/10.5281/zenodo.16992629">
+    <img src="https://img.shields.io/badge/Dataset-Zenodo-blue" alt="Dataset: Zenodo">
+  </a>
+  <a href="https://huggingface.co/ProMeText/aquilign-multilingual-segmenter">
+    <img src="https://img.shields.io/badge/Model-Segmenter-yellow" alt="Model: Segmenter">
+  </a>
+</p>
 
 
  *How can we computationally align medieval texts written in different languages and copied over centuries — without losing their philological depth?*
@@ -17,7 +32,7 @@
 **AQUILIGN** is a multilingual alignment and collation engine designed for **historical corpora**.  
 It performs **phrase-level alignment** of parallel texts using a combination of **regular-expression-based and BERT-based segmentation**, and supports multilingual workflows across medieval Romance, Latin, and Middle English texts.
 
-Developed by the **ProMeTEXT** team.
+Developed by the **ProMeTEXT** [team](https://github.com/orgs/ProMeText/people).
 
 ---
 

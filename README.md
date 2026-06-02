@@ -2,7 +2,7 @@
 
 
 <p align="center">
-  <img src="img/aquilign_banner_final_transparent.png" alt="Aquilign banner" width="500">
+  <img src="img/aquilign_banner_final_transparent.png" alt="Aquilign banner" width="450">
 </p>
 
 <h1 align="center">AQUILIGN</h1>
@@ -12,6 +12,9 @@
 </p>
 
 <p align="center">
+  <a href="https://codecov.io/github/ProMeText/Aquilign">
+    <img src="https://codecov.io/github/ProMeText/Aquilign/graph/badge.svg?token=TY5HCBOOKL" alt="codecov">
+  </a>
   <a href="https://ceur-ws.org/Vol-3834/paper104.pdf">
     <img src="https://img.shields.io/badge/Paper-CHR%202024-blue" alt="Paper: CHR 2024">
   </a>
@@ -29,10 +32,10 @@
 
  *How can we computationally align medieval texts written in different languages and copied over centuries — without losing their philological depth?*
 
-**AQUILIGN** is a multilingual alignment and collation engine designed for **historical corpora**.  
+Aquilign is a multilingual alignment and collation engine designed for **historical corpora**.  
 It performs **phrase-level alignment** of parallel texts using a combination of **regular-expression-based and BERT-based segmentation**, and supports multilingual workflows across medieval Romance, Latin, and Middle English texts.
 
-Developed by the **ProMeTEXT** [team](https://github.com/orgs/ProMeText/people).
+Aquilign is developed and maintained by the ProMeTEXT [team](https://github.com/orgs/ProMeText/people).
 
 ---
 

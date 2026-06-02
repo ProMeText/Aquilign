@@ -2,7 +2,7 @@
 # AQUILIGN – Multilingual Aligner for Historical Corpora
 
 <p align="center">
-  <img src="img/aquilign_banner_clean.png" alt="Aquilign banner" width="550">
+  <img src="img/aquilign_banner_final_transparent.png" alt="Aquilign banner" width="550">
 </p>
 
 [![codecov](https://codecov.io/github/ProMeText/Aquilign/graph/badge.svg?token=TY5HCBOOKL)](https://codecov.io/github/ProMeText/Aquilign)
@@ -18,6 +18,7 @@
 It performs **phrase-level alignment** of parallel texts using a combination of **regular-expression-based and BERT-based segmentation**, and supports multilingual workflows across medieval Romance, Latin, and Middle English texts.
 
 Developed by the **ProMeTEXT** team.
+
 ---
 
 ##  Key Features
